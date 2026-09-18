@@ -20,6 +20,7 @@ $avg_loss_per_order  = (float) ($summary['avg_loss_per_order'] ?? 0.0);
 $annualized_run_rate = (float) ($summary['annualized_run_rate'] ?? 0.0);
 $severity_level      = (string) ($summary['severity_level'] ?? 'moderate');
 $by_currency         = (array) ($summary['by_currency'] ?? []);
+$is_mock             = !empty($summary['is_mock']);
 
 $formatted_total      = wc_price($total_loss, ['currency' => $store_currency]);
 $formatted_run_rate   = wc_price($annualized_run_rate, ['currency' => $store_currency]);
@@ -34,6 +35,31 @@ $severity_labels = [
 ];
 $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderate'];
 ?>
+
+<!-- Environment & Data Mode Indicator Bar -->
+<div class="finlyzer-mode-bar <?php echo $is_mock ? 'finlyzer-mode-bar--mock' : 'finlyzer-mode-bar--live'; ?>">
+	<div class="finlyzer-mode-bar__status">
+		<span class="finlyzer-mode-dot"></span>
+		<span class="finlyzer-mode-text">
+			<?php if ($is_mock) : ?>
+				<strong><?php esc_html_e('DEVELOPMENT MOCK MODE', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Displaying simulated cross-currency order telemetry.', 'finlyzer'); ?>
+			<?php else : ?>
+				<strong><?php esc_html_e('PRODUCTION LIVE MODE', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Reading real WooCommerce HPOS database events.', 'finlyzer'); ?>
+			<?php endif; ?>
+		</span>
+	</div>
+	<div class="finlyzer-mode-bar__action">
+		<?php if ($is_mock) : ?>
+			<a href="?finlyzer_mode=live" class="finlyzer-mode-switch-btn" title="<?php esc_attr_e('Switch to live store orders', 'finlyzer'); ?>">
+				<?php esc_html_e('Switch to Live Data', 'finlyzer'); ?> &rarr;
+			</a>
+		<?php else : ?>
+			<a href="?finlyzer_mode=mock" class="finlyzer-mode-switch-btn" title="<?php esc_attr_e('Switch to simulated mock telemetry', 'finlyzer'); ?>">
+				<?php esc_html_e('Preview Mock Data', 'finlyzer'); ?> &rarr;
+			</a>
+		<?php endif; ?>
+	</div>
+</div>
 
 <!-- Overview Grid -->
 <div class="finlyzer-grid">
@@ -108,10 +134,15 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 			<?php foreach ($by_currency as $curr => $data) : ?>
 				<?php $pct = (float) ($data['share_pct'] ?? 0); ?>
 				<?php if ($pct > 0.5) : ?>
+					<?php
+					$strip_fn = function_exists('wp_strip_all_tags') ? 'wp_strip_all_tags' : 'strip_tags';
+					$price_label = $strip_fn(wc_price((float) $data['loss'], ['currency' => $store_currency]));
+					$tooltip_title = sprintf('%s: %s (%s%%)', $curr, $price_label, $pct);
+					?>
 					<div
 						class="finlyzer-bar-segment curr-<?php echo esc_attr(strtolower($curr)); ?>"
 						style="width: <?php echo esc_attr((string) $pct); ?>%;"
-						title="<?php echo esc_attr(sprintf('%s: %s (%s%%)', $curr, wp_strip_all_tags(wc_price((float) $data['loss'], ['currency' => $store_currency])), $pct)); ?>"
+						title="<?php echo esc_attr($tooltip_title); ?>"
 					></div>
 				<?php endif; ?>
 			<?php endforeach; ?>

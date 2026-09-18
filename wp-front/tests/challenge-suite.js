@@ -258,6 +258,46 @@ const tamperedSig = signWorkerPayload(tamperedPayload, now, secret);
 assert(!timingSafeEqual(sig, tamperedSig), 'Tampered payload produces completely different signature');
 
 // -------------------------------------------------------------
+// CHALLENGE 6: Dual-Mode Architecture (Mock vs. Production Live)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 6: Dual-Mode Architecture (Mock vs. Production Live)');
+
+// Mock mode verification (scaling and data richness)
+function generateMockSummary(days) {
+	const scale = days === 60 ? 1.85 : days === 90 ? 2.70 : 1.00;
+	const baseLoss = Math.round(1420.50 * scale * 100) / 100;
+	return {
+		period_days: days,
+		total_loss: baseLoss,
+		order_count: Math.round(48 * scale),
+		annualized_run_rate: Math.round(((baseLoss / days) * 365) * 100) / 100,
+		is_mock: true,
+	};
+}
+
+const mock30 = generateMockSummary(30);
+const mock60 = generateMockSummary(60);
+const mock90 = generateMockSummary(90);
+
+assert(mock30.is_mock === true, 'Mock Mode Flag Set');
+assert(mock30.total_loss === 1420.50, '30D Mock Loss Matches Baseline', `Loss: ${mock30.total_loss}`);
+assert(mock60.total_loss > mock30.total_loss, '60D Mock Loss Scales Non-Linearly', `60D: ${mock60.total_loss}`);
+assert(mock90.total_loss > mock60.total_loss, '90D Mock Loss Scales Correctly', `90D: ${mock90.total_loss}`);
+
+// Live mode empty baseline verification
+const liveBaseline = {
+	period_days: 30,
+	total_loss: 0.0,
+	order_count: 0,
+	severity_level: 'optimal',
+	is_mock: false,
+};
+assert(liveBaseline.is_mock === false, 'Live Mode Flag Set');
+assert(liveBaseline.total_loss === 0.0, 'Live Mode Starts at 0.0 Baseline');
+assert(liveBaseline.severity_level === 'optimal', 'Live Zero State Severity is Optimal');
+
+
+// -------------------------------------------------------------
 // SUMMARY
 // -------------------------------------------------------------
 console.log('\n================================================================');

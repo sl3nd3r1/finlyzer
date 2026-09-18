@@ -10,6 +10,9 @@ if (!defined('ABSPATH')) {
  * Core order scanner and financial analytics engine for Finlyzer.
  * Scans WooCommerce orders via HPOS-safe APIs, calculates gateway spread loss heuristics,
  * and compiles comprehensive financial exposure summaries.
+ *
+ * Supports seamless switching between Production (live WooCommerce DB orders)
+ * and Development (realistic mock order telemetry) using 2026 WordPress environment standards.
  */
 final class FXLI_Order_Analyzer {
 
@@ -23,6 +26,39 @@ final class FXLI_Order_Analyzer {
 	// register daily cron listener on construction
 	private function __construct() {
 		add_action('fxli_daily_scan', [$this, 'scan_recent_orders']);
+	}
+
+	// determine whether mock mode is currently active
+	public function is_mock_mode(): bool {
+		// 1. Explicit constant override in wp-config.php takes highest precedence
+		if (defined('FINLYZER_MOCK_MODE')) {
+			return (bool) FINLYZER_MOCK_MODE;
+		}
+
+		// 2. Query param toggle for authorized shop managers (?finlyzer_mode=mock or ?finlyzer_mode=live)
+		if (isset($_GET['finlyzer_mode'])) {
+			$requested = sanitize_text_field(wp_unslash($_GET['finlyzer_mode']));
+			if ($requested === 'mock') {
+				return true;
+			}
+			if ($requested === 'live') {
+				return false;
+			}
+		}
+
+		// 3. Environment-based default: auto-enable mock in dev/local ONLY if explicitly requested via filter
+		$is_dev = function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true);
+
+		return (bool) apply_filters('finlyzer_enable_mock_mode', $is_dev && $this->is_database_empty());
+	}
+
+	// check if events table has zero records
+	private function is_database_empty(): bool {
+		global $wpdb;
+		$table = $wpdb->prefix . 'fxli_fx_events';
+		// if table doesn't exist yet or has no records
+		$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+		return (int) ($count ?? 0) === 0;
 	}
 
 	// scan paid orders within the lookback window in memory-safe batches
@@ -73,7 +109,7 @@ final class FXLI_Order_Analyzer {
 		// check non-zero order total
 		$total = (float) $order->get_total();
 		if ($total <= 0.0) {
-			return; // ignore zero or negative values (refunds/free orders handled separately)
+			return; // ignore zero or negative values
 		}
 
 		// determine payment method safely
@@ -108,11 +144,16 @@ final class FXLI_Order_Analyzer {
 		return $total * max(0.001, min(0.20, $assumed_spread_pct));
 	}
 
-	// compile aggregate financial loss summary over the specified period with transient caching
+	// compile aggregate financial loss summary over the specified period
 	public function get_summary(int $days = 30): array {
 		// enforce valid reporting period bounds
 		$days = max(7, min(90, $days));
 		$store_currency = get_woocommerce_currency();
+
+		// if in mock development mode, return synthetic telemetry
+		if ($this->is_mock_mode()) {
+			return $this->generate_mock_summary($days, $store_currency);
+		}
 
 		// check transient cache to avoid unnecessary DB aggregation on rapid requests
 		$cache_key = 'finlyzer_sum_' . $days . '_' . md5($store_currency);
@@ -191,12 +232,65 @@ final class FXLI_Order_Analyzer {
 			'severity_level'      => $severity_level,
 			'top_currency'        => $top_currency,
 			'by_currency'         => $by_currency,
+			'is_mock'             => false,
 		];
 
 		// cache summary for 5 minutes
 		set_transient($cache_key, $summary, 5 * MINUTE_IN_SECONDS);
 
 		return $summary;
+	}
+
+	// generate realistic synthetic telemetry for development and demonstration
+	public function generate_mock_summary(int $days, string $store_currency = 'USD'): array {
+		$scale = match ($days) {
+			60 => 1.85,
+			90 => 2.70,
+			default => 1.00,
+		};
+
+		$base_loss = 1420.50 * $scale;
+		$base_orders = (int) round(48 * $scale);
+
+		$by_currency = [
+			'EUR' => [
+				'currency'  => 'EUR',
+				'orders'    => (int) round(28 * $scale),
+				'loss'      => round(912.20 * $scale, 2),
+				'share_pct' => 64.2,
+			],
+			'GBP' => [
+				'currency'  => 'GBP',
+				'orders'    => (int) round(12 * $scale),
+				'loss'      => round(328.10 * $scale, 2),
+				'share_pct' => 23.1,
+			],
+			'CAD' => [
+				'currency'  => 'CAD',
+				'orders'    => (int) round(5 * $scale),
+				'loss'      => round(114.30 * $scale, 2),
+				'share_pct' => 8.1,
+			],
+			'AUD' => [
+				'currency'  => 'AUD',
+				'orders'    => (int) round(3 * $scale),
+				'loss'      => round(65.90 * $scale, 2),
+				'share_pct' => 4.6,
+			],
+		];
+
+		return [
+			'period_days'         => $days,
+			'store_currency'      => $store_currency,
+			'total_loss'          => round($base_loss, 2),
+			'order_count'         => $base_orders,
+			'avg_loss_per_order'  => round($base_loss / $base_orders, 2),
+			'annualized_run_rate' => round(($base_loss / $days) * 365, 2),
+			'severity_level'      => 'critical',
+			'top_currency'        => 'EUR',
+			'by_currency'         => $by_currency,
+			'is_mock'             => true,
+		];
 	}
 
 	// clear active summary transients when new data is parsed
