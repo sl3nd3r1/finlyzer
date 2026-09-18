@@ -36,32 +36,39 @@ $rest_nonce = wp_create_nonce('wp_rest');
 		</div>
 	</header>
 
-	<!-- Main Analytics Grid (Dynamic htmx swap) -->
-	<section
-		id="finlyzer-summary"
-		class="finlyzer-summary"
-		hx-get="<?php echo esc_url($rest_summary_url); ?>"
-		hx-trigger="load"
-		hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
-		hx-swap="innerHTML"
-		aria-live="polite"
-	>
-		<div class="finlyzer-skeleton finlyzer-skeleton--hero" aria-hidden="true"></div>
-		<div class="finlyzer-skeleton finlyzer-skeleton--ledger" aria-hidden="true"></div>
-	</section>
+	<!-- Main Responsive Dashboard Layout (Horizontal on Desktop, Vertical on Mobile) -->
+	<div class="finlyzer-main-layout">
+		<!-- Primary Analytics Column (Hero, Metrics & Ledger) -->
+		<div class="finlyzer-main-layout__primary">
+			<section
+				id="finlyzer-summary"
+				class="finlyzer-summary"
+				hx-get="<?php echo esc_url($rest_summary_url); ?>"
+				hx-trigger="load"
+				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
+				hx-swap="innerHTML"
+				aria-live="polite"
+			>
+				<div class="finlyzer-skeleton finlyzer-skeleton--hero" aria-hidden="true"></div>
+				<div class="finlyzer-skeleton finlyzer-skeleton--ledger" aria-hidden="true"></div>
+			</section>
+		</div>
 
-	<!-- AI Risk Sentinel Advisory Box (Dynamic htmx swap) -->
-	<section
-		id="finlyzer-insight"
-		class="finlyzer-insight"
-		hx-get="<?php echo esc_url($rest_insight_url); ?>"
-		hx-trigger="load"
-		hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
-		hx-swap="innerHTML"
-		aria-live="polite"
-	>
-		<div class="finlyzer-skeleton finlyzer-skeleton--insight" aria-hidden="true"></div>
-	</section>
+		<!-- Sidebar Advisory Column (Sticky AI Risk Sentinel on Desktop) -->
+		<div class="finlyzer-main-layout__sidebar">
+			<section
+				id="finlyzer-insight"
+				class="finlyzer-insight"
+				hx-get="<?php echo esc_url($rest_insight_url); ?>"
+				hx-trigger="load"
+				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
+				hx-swap="innerHTML"
+				aria-live="polite"
+			>
+				<div class="finlyzer-skeleton finlyzer-skeleton--insight" aria-hidden="true"></div>
+			</section>
+		</div>
+	</div>
 
 	<!-- Security & Architecture Footer -->
 	<footer class="finlyzer-footer">

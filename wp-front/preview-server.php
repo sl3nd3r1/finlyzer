@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.1.0');
+	define('FINLYZER_VERSION', '1.2.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
@@ -109,7 +109,7 @@ if (preg_match('#^/assets/(css|js)/(.+)$#', $uri, $matches)) {
 			default => 'application/octet-stream',
 		};
 		header('Content-Type: ' . $contentType);
-		header('Cache-Control: public, max-age=3600');
+		header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 		readfile($filePath);
 		exit;
 	}
@@ -205,7 +205,7 @@ header('Content-Type: text/html; charset=utf-8');
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Finlyzer — Preview Test Environment</title>
 	<!-- Finlyzer Modern Chic Stylesheet -->
-	<link rel="stylesheet" href="/assets/css/dashboard.css">
+	<link rel="stylesheet" href="/assets/css/dashboard.css?v=<?php echo time(); ?>">
 	<style>
 		body {
 			margin: 0;
@@ -220,7 +220,7 @@ header('Content-Type: text/html; charset=utf-8');
 		}
 		.wp-admin-preview-bar {
 			width: 100%;
-			max-width: 960px;
+			max-width: 1440px;
 			display: flex;
 			align-items: center;
 			justify-content: space-between;

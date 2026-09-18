@@ -55,9 +55,10 @@
 /* Base Wrapper */
 #finlyzer-app,
 .finlyzer-app {
-	max-width: 960px;
-	margin: 24px auto 48px 0;
-	padding: 24px;
+	max-width: 1440px;
+	width: 100%;
+	margin: 24px auto 48px auto;
+	padding: 28px;
 	background: var(--fl-bg-base);
 	border: 1px solid var(--fl-border-subtle);
 	border-radius: var(--fl-radius-lg);
@@ -71,6 +72,45 @@
 #finlyzer-app *,
 .finlyzer-app * {
 	box-sizing: border-box;
+}
+
+/* Main Responsive Dashboard Layout (Horizontal Desktop, Vertical Mobile) */
+.finlyzer-main-layout {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	margin-bottom: 28px;
+}
+
+.finlyzer-main-layout__primary {
+	container-type: inline-size;
+	container-name: primary;
+	min-width: 0;
+}
+
+.finlyzer-main-layout__sidebar {
+	min-width: 0;
+}
+
+@media (min-width: 1024px) {
+	.finlyzer-main-layout {
+		display: grid;
+		grid-template-columns: minmax(0, 1.65fr) minmax(360px, 1fr);
+		gap: 28px;
+		align-items: start;
+	}
+
+	.finlyzer-main-layout__sidebar {
+		position: sticky;
+		top: 24px;
+	}
+}
+
+@media (min-width: 1400px) {
+	.finlyzer-main-layout {
+		grid-template-columns: minmax(0, 1.75fr) minmax(420px, 1fr);
+		gap: 32px;
+	}
 }
 
 /* Header & Brand Section */
@@ -167,9 +207,15 @@
 /* KPI & Overview Grid */
 .finlyzer-grid {
 	display: grid;
-	grid-template-columns: 1.5fr 1fr;
+	grid-template-columns: 1.4fr 1fr;
 	gap: 20px;
 	margin-bottom: 24px;
+}
+
+@container primary (max-width: 680px) {
+	.finlyzer-grid {
+		grid-template-columns: 1fr;
+	}
 }
 
 .finlyzer-card {
