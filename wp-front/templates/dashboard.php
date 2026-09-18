@@ -1,0 +1,79 @@
+<?php
+declare(strict_types=1);
+
+// prevent direct template execution
+if (!defined('ABSPATH')) {
+	exit;
+}
+
+$default_days = 30;
+$rest_summary_url = rest_url('finlyzer/v1/summary') . '?days=' . $default_days;
+$rest_insight_url = rest_url('finlyzer/v1/insight') . '?days=' . $default_days;
+$rest_nonce = wp_create_nonce('wp_rest');
+?>
+<div class="finlyzer-app" id="finlyzer-app">
+
+	<!-- Top Navigation and Header -->
+	<header class="finlyzer-header">
+		<div class="finlyzer-header__brand">
+			<div class="finlyzer-badge">
+				<span class="finlyzer-badge__dot"></span>
+				<span class="finlyzer-badge__text"><?php esc_html_e('FX SENTINEL ACTIVE', 'finlyzer'); ?></span>
+			</div>
+			<h1 class="finlyzer-header__title"><?php esc_html_e('Finlyzer', 'finlyzer'); ?></h1>
+			<p class="finlyzer-header__sub">
+				<?php esc_html_e('Monitoring hidden payment gateway spreads and cross-border currency erosion in real time.', 'finlyzer'); ?>
+			</p>
+		</div>
+
+		<!-- Timeframe Selector -->
+		<div class="finlyzer-header__controls">
+			<div class="finlyzer-range-group" role="group" aria-label="<?php esc_attr_e('Reporting timeframe', 'finlyzer'); ?>">
+				<button type="button" class="finlyzer-range-btn is-active" data-days="30">30D</button>
+				<button type="button" class="finlyzer-range-btn" data-days="60">60D</button>
+				<button type="button" class="finlyzer-range-btn" data-days="90">90D</button>
+			</div>
+		</div>
+	</header>
+
+	<!-- Main Analytics Grid (Dynamic htmx swap) -->
+	<section
+		id="finlyzer-summary"
+		class="finlyzer-summary"
+		hx-get="<?php echo esc_url($rest_summary_url); ?>"
+		hx-trigger="load"
+		hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
+		hx-swap="innerHTML"
+		aria-live="polite"
+	>
+		<div class="finlyzer-skeleton finlyzer-skeleton--hero" aria-hidden="true"></div>
+		<div class="finlyzer-skeleton finlyzer-skeleton--ledger" aria-hidden="true"></div>
+	</section>
+
+	<!-- AI Risk Sentinel Advisory Box (Dynamic htmx swap) -->
+	<section
+		id="finlyzer-insight"
+		class="finlyzer-insight"
+		hx-get="<?php echo esc_url($rest_insight_url); ?>"
+		hx-trigger="load"
+		hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
+		hx-swap="innerHTML"
+		aria-live="polite"
+	>
+		<div class="finlyzer-skeleton finlyzer-skeleton--insight" aria-hidden="true"></div>
+	</section>
+
+	<!-- Security & Architecture Footer -->
+	<footer class="finlyzer-footer">
+		<div class="finlyzer-footer__left">
+			<span class="finlyzer-footer__icon">&#x1F512;</span>
+			<p>
+				<?php esc_html_e('Zero Money Movement Architecture. Read-only financial analytics computed from local store orders.', 'finlyzer'); ?>
+			</p>
+		</div>
+		<div class="finlyzer-footer__right">
+			<span class="finlyzer-version-tag">v<?php echo esc_html(FINLYZER_VERSION); ?></span>
+		</div>
+	</footer>
+
+</div>
