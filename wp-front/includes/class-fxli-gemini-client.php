@@ -60,7 +60,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.10.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.11.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -165,8 +165,83 @@ final class FXLI_Gemini_Client {
 		);
 	}
 
+	// resolve Cloudflare Worker order analysis endpoint URL
+	public static function analyze_endpoint(): string {
+		if (defined('FINLYZER_WORKER_ANALYZE_ENDPOINT')) {
+			return (string) FINLYZER_WORKER_ANALYZE_ENDPOINT;
+		}
+
+		$base = defined('FINLYZER_WORKER_ENDPOINT') ? FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? FXLI_WORKER_ENDPOINT : '');
+		if ($base === '') {
+			return '';
+		}
+
+		// strip /api/v1/insight or /insight or trailing slashes to obtain base worker URL
+		$clean_base = preg_replace('#(/api/v1)?/insight/?$#', '', rtrim($base, '/'));
+		$endpoint = $clean_base . '/api/v1/analyze';
+
+		return apply_filters('finlyzer_worker_analyze_endpoint', $endpoint);
+	}
+
+	// delegate store order calculation directly to the Cloudflare Worker backend
+	public function analyze_orders(array $payload): array|WP_Error {
+		$endpoint = self::analyze_endpoint();
+		if ($endpoint === '') {
+			return new WP_Error('worker_unconfigured', 'Cloudflare Worker endpoint is unconfigured.');
+		}
+
+		// attach site authentication metadata to payload
+		$payload['site_id'] = self::site_id();
+		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.11.0';
+
+		$body = wp_json_encode($payload);
+		if ($body === false) {
+			return new WP_Error('json_encode_error', 'Failed to encode order analysis payload.');
+		}
+
+		// generate timestamped HMAC signature
+		$timestamp = time();
+		$signature = FXLI_Security::sign_worker_payload($body, $timestamp);
+		if ($signature === '') {
+			return new WP_Error('hmac_unconfigured', 'Worker HMAC signing secret is unconfigured.');
+		}
+
+		// dispatch server-to-server POST request to the Cloudflare Worker isolate
+		$response = wp_remote_post($endpoint, [
+			'timeout' => 12,
+			'headers' => [
+				'Content-Type'    => 'application/json',
+				'X-FXLI-Site'     => self::site_id(),
+				'X-FXLI-Site-Url' => $payload['site_url'],
+				'X-FXLI-Version'  => $payload['plugin_version'],
+				'X-FXLI-Time'     => (string) $timestamp,
+				'X-FXLI-Sig'      => $signature,
+			],
+			'body'    => $body,
+		]);
+
+		if (is_wp_error($response)) {
+			return $response;
+		}
+
+		$code = wp_remote_retrieve_response_code($response);
+		$raw_body = wp_remote_retrieve_body($response);
+
+		if ($code !== 200) {
+			return new WP_Error('worker_http_error', "Worker returned HTTP status {$code}: {$raw_body}");
+		}
+
+		$data = json_decode($raw_body, true);
+		if (!is_array($data) || !isset($data['total_loss'])) {
+			return new WP_Error('invalid_worker_response', 'Malformed financial analysis response from Worker.');
+		}
+
+		return $data;
+	}
+
 	// generate a stable, non-PII site hash identifier
-	private static function site_id(): string {
+	public static function site_id(): string {
 		$salted = (defined('AUTH_KEY') ? AUTH_KEY : 'finlyzer_salt') . '|' . home_url();
 		return hash('sha256', $salted);
 	}

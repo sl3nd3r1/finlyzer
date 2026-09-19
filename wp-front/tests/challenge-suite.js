@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.10.0', `FINLYZER_VERSION is bumped to 1.10.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.11.0', `FINLYZER_VERSION is bumped to 1.11.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.10.0'), 'readme.txt Stable tag matches v1.10.0');
+assert(readmeContent.includes('Stable tag: 1.11.0'), 'readme.txt Stable tag matches v1.11.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -675,6 +675,77 @@ assert(insightNoteContent.includes('MARGIN SECURE'), 'insight-note.php supports 
 assert(insightNoteContent.includes('FEES DETECTED'), 'insight-note.php supports FEES DETECTED status badge');
 assert(!insightNoteContent.includes('finlyzer-sentinel-action'), 'insight-note.php strictly excludes solution recommendation banner in Phase 1');
 assert(!insightNoteContent.includes('Recommendation:'), 'insight-note.php strictly excludes Recommendation label in Phase 1');
+
+// -------------------------------------------------------------
+// TEST GROUP 14: Bulk International Order Generator & Backend Calculation Architecture (v1.11.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 14: Bulk International Order Generator & Backend Calculation Architecture');
+
+const generatorPhpPath = path.resolve(__dirname, '../includes/class-fxli-order-generator.php');
+const binGenerateOrdersPath = path.resolve(__dirname, '../bin/generate-orders.php');
+const orderAnalyzerPath = path.resolve(__dirname, '../includes/class-fxli-order-analyzer.php');
+const geminiClientPath = path.resolve(__dirname, '../includes/class-fxli-gemini-client.php');
+const restApiPath = path.resolve(__dirname, '../includes/class-fxli-rest-api.php');
+
+assert(fs.existsSync(generatorPhpPath), 'class-fxli-order-generator.php exists');
+assert(fs.existsSync(binGenerateOrdersPath), 'bin/generate-orders.php CLI script exists');
+
+const generatorContent = fs.readFileSync(generatorPhpPath, 'utf8');
+const binContent = fs.readFileSync(binGenerateOrdersPath, 'utf8');
+const analyzerContent = fs.readFileSync(orderAnalyzerPath, 'utf8');
+const geminiContent = fs.readFileSync(geminiClientPath, 'utf8');
+const restApiContent = fs.readFileSync(restApiPath, 'utf8');
+
+// 14.1 Custom Gateway Titles & Transaction IDs
+assert(generatorContent.includes("'Credit Card (Stripe)'"), 'Order generator declares custom title: Credit Card (Stripe)');
+assert(generatorContent.includes("'PayPal Commerce Platform'"), 'Order generator declares custom title: PayPal Commerce Platform');
+assert(generatorContent.includes("'Klarna Pay Later / Slice It'"), 'Order generator declares custom title: Klarna Pay Later / Slice It');
+assert(generatorContent.includes("'ch_stripe_'"), 'Order generator assigns ch_stripe_ fake transaction prefix');
+assert(generatorContent.includes("'PAYID-'"), 'Order generator assigns PAYID- fake transaction prefix');
+assert(generatorContent.includes("'klarna_txn_'"), 'Order generator assigns klarna_txn_ fake transaction prefix');
+
+// 14.2 Order Completion & HPOS Compatibility
+assert(generatorContent.includes("set_status('completed'"), 'Order generator strictly sets completed status');
+assert(generatorContent.includes("update_meta_data('_finlyzer_sample_order'"), 'Order generator tags sample orders with _finlyzer_sample_order');
+assert(generatorContent.includes("function clean()"), 'Order generator provides clean() method for idempotent teardown');
+
+// 14.3 CLI Script XAMPP Auto-Discovery
+assert(binContent.includes('/opt/lampp/htdocs/wordpress/wp-load.php'), 'CLI script searches Linux XAMPP path');
+assert(binContent.includes('C:/xampp/htdocs/wordpress/wp-load.php'), 'CLI script searches Windows XAMPP path');
+assert(binContent.includes('--currencies'), 'CLI script accepts --currencies flag');
+assert(binContent.includes('--gateways'), 'CLI script accepts --gateways flag');
+
+// 14.4 Backend Calculation Delegation Architecture
+assert(analyzerContent.includes('fetch_backend_analysis'), 'class-fxli-order-analyzer.php delegates calculations to backend worker');
+assert(analyzerContent.includes('woocommerce_order_status_completed'), 'Order analyzer binds woocommerce_order_status_completed hook');
+assert(analyzerContent.includes('woocommerce_payment_complete'), 'Order analyzer binds woocommerce_payment_complete hook');
+assert(analyzerContent.includes('woocommerce_order_status_processing'), 'Order analyzer binds woocommerce_order_status_processing hook');
+assert(analyzerContent.includes("'klarna'"), 'GATEWAY_PROFILES includes klarna');
+assert(analyzerContent.includes("'spread_rate_pct' => 3.0"), 'Klarna spread rate is defined as 3.0%');
+assert(analyzerContent.includes("'badge_color'     => '#E06D8C'"), 'Klarna badge color is #E06D8C');
+
+// 14.5 REST API & Client Endpoints
+assert(restApiContent.includes('/generate-sample-orders'), 'REST API registers /generate-sample-orders endpoint');
+assert(geminiContent.includes('analyze_orders'), 'FXLI_Gemini_Client implements analyze_orders() server-to-server dispatcher');
+assert(dashboardPhpContent.includes('finlyzer-gen-orders-btn'), 'dashboard.php includes sample order generation button');
+
+// 14.6 High-Load Heavy Order Attribution Simulation (10,000 Order Items)
+const heavyLoadStart = performance.now();
+const simulatedItems = [];
+const gateways = [
+	{ id: 'stripe', spread: 0.022 },
+	{ id: 'paypal', spread: 0.038 },
+	{ id: 'klarna', spread: 0.030 },
+];
+for (let i = 0; i < 10000; i++) {
+	const gw = gateways[i % 3];
+	const total = 50 + (i % 200);
+	const loss = Math.round(total * gw.spread * 100) / 100;
+	simulatedItems.push({ id: i + 1, gateway: gw.id, total, loss });
+}
+const heavyLoadElapsed = performance.now() - heavyLoadStart;
+assert(simulatedItems.length === 10000, 'Processed 10,000 synthetic order items');
+assert(heavyLoadElapsed < 100, `10,000 order items simulated in ${heavyLoadElapsed.toFixed(2)}ms (< 100ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

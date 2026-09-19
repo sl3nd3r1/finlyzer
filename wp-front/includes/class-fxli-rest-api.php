@@ -62,6 +62,27 @@ final class FXLI_REST_API {
 						],
 					],
 				]);
+
+				// register sample order generation endpoint
+				register_rest_route($ns, '/generate-sample-orders', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_generate_orders'],
+					'permission_callback' => [$this, 'permission_check'],
+					'args'                => [
+						'count' => [
+							'required'          => false,
+							'default'           => 25,
+							'type'              => 'integer',
+							'validate_callback' => static fn($v): bool => is_numeric($v) && (int) $v >= 1 && (int) $v <= 100,
+							'sanitize_callback' => static fn($v): int => max(1, min(100, (int) $v)),
+						],
+						'clean' => [
+							'required'          => false,
+							'default'           => false,
+							'type'              => 'boolean',
+						],
+					],
+				]);
 			}
 		});
 	}
@@ -129,5 +150,21 @@ final class FXLI_REST_API {
 		$html = (string) ob_get_clean();
 
 		return $this->serve_html($html);
+	}
+
+	// handle sample order bulk generation request
+	public function handle_generate_orders(WP_REST_Request $request): WP_REST_Response {
+		$count = max(1, min(100, (int) ($request->get_param('count') ?: 25)));
+		$clean = (bool) $request->get_param('clean');
+
+		// clean previous test orders if requested
+		if ($clean) {
+			FXLI_Order_Generator::clean();
+		}
+
+		// generate sample international orders
+		$result = FXLI_Order_Generator::generate($count);
+
+		return new WP_REST_Response($result, $result['success'] ? 200 : 400);
 	}
 }

@@ -23,9 +23,17 @@ final class FXLI_Order_Analyzer {
 		return self::$instance ??= new self();
 	}
 
-	// register daily cron listener on construction
+	// register daily cron listener and real-time order completion hooks on construction
 	private function __construct() {
 		add_action('fxli_daily_scan', [$this, 'scan_recent_orders']);
+		add_action('woocommerce_order_status_completed', [$this, 'on_order_status_changed'], 10, 1);
+		add_action('woocommerce_payment_complete', [$this, 'on_order_status_changed'], 10, 1);
+		add_action('woocommerce_order_status_processing', [$this, 'on_order_status_changed'], 10, 1);
+	}
+
+	// invalidate cache when an order completes or updates
+	public function on_order_status_changed(int $order_id = 0): void {
+		$this->clear_summary_transients();
 	}
 
 	// determine whether mock mode is currently active
@@ -185,6 +193,76 @@ final class FXLI_Order_Analyzer {
 		return $total * max(0.000, min(0.20, $assumed_spread_pct));
 	}
 
+	// delegate calculation to Cloudflare Worker serverless backend (pure backend calculation)
+	public function fetch_backend_analysis(int $days, string $store_currency): ?array {
+		// assert WooCommerce order retrieval is possible
+		if (!function_exists('wc_get_orders')) {
+			return null;
+		}
+
+		$since = (new DateTimeImmutable("-{$days} days"))->format('Y-m-d\TH:i:s');
+		$wc_orders = wc_get_orders([
+			'status'    => apply_filters('finlyzer_scanned_order_statuses', ['wc-processing', 'wc-completed']),
+			'date_paid' => '>' . strtotime($since),
+			'limit'     => 1000,
+			'return'    => 'objects',
+		]);
+
+		if (empty($wc_orders)) {
+			// check if any completed orders exist in date_created if date_paid was not explicitly recorded
+			$wc_orders = wc_get_orders([
+				'status'       => apply_filters('finlyzer_scanned_order_statuses', ['wc-processing', 'wc-completed']),
+				'date_created' => '>' . strtotime($since),
+				'limit'        => 1000,
+				'return'       => 'objects',
+			]);
+		}
+
+		$orders_payload = [];
+		foreach ($wc_orders as $ord) {
+			if (!$ord instanceof WC_Order) {
+				continue;
+			}
+
+			// extract product line items
+			$items_payload = [];
+			foreach ($ord->get_items() as $item) {
+				if ($item instanceof WC_Order_Item_Product) {
+					$items_payload[] = [
+						'product_id'   => (int) $item->get_product_id(),
+						'product_name' => (string) ($item->get_name() ?: ('Product #' . $item->get_product_id())),
+						'quantity'     => max(1, (int) $item->get_quantity()),
+						'line_total'   => (float) $item->get_total(),
+					];
+				}
+			}
+
+			$orders_payload[] = [
+				'order_id'       => (int) $ord->get_id(),
+				'order_date'     => $ord->get_date_paid()?->date('c') ?? $ord->get_date_created()?->date('c') ?? current_time('c'),
+				'order_currency' => (string) $ord->get_currency(),
+				'order_total'    => (float) $ord->get_total(),
+				'payment_method' => (string) ($ord->get_payment_method() ?: 'standard'),
+				'transaction_id' => (string) $ord->get_transaction_id(),
+				'items'          => $items_payload,
+			];
+		}
+
+		$payload = [
+			'store_currency' => $store_currency,
+			'period_days'    => $days,
+			'orders'         => $orders_payload,
+		];
+
+		// invoke serverless backend calculation via secure HMAC proxy
+		$response = FXLI_Gemini_Client::instance()->analyze_orders($payload);
+		if (!is_wp_error($response) && is_array($response) && isset($response['total_loss'])) {
+			return $response;
+		}
+
+		return null;
+	}
+
 	// compile aggregate financial loss summary over the specified period
 	public function get_summary(int $days = 30): array {
 		// enforce valid reporting period bounds
@@ -201,6 +279,13 @@ final class FXLI_Order_Analyzer {
 		$cached = get_transient($cache_key);
 		if (is_array($cached)) {
 			return $cached;
+		}
+
+		// attempt serverless calculation on Cloudflare Worker backend (backend-first architecture)
+		$backend_result = $this->fetch_backend_analysis($days, $store_currency);
+		if (is_array($backend_result) && !empty($backend_result)) {
+			set_transient($cache_key, $backend_result, 5 * MINUTE_IN_SECONDS);
+			return $backend_result;
 		}
 
 		global $wpdb;
@@ -676,6 +761,16 @@ final class FXLI_Order_Analyzer {
 			'badge_color'     => '#6366F1',
 			'fee_description' => 'Standard cross-border conversion fee (1.0% international + 1.2% FX markup)',
 		],
+		'klarna' => [
+			'id'              => 'klarna',
+			'name'            => 'Klarna',
+			'title'           => 'Klarna Payments / Checkout',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 3.0,
+			'fx_status'       => 'Moderate Spread',
+			'badge_color'     => '#E06D8C',
+			'fee_description' => 'Cross-border financing and currency conversion markup (~3.0% spread drag)',
+		],
 		'woocommerce_payments' => [
 			'id'              => 'woocommerce_payments',
 			'name'            => 'WooPayments',
@@ -764,6 +859,12 @@ final class FXLI_Order_Analyzer {
 			return $profile;
 		}
 
+		if (str_contains($normalized, 'klarna') || $normalized === 'kco') {
+			$profile = self::GATEWAY_PROFILES['klarna'];
+			$profile['id'] = $method_id;
+			return $profile;
+		}
+
 		if (str_contains($normalized, 'paypal') || str_contains($normalized, 'ppcp')) {
 			$profile = self::GATEWAY_PROFILES['paypal'];
 			$profile['id'] = $method_id;
@@ -819,7 +920,7 @@ final class FXLI_Order_Analyzer {
 
 		// if WooCommerce is not initialized or in preview/mock mode, provide default supported gateways
 		if (empty($detected)) {
-			foreach (['paypal', 'stripe', 'woocommerce_payments'] as $default_id) {
+			foreach (['paypal', 'stripe', 'klarna', 'woocommerce_payments'] as $default_id) {
 				$profile = self::resolve_gateway_profile($default_id);
 				$detected[$default_id] = array_merge($profile, ['is_enabled' => true]);
 			}

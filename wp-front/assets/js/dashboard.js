@@ -102,5 +102,60 @@
 				}
 			});
 		});
+
+		// handle quick sample order generator button
+		var genBtn = document.getElementById('finlyzer-gen-orders-btn');
+		if (genBtn) {
+			genBtn.addEventListener('click', function () {
+				if (genBtn.disabled) {
+					return;
+				}
+				var origHtml = genBtn.innerHTML;
+				genBtn.disabled = true;
+				genBtn.style.opacity = '0.7';
+				genBtn.innerHTML = '<span>⏳ Generating Orders...</span>';
+
+				fetch(config.restUrl + '/generate-sample-orders', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': config.nonce,
+					},
+					body: JSON.stringify({ count: 25 }),
+				})
+					.then(function (res) {
+						return res.json();
+					})
+					.then(function (data) {
+						genBtn.disabled = false;
+						genBtn.style.opacity = '1';
+						if (data && data.success) {
+							genBtn.innerHTML = '<span>✅ ' + data.created + ' Orders Generated!</span>';
+							setTimeout(function () {
+								genBtn.innerHTML = origHtml;
+							}, 3500);
+
+							// refresh summary and insight fragments via htmx
+							if (window.htmx) {
+								window.htmx.trigger(summary, 'load');
+								window.htmx.trigger(insight, 'load');
+							}
+						} else {
+							genBtn.innerHTML = '<span>❌ ' + (data && data.message ? data.message : 'Error') + '</span>';
+							setTimeout(function () {
+								genBtn.innerHTML = origHtml;
+							}, 3500);
+						}
+					})
+					.catch(function () {
+						genBtn.disabled = false;
+						genBtn.style.opacity = '1';
+						genBtn.innerHTML = '<span>❌ Request Failed</span>';
+						setTimeout(function () {
+							genBtn.innerHTML = origHtml;
+						}, 3500);
+					});
+			});
+		}
 	});
 })();

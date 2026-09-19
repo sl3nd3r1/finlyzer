@@ -26,8 +26,11 @@ $rest_nonce = wp_create_nonce('wp_rest');
 			</p>
 		</div>
 
-		<!-- Timeframe Selector -->
-		<div class="finlyzer-header__controls">
+		<!-- Timeframe Selector & Test Generator Controls -->
+		<div class="finlyzer-header__controls" style="display:flex; align-items:center; gap:12px;">
+			<button type="button" id="finlyzer-gen-orders-btn" class="finlyzer-btn finlyzer-btn--ghost" style="font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px; cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:#cbd5e1; transition:all 0.15s ease;" title="<?php esc_attr_e('Generate sample international orders with Stripe, PayPal, and Klarna', 'finlyzer'); ?>">
+				<span>⚡ <?php esc_html_e('Generate Sample Orders', 'finlyzer'); ?></span>
+			</button>
 			<div class="finlyzer-range-group" role="group" aria-label="<?php esc_attr_e('Reporting timeframe', 'finlyzer'); ?>">
 				<button type="button" class="finlyzer-range-btn is-active" data-days="30">30D</button>
 				<button type="button" class="finlyzer-range-btn" data-days="60">60D</button>
