@@ -8,13 +8,9 @@
  * Excludes developer test suites, preview servers, and non-production files.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { execSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
 
 const PLUGIN_ROOT = __dirname;
 const DIST_DIR = path.resolve(PLUGIN_ROOT, 'dist');

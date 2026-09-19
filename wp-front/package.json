@@ -1,0 +1,21 @@
+{
+  "name": "finlyzer-woocommerce",
+  "version": "1.7.0",
+  "description": "Finlyzer — FX Loss & Margin Insights for WooCommerce Plugin",
+  "scripts": {
+    "build": "node build-package.js",
+    "package": "node build-package.js",
+    "pack": "node build-package.js",
+    "test": "node tests/challenge-suite.js",
+    "preview": "php -S localhost:8080 preview-server.php"
+  },
+  "keywords": [
+    "woocommerce",
+    "currency",
+    "fx",
+    "payments",
+    "plugin"
+  ],
+  "author": "Finlyzer Core Team",
+  "license": "GPL-2.0-or-later"
+}
