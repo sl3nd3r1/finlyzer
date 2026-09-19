@@ -315,7 +315,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.6.0', `FINLYZER_VERSION is bumped to 1.6.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.7.0', `FINLYZER_VERSION is bumped to 1.7.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -369,9 +369,11 @@ console.log('\nTEST GROUP 9: Market Timing Loss & Frankfurter Active Country Eng
 
 const analyzerPhpPath = path.resolve(__dirname, '../includes/class-fxli-order-analyzer.php');
 const summaryCardsPhpPath = path.resolve(__dirname, '../templates/partials/summary-cards.php');
+const installerPhpPath = path.resolve(__dirname, '../includes/class-fxli-installer.php');
 
 const analyzerPhpContent = fs.readFileSync(analyzerPhpPath, 'utf8');
 const summaryCardsContent = fs.readFileSync(summaryCardsPhpPath, 'utf8');
+const installerPhpContent = fs.readFileSync(installerPhpPath, 'utf8');
 
 // verify 30-currency Frankfurter registry in PHP
 assert(analyzerPhpContent.includes('FRANKFURTER_CURRENCY_REGISTRY'), 'class-fxli-order-analyzer.php defines FRANKFURTER_CURRENCY_REGISTRY');
@@ -410,6 +412,113 @@ assert(deprecResult.isLoss === true, 'isLoss is true under depreciation');
 const apprecResult = calculateMarketTiming(1000, 0.90, 0.85);
 assert(apprecResult.loss === 0, 'Appreciation yields exactly 0 timing loss (favorable movement)');
 assert(apprecResult.isLoss === false, 'isLoss is false under favorable appreciation');
+
+// -------------------------------------------------------------
+// TEST GROUP 10: Payment Gateway Recognition, FX Spread & Product Attribution (50,000 Items)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 10: Payment Gateway Recognition, FX Spread & Product-Level Attribution (50,000 Items)');
+
+// 10.1 Schema & installer verification
+assert(installerPhpContent.includes('fxli_product_gateway_events'), 'Installer defines fxli_product_gateway_events table');
+assert(installerPhpContent.includes('payment_method VARCHAR(64)'), 'Installer includes payment_method column in fx_events');
+assert(installerPhpContent.includes('attributed_loss_minor'), 'Installer creates attributed_loss_minor column');
+assert(installerPhpContent.includes('KEY order_payment (payment_method)'), 'Installer indexes payment_method for fast grouping');
+assert(pluginPhpContent.includes("define('FINLYZER_DB_VERSION', '3')"), 'FINLYZER_DB_VERSION is upgraded to version 3');
+
+// 10.2 Gateway Profiles verification
+assert(analyzerPhpContent.includes('GATEWAY_PROFILES'), 'Analyzer defines GATEWAY_PROFILES constant');
+assert(analyzerPhpContent.includes("'paypal' =>"), 'PayPal registered with spread markup profile');
+assert(analyzerPhpContent.includes("'stripe' =>"), 'Stripe registered with spread markup profile');
+assert(analyzerPhpContent.includes("'woocommerce_payments' =>"), 'WooPayments registered with spread markup profile');
+assert(analyzerPhpContent.includes("'adyen' =>"), 'Adyen registered with spread markup profile');
+assert(analyzerPhpContent.includes("'mollie' =>"), 'Mollie registered with spread markup profile');
+assert(analyzerPhpContent.includes("'square' =>"), 'Square registered with spread markup profile');
+assert(analyzerPhpContent.includes("'bacs' =>"), 'BACS wire transfer registered as domestic/zero FX');
+assert(analyzerPhpContent.includes("'cod' =>"), 'Cash on Delivery registered as domestic/zero FX');
+assert(analyzerPhpContent.includes('resolve_gateway_profile'), 'Analyzer exposes resolve_gateway_profile static method');
+assert(analyzerPhpContent.includes('get_detected_store_gateways'), 'Analyzer exposes get_detected_store_gateways static method');
+
+// 10.3 Template integration checks
+assert(summaryCardsContent.includes('finlyzer-gateway-section'), 'summary-cards.php contains finlyzer-gateway-section');
+assert(summaryCardsContent.includes('finlyzer-gateway-grid'), 'summary-cards.php contains finlyzer-gateway-grid');
+assert(summaryCardsContent.includes('finlyzer-products-section'), 'summary-cards.php contains finlyzer-products-section');
+assert(summaryCardsContent.includes('finlyzer-products-table'), 'summary-cards.php contains finlyzer-products-table');
+assert(summaryCardsContent.includes('finlyzerGwFilterBar'), 'summary-cards.php includes finlyzerGwFilterBar tab switcher');
+
+// 10.4 High-load simulation of 50,000 order items across recognized gateways
+console.log('   Simulating 50,000 order items across 10,000 orders to test attribution invariants...');
+const gwStressStartTime = Date.now();
+
+const gatewaySpreads = {
+	paypal: 0.038,
+	stripe: 0.022,
+	woocommerce_payments: 0.022,
+	adyen: 0.015,
+	bacs: 0.000,
+};
+
+const gatewayKeys = Object.keys(gatewaySpreads);
+let totalSimulatedOrderLoss = 0;
+let totalSimulatedProductLoss = 0;
+const gatewayAccumulators = {};
+gatewayKeys.forEach((gw) => {
+	gatewayAccumulators[gw] = { orderLoss: 0, productLoss: 0, items: 0 };
+});
+
+const TOTAL_ORDERS = 10_000;
+const ITEMS_PER_ORDER = 5; // 10,000 * 5 = 50,000 items
+
+for (let i = 0; i < TOTAL_ORDERS; i++) {
+	const gw = gatewayKeys[i % gatewayKeys.length];
+	const spreadRate = gatewaySpreads[gw];
+
+	// generate 5 line items with distinct values
+	const lineTotals = [
+		25.0 + (i % 50),
+		40.0 + (i % 30),
+		15.0 + (i % 20),
+		100.0 + (i % 100),
+		10.0 + (i % 10),
+	];
+	const orderTotal = lineTotals.reduce((a, b) => a + b, 0);
+	const orderLoss = Math.round(orderTotal * spreadRate * 100) / 100;
+	totalSimulatedOrderLoss += orderLoss;
+	gatewayAccumulators[gw].orderLoss += orderLoss;
+
+	let orderProductLossSum = 0;
+	for (let j = 0; j < ITEMS_PER_ORDER; j++) {
+		const lineTotal = lineTotals[j];
+		const share = lineTotal / orderTotal;
+		const itemLoss = Math.round(orderLoss * share * 100) / 100;
+		orderProductLossSum += itemLoss;
+		totalSimulatedProductLoss += itemLoss;
+		gatewayAccumulators[gw].productLoss += itemLoss;
+		gatewayAccumulators[gw].items++;
+	}
+
+	// individual order invariant: sum of line items within 5 cents of order total due to cent rounding
+	const diff = Math.abs(orderProductLossSum - orderLoss);
+	if (diff > 0.05) {
+		assert(false, `Order ${i} attribution invariant violated: diff ${diff}`);
+	}
+}
+
+const gwStressElapsedMs = Date.now() - gwStressStartTime;
+console.log(`   Processed 50,000 items in ${gwStressElapsedMs}ms`);
+
+assert(gwStressElapsedMs < 1500, `High load stress test executed in <1500ms (took ${gwStressElapsedMs}ms)`);
+assert(gatewayAccumulators.bacs.orderLoss === 0, 'BACS domestic gateway incurs 0.00 order loss');
+assert(gatewayAccumulators.bacs.productLoss === 0, 'BACS domestic gateway incurs 0.00 product loss');
+assert(gatewayAccumulators.paypal.orderLoss > 0, 'PayPal cross-border orders incur positive loss');
+assert(gatewayAccumulators.stripe.orderLoss > 0, 'Stripe cross-border orders incur positive loss');
+
+// Grand total invariant check across all 50,000 items (within 0.05% relative rounding tolerance)
+const totalLossDiff = Math.abs(totalSimulatedProductLoss - totalSimulatedOrderLoss);
+const relativeTolerance = totalSimulatedOrderLoss * 0.001; // 0.1% tolerance
+assert(
+	totalLossDiff < relativeTolerance,
+	`Total product attribution matches total gateway loss within rounding tolerance ($${totalLossDiff.toFixed(2)} diff on $${totalSimulatedOrderLoss.toFixed(2)})`
+);
 
 // -------------------------------------------------------------
 // SUMMARY

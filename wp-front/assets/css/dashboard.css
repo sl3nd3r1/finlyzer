@@ -1104,3 +1104,314 @@
 		border-top: 1px solid var(--fl-border-subtle);
 	}
 }
+
+/* ==========================================================================
+   Payment Gateway FX Recognition Matrix & Product-Level Attribution
+   ========================================================================== */
+
+.finlyzer-title-badge--gateway {
+	background: rgba(99, 102, 241, 0.18);
+	border-color: rgba(99, 102, 241, 0.4);
+	color: #A5B4FC;
+}
+
+.finlyzer-title-badge--products {
+	background: rgba(16, 185, 129, 0.18);
+	border-color: rgba(16, 185, 129, 0.4);
+	color: #6EE7B7;
+}
+
+/* Gateway Recognition Cards Grid */
+.finlyzer-gateway-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 16px;
+	padding: 20px;
+}
+
+.finlyzer-gw-card {
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid var(--fl-border-subtle);
+	border-left: 3px solid var(--gw-accent, #6366F1);
+	border-radius: var(--fl-radius-md);
+	padding: 18px 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.finlyzer-gw-card:hover {
+	background: rgba(255, 255, 255, 0.04);
+	border-color: rgba(255, 255, 255, 0.12);
+	transform: translateY(-2px);
+	box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.4);
+}
+
+.finlyzer-gw-card__top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.finlyzer-gw-card__identity {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.finlyzer-gw-card__dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background-color: var(--gw-accent, #6366F1);
+	box-shadow: 0 0 8px var(--gw-accent, #6366F1);
+	flex-shrink: 0;
+}
+
+.finlyzer-gw-card__name {
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 700;
+	color: #FFFFFF;
+	line-height: 1.2;
+}
+
+.finlyzer-gw-card__type {
+	font-size: 0.76rem;
+	color: var(--fl-text-muted);
+}
+
+.finlyzer-gw-card__tags {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.finlyzer-gw-tag {
+	font-family: var(--fl-font-mono);
+	font-size: 0.70rem;
+	font-weight: 700;
+	padding: 2px 7px;
+	border-radius: var(--fl-radius-sm);
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.finlyzer-gw-tag--fx {
+	background: rgba(16, 185, 129, 0.12);
+	border: 1px solid rgba(16, 185, 129, 0.3);
+	color: #34D399;
+}
+
+.finlyzer-gw-tag--spread {
+	background: rgba(245, 158, 11, 0.12);
+	border: 1px solid rgba(245, 158, 11, 0.3);
+	color: #FBBF24;
+}
+
+.finlyzer-gw-tag--domestic {
+	background: rgba(148, 163, 184, 0.10);
+	border: 1px solid rgba(148, 163, 184, 0.25);
+	color: #94A3B8;
+}
+
+.finlyzer-gw-card__metrics {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
+	background: rgba(0, 0, 0, 0.25);
+	border-radius: var(--fl-radius-sm);
+	padding: 10px 12px;
+}
+
+.finlyzer-gw-metric {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.finlyzer-gw-metric__label {
+	font-size: 0.68rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: var(--fl-text-muted);
+	letter-spacing: 0.04em;
+}
+
+.finlyzer-gw-metric__val {
+	font-family: var(--fl-font-mono);
+	font-size: 0.88rem;
+	font-weight: 700;
+	color: #FFFFFF;
+}
+
+.finlyzer-gw-metric__val--loss {
+	color: #FDA4AF;
+}
+
+.finlyzer-gw-card__share {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.finlyzer-gw-share-bar {
+	height: 5px;
+	background: rgba(255, 255, 255, 0.08);
+	border-radius: var(--fl-radius-full);
+	overflow: hidden;
+}
+
+.finlyzer-gw-share-bar__fill {
+	height: 100%;
+	background: var(--gw-accent, #6366F1);
+	border-radius: var(--fl-radius-full);
+	transition: width 0.4s ease;
+}
+
+.finlyzer-gw-share-label {
+	font-family: var(--fl-font-mono);
+	font-size: 0.72rem;
+	color: var(--fl-text-muted);
+}
+
+.finlyzer-gw-card__desc {
+	display: flex;
+	gap: 6px;
+	font-size: 0.74rem;
+	color: var(--fl-text-secondary);
+	line-height: 1.4;
+	border-top: 1px dashed rgba(255, 255, 255, 0.06);
+	padding-top: 8px;
+}
+
+.finlyzer-gw-desc-icon {
+	color: var(--fl-text-muted);
+	flex-shrink: 0;
+}
+
+/* Gateway Filter Bar for Products */
+.finlyzer-gw-filter-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.finlyzer-gw-tab {
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--fl-border-subtle);
+	border-radius: var(--fl-radius-full);
+	padding: 5px 14px;
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: var(--fl-text-secondary);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.finlyzer-gw-tab:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: #FFFFFF;
+}
+
+.finlyzer-gw-tab--active {
+	background: rgba(99, 102, 241, 0.2);
+	border-color: rgba(99, 102, 241, 0.6);
+	color: #EEF2FF;
+}
+
+/* Purchased Products by Gateway Ledger Table */
+.finlyzer-products-table .finlyzer-ledger__row {
+	grid-template-columns: 2.2fr 1.2fr 0.8fr 1.2fr 1.2fr 1.2fr;
+	align-items: center;
+}
+
+.finlyzer-product-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.finlyzer-product-name {
+	font-size: 0.88rem;
+	font-weight: 600;
+	color: #FFFFFF;
+	line-height: 1.3;
+}
+
+.finlyzer-product-id {
+	font-family: var(--fl-font-mono);
+	font-size: 0.72rem;
+	color: var(--fl-text-muted);
+}
+
+.finlyzer-product-gw-cell {
+	display: flex;
+	align-items: center;
+}
+
+.finlyzer-gw-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 9px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-left-width: 3px;
+	border-radius: var(--fl-radius-sm);
+	font-size: 0.76rem;
+	font-weight: 600;
+	color: #FFFFFF;
+}
+
+.finlyzer-gw-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.finlyzer-units-cell {
+	font-family: var(--fl-font-mono);
+	font-size: 0.86rem;
+	color: var(--fl-text-secondary);
+}
+
+.finlyzer-rev-cell {
+	font-family: var(--fl-font-mono);
+	font-size: 0.86rem;
+	color: var(--fl-text-secondary);
+}
+
+.finlyzer-product-loss-cell {
+	font-family: var(--fl-font-mono);
+	font-size: 0.92rem;
+	color: #FDA4AF;
+}
+
+@media (max-width: 900px) {
+	.finlyzer-products-table .finlyzer-ledger__row {
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+
+	.finlyzer-products-table .finlyzer-ledger__row--head {
+		display: none;
+	}
+
+	.finlyzer-product-cell {
+		grid-column: span 2;
+	}
+
+	.finlyzer-product-loss-cell {
+		grid-column: span 2;
+		text-align: left;
+		padding-top: 6px;
+		border-top: 1px solid var(--fl-border-subtle);
+	}
+}

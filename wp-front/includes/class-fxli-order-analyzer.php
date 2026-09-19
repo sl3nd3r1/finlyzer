@@ -97,6 +97,7 @@ final class FXLI_Order_Analyzer {
 	}
 
 	// calculate and cache individual order FX spread loss
+	// calculate and cache individual order FX spread loss & line item attribution
 	private function cache_order_estimate(WC_Order $order, string $store_currency): void {
 		global $wpdb;
 
@@ -113,18 +114,18 @@ final class FXLI_Order_Analyzer {
 		}
 
 		// determine payment method safely
-		$payment_method = (string) ($order->get_payment_method() ?? 'standard');
+		$payment_method = (string) ($order->get_payment_method() ?: 'standard');
 
 		// estimate spread loss
 		$estimated_loss = $this->estimate_loss($total, $order_currency, $store_currency, $payment_method);
 
 		// prepare database table target
-		$table = $wpdb->prefix . 'fxli_fx_events';
+		$events_table = $wpdb->prefix . 'fxli_fx_events';
 		$paid_date = $order->get_date_paid()?->date('Y-m-d H:i:s') ?? current_time('mysql');
 
 		// insert or replace event record using integer minor units (cents)
 		$wpdb->replace(
-			$table,
+			$events_table,
 			[
 				'order_id'             => $order->get_id(),
 				'order_date'           => $paid_date,
@@ -132,16 +133,56 @@ final class FXLI_Order_Analyzer {
 				'store_currency'       => $store_currency,
 				'order_total_minor'    => (int) round($total * 100),
 				'estimated_loss_minor' => (int) round($estimated_loss * 100),
+				'payment_method'       => $payment_method,
 			],
-			['%d', '%s', '%s', '%s', '%d', '%d']
+			['%d', '%s', '%s', '%s', '%d', '%d', '%s']
 		);
+
+		// extract order items and attribute FX spread loss proportionally per product
+		$products_table = $wpdb->prefix . 'fxli_product_gateway_events';
+		$wpdb->delete($products_table, ['order_id' => $order->get_id()], ['%d']);
+
+		$items = $order->get_items();
+		foreach ($items as $item) {
+			if (!$item instanceof WC_Order_Item_Product) {
+				continue;
+			}
+
+			$product_id = (int) $item->get_product_id();
+			$product_name = (string) ($item->get_name() ?: ('Product #' . $product_id));
+			$quantity = max(1, (int) $item->get_quantity());
+			$line_total = (float) $item->get_total();
+
+			// proportional loss attribution
+			$line_share = $total > 0 ? ($line_total / $total) : 0.0;
+			$attributed_loss = round($estimated_loss * $line_share, 2);
+
+			$wpdb->insert(
+				$products_table,
+				[
+					'order_id'              => $order->get_id(),
+					'product_id'            => $product_id,
+					'product_name'          => sanitize_text_field($product_name),
+					'quantity'              => $quantity,
+					'line_total_minor'      => (int) round($line_total * 100),
+					'attributed_loss_minor' => (int) round($attributed_loss * 100),
+					'order_currency'        => $order_currency,
+					'payment_method'        => $payment_method,
+					'order_date'            => $paid_date,
+				],
+				['%d', '%d', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+			);
+		}
 	}
 
-	// conservative baseline FX spread loss estimate (average gateway spread markup: ~2.2%)
+	// dynamic gateway-aware baseline FX spread loss estimate
 	private function estimate_loss(float $total, string $order_currency, string $store_currency, string $payment_method): float {
+		$profile = self::resolve_gateway_profile($payment_method);
+		$base_pct = ($profile['spread_rate_pct'] ?? 2.5) / 100;
+
 		// allow custom store overrides via filter
-		$assumed_spread_pct = (float) apply_filters('fxli_assumed_fx_spread_pct', 0.022, $order_currency, $store_currency, $payment_method);
-		return $total * max(0.001, min(0.20, $assumed_spread_pct));
+		$assumed_spread_pct = (float) apply_filters('fxli_assumed_fx_spread_pct', $base_pct, $order_currency, $store_currency, $payment_method);
+		return $total * max(0.000, min(0.20, $assumed_spread_pct));
 	}
 
 	// compile aggregate financial loss summary over the specified period
@@ -225,6 +266,82 @@ final class FXLI_Order_Analyzer {
 		// compute market timing volatility loss for active merchant currencies
 		$market_timing = $this->calculate_market_timing($by_currency, $store_currency, $days);
 
+		// execute indexed query grouping by payment_method
+		$gateway_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT payment_method, COUNT(*) AS orders, SUM(order_total_minor) AS volume_minor, SUM(estimated_loss_minor) AS loss_minor
+				 FROM {$table}
+				 WHERE order_date >= %s
+				 GROUP BY payment_method
+				 ORDER BY loss_minor DESC",
+				(new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s')
+			),
+			ARRAY_A
+		);
+
+		$gateways = [];
+		foreach ((array) $gateway_rows as $grow) {
+			$pm = (string) ($grow['payment_method'] ?: 'standard');
+			$profile = self::resolve_gateway_profile($pm);
+			$gloss = ((int) $grow['loss_minor']) / 100;
+			$gvol = ((int) $grow['volume_minor']) / 100;
+			$gorders = (int) $grow['orders'];
+
+			$gateways[$pm] = [
+				'id'              => $pm,
+				'name'            => $profile['name'],
+				'title'           => $profile['title'],
+				'supports_fx'     => $profile['supports_fx'],
+				'spread_rate_pct' => $profile['spread_rate_pct'],
+				'fx_status'       => $profile['fx_status'],
+				'badge_color'     => $profile['badge_color'],
+				'fee_description' => $profile['fee_description'],
+				'orders'          => $gorders,
+				'volume'          => round($gvol, 2),
+				'loss'            => round($gloss, 2),
+				'loss_share_pct'  => $total_loss > 0 ? round(($gloss / $total_loss) * 100, 1) : 0.0,
+			];
+		}
+
+		// execute indexed query grouping by product and gateway
+		$products_table = $wpdb->prefix . 'fxli_product_gateway_events';
+		$product_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT product_id, product_name, payment_method, order_currency,
+				        SUM(quantity) AS units_sold,
+				        SUM(line_total_minor) AS revenue_minor,
+				        SUM(attributed_loss_minor) AS loss_minor
+				 FROM {$products_table}
+				 WHERE order_date >= %s
+				 GROUP BY product_id, payment_method, order_currency
+				 ORDER BY loss_minor DESC
+				 LIMIT 50",
+				(new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s')
+			),
+			ARRAY_A
+		);
+
+		$products_by_gateway = [];
+		foreach ((array) $product_rows as $prow) {
+			$pm = (string) ($prow['payment_method'] ?: 'standard');
+			$profile = self::resolve_gateway_profile($pm);
+			$ploss = ((int) $prow['loss_minor']) / 100;
+			$prev = ((int) $prow['revenue_minor']) / 100;
+
+			$products_by_gateway[] = [
+				'product_id'      => (int) $prow['product_id'],
+				'product_name'    => (string) $prow['product_name'],
+				'payment_method'  => $pm,
+				'gateway_name'    => $profile['name'],
+				'badge_color'     => $profile['badge_color'],
+				'units_sold'      => (int) $prow['units_sold'],
+				'foreign_revenue' => round($prev, 2),
+				'order_currency'  => (string) $prow['order_currency'],
+				'attributed_loss' => round($ploss, 2),
+				'loss_share_pct'  => $total_loss > 0 ? round(($ploss / $total_loss) * 100, 1) : 0.0,
+			];
+		}
+
 		$summary = [
 			'period_days'                  => $days,
 			'store_currency'               => $store_currency,
@@ -235,6 +352,8 @@ final class FXLI_Order_Analyzer {
 			'severity_level'               => $severity_level,
 			'top_currency'                 => $top_currency,
 			'by_currency'                  => $by_currency,
+			'gateways'                     => $gateways,
+			'products_by_gateway'          => $products_by_gateway,
 			'total_market_timing_loss'     => (float) ($market_timing['total_market_timing_loss'] ?? 0.0),
 			'total_combined_currency_drag' => (float) ($market_timing['total_combined_currency_drag'] ?? round($total_loss, 2)),
 			'active_markets'               => (array) ($market_timing['active_markets'] ?? []),
@@ -370,6 +489,152 @@ final class FXLI_Order_Analyzer {
 			],
 		];
 
+		// breakdown of recognized store payment gateways with FX spread metrics
+		$gateways = [
+			'paypal' => [
+				'id'              => 'paypal',
+				'name'            => 'PayPal',
+				'title'           => 'PayPal Commerce',
+				'supports_fx'     => true,
+				'spread_rate_pct' => 3.8,
+				'fx_status'       => 'High Spread',
+				'badge_color'     => '#0284C7',
+				'fee_description' => 'Cross-border foreign exchange markup (~3.5% - 4.0% spread drag)',
+				'orders'          => (int) round(24 * $scale),
+				'volume'          => round(28450.00 * $scale, 2),
+				'loss'            => round(825.20 * $scale, 2),
+				'loss_share_pct'  => 58.1,
+			],
+			'stripe' => [
+				'id'              => 'stripe',
+				'name'            => 'Stripe',
+				'title'           => 'Stripe Credit Cards',
+				'supports_fx'     => true,
+				'spread_rate_pct' => 2.2,
+				'fx_status'       => 'Moderate Spread',
+				'badge_color'     => '#6366F1',
+				'fee_description' => 'Standard cross-border conversion fee (1.0% intl + 1.2% FX markup)',
+				'orders'          => (int) round(18 * $scale),
+				'volume'          => round(19200.00 * $scale, 2),
+				'loss'            => round(442.10 * $scale, 2),
+				'loss_share_pct'  => 31.1,
+			],
+			'woocommerce_payments' => [
+				'id'              => 'woocommerce_payments',
+				'name'            => 'WooPayments',
+				'title'           => 'WooCommerce Payments',
+				'supports_fx'     => true,
+				'spread_rate_pct' => 2.2,
+				'fx_status'       => 'Moderate Spread',
+				'badge_color'     => '#7C3AED',
+				'fee_description' => 'Multi-currency settlement markup (2.0% FX conversion drag)',
+				'orders'          => (int) round(6 * $scale),
+				'volume'          => round(6850.00 * $scale, 2),
+				'loss'            => round(153.20 * $scale, 2),
+				'loss_share_pct'  => 10.8,
+			],
+		];
+
+		// recognized products purchased with their respective gateways and attributed spread loss
+		$products_by_gateway = [
+			[
+				'product_id'      => 101,
+				'product_name'    => 'Wireless Noise-Cancelling Headphones Pro',
+				'payment_method'  => 'paypal',
+				'gateway_name'    => 'PayPal',
+				'badge_color'     => '#0284C7',
+				'units_sold'      => (int) round(14 * $scale),
+				'foreign_revenue' => round(4890.00 * $scale, 2),
+				'order_currency'  => 'EUR',
+				'attributed_loss' => round(312.40 * $scale, 2),
+				'loss_share_pct'  => 22.0,
+			],
+			[
+				'product_id'      => 102,
+				'product_name'    => 'Ultra-Wide 4K Gaming Monitor 34"',
+				'payment_method'  => 'paypal',
+				'gateway_name'    => 'PayPal',
+				'badge_color'     => '#0284C7',
+				'units_sold'      => (int) round(6 * $scale),
+				'foreign_revenue' => round(5420.00 * $scale, 2),
+				'order_currency'  => 'GBP',
+				'attributed_loss' => round(315.30 * $scale, 2),
+				'loss_share_pct'  => 22.2,
+			],
+			[
+				'product_id'      => 103,
+				'product_name'    => 'Mechanical Ergonomic Keyboard RGB',
+				'payment_method'  => 'stripe',
+				'gateway_name'    => 'Stripe',
+				'badge_color'     => '#6366F1',
+				'units_sold'      => (int) round(18 * $scale),
+				'foreign_revenue' => round(3580.00 * $scale, 2),
+				'order_currency'  => 'EUR',
+				'attributed_loss' => round(245.10 * $scale, 2),
+				'loss_share_pct'  => 17.3,
+			],
+			[
+				'product_id'      => 104,
+				'product_name'    => 'Smart Fitness Tracker Band V4',
+				'payment_method'  => 'paypal',
+				'gateway_name'    => 'PayPal',
+				'badge_color'     => '#0284C7',
+				'units_sold'      => (int) round(22 * $scale),
+				'foreign_revenue' => round(2860.00 * $scale, 2),
+				'order_currency'  => 'EUR',
+				'attributed_loss' => round(197.50 * $scale, 2),
+				'loss_share_pct'  => 13.9,
+			],
+			[
+				'product_id'      => 105,
+				'product_name'    => 'Waterproof Trail Running Shoes',
+				'payment_method'  => 'stripe',
+				'gateway_name'    => 'Stripe',
+				'badge_color'     => '#6366F1',
+				'units_sold'      => (int) round(12 * $scale),
+				'foreign_revenue' => round(1920.00 * $scale, 2),
+				'order_currency'  => 'CAD',
+				'attributed_loss' => round(114.30 * $scale, 2),
+				'loss_share_pct'  => 8.0,
+			],
+			[
+				'product_id'      => 106,
+				'product_name'    => 'Fast USB-C GaN 100W Charger',
+				'payment_method'  => 'woocommerce_payments',
+				'gateway_name'    => 'WooPayments',
+				'badge_color'     => '#7C3AED',
+				'units_sold'      => (int) round(20 * $scale),
+				'foreign_revenue' => round(1840.00 * $scale, 2),
+				'order_currency'  => 'GBP',
+				'attributed_loss' => round(92.50 * $scale, 2),
+				'loss_share_pct'  => 6.5,
+			],
+			[
+				'product_id'      => 107,
+				'product_name'    => 'Anodized Aluminum Laptop Stand',
+				'payment_method'  => 'stripe',
+				'gateway_name'    => 'Stripe',
+				'badge_color'     => '#6366F1',
+				'units_sold'      => (int) round(15 * $scale),
+				'foreign_revenue' => round(1480.00 * $scale, 2),
+				'order_currency'  => 'EUR',
+				'attributed_loss' => round(82.70 * $scale, 2),
+				'loss_share_pct'  => 5.8,
+			],
+			[
+				'product_id'      => 108,
+				'product_name'    => 'Leather Minimalist Card Wallet',
+				'payment_method'  => 'woocommerce_payments',
+				'gateway_name'    => 'WooPayments',
+				'badge_color'     => '#7C3AED',
+				'units_sold'      => (int) round(16 * $scale),
+				'foreign_revenue' => round(1120.00 * $scale, 2),
+				'order_currency'  => 'AUD',
+				'attributed_loss' => round(60.70 * $scale, 2),
+				'loss_share_pct'  => 4.3,
+			],
+		];
+
 		return [
 			'period_days'                  => $days,
 			'store_currency'               => $store_currency,
@@ -380,11 +645,187 @@ final class FXLI_Order_Analyzer {
 			'severity_level'               => 'critical',
 			'top_currency'                 => 'EUR',
 			'by_currency'                  => $by_currency,
+			'gateways'                     => $gateways,
+			'products_by_gateway'          => $products_by_gateway,
 			'total_market_timing_loss'     => $total_timing_loss,
 			'total_combined_currency_drag' => $total_combined_drag,
 			'active_markets'               => $active_markets,
 			'is_mock'                      => true,
 		];
+	}
+
+	// comprehensive registry of recognized WooCommerce payment gateways with FX spread profiles
+	public const GATEWAY_PROFILES = [
+		'paypal' => [
+			'id'              => 'paypal',
+			'name'            => 'PayPal',
+			'title'           => 'PayPal Commerce / Standard',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 3.8,
+			'fx_status'       => 'High Spread',
+			'badge_color'     => '#0284C7',
+			'fee_description' => 'Cross-border foreign exchange markup (~3.5% - 4.0% spread drag)',
+		],
+		'stripe' => [
+			'id'              => 'stripe',
+			'name'            => 'Stripe',
+			'title'           => 'Stripe Credit Cards & Wallets',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 2.2,
+			'fx_status'       => 'Moderate Spread',
+			'badge_color'     => '#6366F1',
+			'fee_description' => 'Standard cross-border conversion fee (1.0% international + 1.2% FX markup)',
+		],
+		'woocommerce_payments' => [
+			'id'              => 'woocommerce_payments',
+			'name'            => 'WooPayments',
+			'title'           => 'WooCommerce Payments',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 2.2,
+			'fx_status'       => 'Moderate Spread',
+			'badge_color'     => '#7C3AED',
+			'fee_description' => 'Multi-currency settlement markup (2.0% FX conversion drag)',
+		],
+		'adyen' => [
+			'id'              => 'adyen',
+			'name'            => 'Adyen',
+			'title'           => 'Adyen Global Payments',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 1.5,
+			'fx_status'       => 'Optimal (Low Spread)',
+			'badge_color'     => '#10B981',
+			'fee_description' => 'Direct tier interchange++ pricing with minimal FX conversion markup',
+		],
+		'mollie' => [
+			'id'              => 'mollie',
+			'name'            => 'Mollie',
+			'title'           => 'Mollie Payments for WooCommerce',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 2.5,
+			'fx_status'       => 'Moderate Spread',
+			'badge_color'     => '#06B6D4',
+			'fee_description' => 'Cross-border transaction markup (~2.0% - 2.5% FX markup)',
+		],
+		'square' => [
+			'id'              => 'square',
+			'name'            => 'Square',
+			'title'           => 'Square for WooCommerce',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 2.8,
+			'fx_status'       => 'Moderate Spread',
+			'badge_color'     => '#F59E0B',
+			'fee_description' => 'Cross-border card transaction processing markup (~2.5% - 3.0%)',
+		],
+		'bacs' => [
+			'id'              => 'bacs',
+			'name'            => 'Direct Bank Transfer',
+			'title'           => 'Direct Bank Wire (BACS)',
+			'supports_fx'     => false,
+			'spread_rate_pct' => 0.0,
+			'fx_status'       => 'Domestic / No Auto FX',
+			'badge_color'     => '#64748B',
+			'fee_description' => 'Direct wire transfer with no automated merchant gateway conversion',
+		],
+		'cod' => [
+			'id'              => 'cod',
+			'name'            => 'Cash on Delivery',
+			'title'           => 'Cash on Delivery (COD)',
+			'supports_fx'     => false,
+			'spread_rate_pct' => 0.0,
+			'fx_status'       => 'Domestic Only',
+			'badge_color'     => '#64748B',
+			'fee_description' => 'Physical currency delivery with no digital gateway spread drag',
+		],
+		'standard' => [
+			'id'              => 'standard',
+			'name'            => 'Standard Gateway',
+			'title'           => 'Unclassified Payment Gateway',
+			'supports_fx'     => true,
+			'spread_rate_pct' => 2.5,
+			'fx_status'       => 'Estimated Spread',
+			'badge_color'     => '#64748B',
+			'fee_description' => 'Estimated standard e-commerce FX conversion markup (~2.5%)',
+		],
+	];
+
+	// resolve payment method string to gateway profile with normalized fallback
+	public static function resolve_gateway_profile(string $method_id): array {
+		$normalized = strtolower(trim($method_id));
+
+		// check direct match
+		if (isset(self::GATEWAY_PROFILES[$normalized])) {
+			return self::GATEWAY_PROFILES[$normalized];
+		}
+
+		// check partial or prefix match
+		if (str_contains($normalized, 'stripe')) {
+			$profile = self::GATEWAY_PROFILES['stripe'];
+			$profile['id'] = $method_id;
+			return $profile;
+		}
+
+		if (str_contains($normalized, 'paypal') || str_contains($normalized, 'ppcp')) {
+			$profile = self::GATEWAY_PROFILES['paypal'];
+			$profile['id'] = $method_id;
+			return $profile;
+		}
+
+		if (str_contains($normalized, 'woocommerce_payments') || str_contains($normalized, 'wcpay')) {
+			$profile = self::GATEWAY_PROFILES['woocommerce_payments'];
+			$profile['id'] = $method_id;
+			return $profile;
+		}
+
+		if (str_contains($normalized, 'mollie')) {
+			$profile = self::GATEWAY_PROFILES['mollie'];
+			$profile['id'] = $method_id;
+			return $profile;
+		}
+
+		if (str_contains($normalized, 'adyen')) {
+			$profile = self::GATEWAY_PROFILES['adyen'];
+			$profile['id'] = $method_id;
+			return $profile;
+		}
+
+		if (str_contains($normalized, 'square')) {
+			$profile = self::GATEWAY_PROFILES['square'];
+			$profile['id'] = $method_id;
+			return $profile;
+		}
+
+		// fallback to generic standard gateway
+		$fallback = self::GATEWAY_PROFILES['standard'];
+		$fallback['id'] = $method_id;
+		$fallback['name'] = ucwords(str_replace(['_', '-'], ' ', $method_id));
+		return $fallback;
+	}
+
+	// detect all payment gateways registered or active in WooCommerce
+	public static function get_detected_store_gateways(): array {
+		$detected = [];
+		if (function_exists('WC') && WC()->payment_gateways()) {
+			$gateways = WC()->payment_gateways()->payment_gateways();
+			foreach ($gateways as $gw_id => $gateway) {
+				$profile = self::resolve_gateway_profile($gw_id);
+				$is_enabled = 'yes' === ($gateway->enabled ?? 'no');
+				$detected[$gw_id] = array_merge($profile, [
+					'id'         => $gw_id,
+					'name'       => $gateway->get_method_title() ?: $profile['name'],
+					'is_enabled' => $is_enabled,
+				]);
+			}
+		}
+
+		// if WooCommerce is not initialized or in preview/mock mode, provide default supported gateways
+		if (empty($detected)) {
+			foreach (['paypal', 'stripe', 'woocommerce_payments'] as $default_id) {
+				$profile = self::resolve_gateway_profile($default_id);
+				$detected[$default_id] = array_merge($profile, ['is_enabled' => true]);
+			}
+		}
+
+		return $detected;
 	}
 
 	// 30 Frankfurter / ECB reference currencies mapped to countries and emoji flags

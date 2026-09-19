@@ -26,6 +26,8 @@ $is_mock             = !empty($summary['is_mock']);
 $total_market_timing_loss     = (float) ($summary['total_market_timing_loss'] ?? 0.0);
 $total_combined_currency_drag = (float) ($summary['total_combined_currency_drag'] ?? round($total_loss + $total_market_timing_loss, 2));
 $active_markets               = (array) ($summary['active_markets'] ?? []);
+$gateways                     = (array) ($summary['gateways'] ?? []);
+$products_by_gateway          = (array) ($summary['products_by_gateway'] ?? []);
 
 $formatted_total         = wc_price($total_loss, ['currency' => $store_currency]);
 $formatted_run_rate      = wc_price($annualized_run_rate, ['currency' => $store_currency]);
@@ -346,4 +348,249 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 		<?php endif; ?>
 	</div>
 </div>
+
+<!-- Payment Gateway FX Recognition Matrix -->
+<div class="finlyzer-ledger-card finlyzer-gateway-section">
+	<div class="finlyzer-ledger-header">
+		<div>
+			<h3 class="finlyzer-ledger-title">
+				<span class="finlyzer-title-badge finlyzer-title-badge--gateway">GATEWAYS</span>
+				<?php esc_html_e('Payment Gateway FX Recognition Matrix', 'finlyzer'); ?>
+			</h3>
+			<p class="finlyzer-ledger-subtitle">
+				<?php echo esc_html(sprintf(
+					/* translators: %d: gateway count */
+					__('Active payment gateways detected in your WooCommerce store, cross-border FX capability, spread markup rates, and isolated currency drag.', 'finlyzer'),
+					count($gateways)
+				)); ?>
+			</p>
+		</div>
+		<span class="finlyzer-badge-filter-notice">
+			<?php echo esc_html(sprintf(
+				/* translators: %d: gateway count */
+				__('%d Gateways Profiled', 'finlyzer'),
+				count($gateways)
+			)); ?>
+		</span>
+	</div>
+
+	<?php if (empty($gateways)) : ?>
+		<div class="finlyzer-ledger__row finlyzer-ledger__empty" role="row">
+			<span role="cell" colspan="4">
+				<span class="finlyzer-empty-icon">&#x2714;</span>
+				<?php esc_html_e('Zero payment gateway cross-border activity recorded in this period.', 'finlyzer'); ?>
+			</span>
+		</div>
+	<?php else : ?>
+		<div class="finlyzer-gateway-grid">
+			<?php foreach ($gateways as $gw_id => $gw) : ?>
+				<?php
+				$gw_name    = (string) ($gw['name'] ?? $gw_id);
+				$gw_title   = (string) ($gw['title'] ?? $gw_name);
+				$supports   = !empty($gw['supports_fx']);
+				$spread_pct = (float) ($gw['spread_rate_pct'] ?? 0.0);
+				$fx_status  = (string) ($gw['fx_status'] ?? ($supports ? 'Active FX' : 'Domestic Only'));
+				$color      = (string) ($gw['badge_color'] ?? '#6366F1');
+				$orders     = (int) ($gw['orders'] ?? 0);
+				$volume     = (float) ($gw['volume'] ?? 0.0);
+				$loss       = (float) ($gw['loss'] ?? 0.0);
+				$share_pct  = (float) ($gw['loss_share_pct'] ?? 0.0);
+				$desc       = (string) ($gw['fee_description'] ?? '');
+				?>
+				<div class="finlyzer-gw-card" style="--gw-accent: <?php echo esc_attr($color); ?>;">
+					<div class="finlyzer-gw-card__top">
+						<div class="finlyzer-gw-card__identity">
+							<span class="finlyzer-gw-card__dot"></span>
+							<div>
+								<h4 class="finlyzer-gw-card__name"><?php echo esc_html($gw_name); ?></h4>
+								<span class="finlyzer-gw-card__type"><?php echo esc_html($gw_title); ?></span>
+							</div>
+						</div>
+						<div class="finlyzer-gw-card__tags">
+							<?php if ($supports) : ?>
+								<span class="finlyzer-gw-tag finlyzer-gw-tag--fx" title="<?php esc_attr_e('Processes cross-currency transactions with spread markup', 'finlyzer'); ?>">
+									<?php esc_html_e('Supports FX', 'finlyzer'); ?>
+								</span>
+								<span class="finlyzer-gw-tag finlyzer-gw-tag--spread">
+									<?php echo esc_html(number_format($spread_pct, 1)); ?>% <?php esc_html_e('Spread', 'finlyzer'); ?>
+								</span>
+							<?php else : ?>
+								<span class="finlyzer-gw-tag finlyzer-gw-tag--domestic">
+									<?php esc_html_e('Domestic Only', 'finlyzer'); ?>
+								</span>
+							<?php endif; ?>
+						</div>
+					</div>
+
+					<div class="finlyzer-gw-card__metrics">
+						<div class="finlyzer-gw-metric">
+							<span class="finlyzer-gw-metric__label"><?php esc_html_e('FX Orders', 'finlyzer'); ?></span>
+							<strong class="finlyzer-gw-metric__val"><?php echo esc_html(number_format($orders)); ?></strong>
+						</div>
+						<div class="finlyzer-gw-metric">
+							<span class="finlyzer-gw-metric__label"><?php esc_html_e('Foreign Volume', 'finlyzer'); ?></span>
+							<strong class="finlyzer-gw-metric__val"><?php echo wp_kses_post(wc_price($volume, ['currency' => $store_currency])); ?></strong>
+						</div>
+						<div class="finlyzer-gw-metric">
+							<span class="finlyzer-gw-metric__label"><?php esc_html_e('Gateway FX Loss', 'finlyzer'); ?></span>
+							<strong class="finlyzer-gw-metric__val finlyzer-gw-metric__val--loss"><?php echo wp_kses_post(wc_price($loss, ['currency' => $store_currency])); ?></strong>
+						</div>
+					</div>
+
+					<div class="finlyzer-gw-card__share">
+						<div class="finlyzer-gw-share-bar">
+							<div class="finlyzer-gw-share-bar__fill" style="width: <?php echo esc_attr((string) $share_pct); ?>%;"></div>
+						</div>
+						<span class="finlyzer-gw-share-label">
+							<?php echo esc_html(sprintf(
+								/* translators: %s: percentage */
+								__('%s%% of total store FX loss', 'finlyzer'),
+								number_format($share_pct, 1)
+							)); ?>
+						</span>
+					</div>
+
+					<?php if ($desc !== '') : ?>
+						<div class="finlyzer-gw-card__desc">
+							<span class="finlyzer-gw-desc-icon">&#9432;</span>
+							<span><?php echo esc_html($desc); ?></span>
+						</div>
+					<?php endif; ?>
+				</div>
+			<?php endforeach; ?>
+		</div>
+	<?php endif; ?>
+</div>
+
+<!-- Purchased Products by Gateway Ledger -->
+<div class="finlyzer-ledger-card finlyzer-products-section">
+	<div class="finlyzer-ledger-header">
+		<div>
+			<h3 class="finlyzer-ledger-title">
+				<span class="finlyzer-title-badge finlyzer-title-badge--products">PRODUCTS</span>
+				<?php esc_html_e('Purchased Products by Payment Gateway', 'finlyzer'); ?>
+			</h3>
+			<p class="finlyzer-ledger-subtitle">
+				<?php esc_html_e('Catalog items purchased via cross-border payment gateways, attributed foreign revenue, and proportional FX spread drag.', 'finlyzer'); ?>
+			</p>
+		</div>
+		<div class="finlyzer-gw-filter-bar" id="finlyzerGwFilterBar">
+			<button type="button" class="finlyzer-gw-tab finlyzer-gw-tab--active" data-gw-filter="all">
+				<?php esc_html_e('All Gateways', 'finlyzer'); ?> (<?php echo esc_html(count($products_by_gateway)); ?>)
+			</button>
+			<?php
+			$distinct_gateways = [];
+			foreach ($products_by_gateway as $p) {
+				$pm = (string) ($p['payment_method'] ?? 'standard');
+				if (!isset($distinct_gateways[$pm])) {
+					$distinct_gateways[$pm] = (string) ($p['gateway_name'] ?? $pm);
+				}
+			}
+			foreach ($distinct_gateways as $pm_id => $pm_name) :
+			?>
+				<button type="button" class="finlyzer-gw-tab" data-gw-filter="<?php echo esc_attr($pm_id); ?>">
+					<?php echo esc_html($pm_name); ?>
+				</button>
+			<?php endforeach; ?>
+		</div>
+	</div>
+
+	<div class="finlyzer-ledger finlyzer-products-table" role="table" aria-label="<?php esc_attr_e('Products purchased by gateway statement', 'finlyzer'); ?>">
+		<div class="finlyzer-ledger__row finlyzer-ledger__row--head" role="row">
+			<span role="columnheader"><?php esc_html_e('Product / SKU', 'finlyzer'); ?></span>
+			<span role="columnheader"><?php esc_html_e('Payment Gateway', 'finlyzer'); ?></span>
+			<span role="columnheader"><?php esc_html_e('Units Sold', 'finlyzer'); ?></span>
+			<span role="columnheader"><?php esc_html_e('Foreign Revenue', 'finlyzer'); ?></span>
+			<span role="columnheader"><?php esc_html_e('Share of Drag', 'finlyzer'); ?></span>
+			<span role="columnheader" class="finlyzer-text-right"><?php esc_html_e('Attributed FX Loss', 'finlyzer'); ?></span>
+		</div>
+
+		<?php if (empty($products_by_gateway)) : ?>
+			<div class="finlyzer-ledger__row finlyzer-ledger__empty" role="row">
+				<span role="cell" colspan="6">
+					<span class="finlyzer-empty-icon">&#x2714;</span>
+					<?php esc_html_e('No product transactions recorded with cross-border payment gateways in this period.', 'finlyzer'); ?>
+				</span>
+			</div>
+		<?php else : ?>
+			<?php foreach ($products_by_gateway as $p) : ?>
+				<?php
+				$p_id       = (int) ($p['product_id'] ?? 0);
+				$p_name     = (string) ($p['product_name'] ?? ('Product #' . $p_id));
+				$p_gw       = (string) ($p['payment_method'] ?? 'standard');
+				$p_gw_name  = (string) ($p['gateway_name'] ?? $p_gw);
+				$p_color    = (string) ($p['badge_color'] ?? '#6366F1');
+				$p_units    = (int) ($p['units_sold'] ?? 0);
+				$p_rev      = (float) ($p['foreign_revenue'] ?? 0.0);
+				$p_curr     = (string) ($p['order_currency'] ?? $store_currency);
+				$p_loss     = (float) ($p['attributed_loss'] ?? 0.0);
+				$p_share    = (float) ($p['loss_share_pct'] ?? 0.0);
+				?>
+				<div class="finlyzer-ledger__row finlyzer-product-row" role="row" data-gateway="<?php echo esc_attr($p_gw); ?>">
+					<!-- Product Name & ID -->
+					<span role="cell" class="finlyzer-product-cell">
+						<strong class="finlyzer-product-name"><?php echo esc_html($p_name); ?></strong>
+						<span class="finlyzer-product-id"><?php echo esc_html(sprintf(__('ID: #%d', 'finlyzer'), $p_id)); ?></span>
+					</span>
+
+					<!-- Gateway Pill with Dynamic Color -->
+					<span role="cell" class="finlyzer-product-gw-cell">
+						<span class="finlyzer-gw-pill" style="border-left-color: <?php echo esc_attr($p_color); ?>;">
+							<span class="finlyzer-gw-dot" style="background-color: <?php echo esc_attr($p_color); ?>;"></span>
+							<?php echo esc_html($p_gw_name); ?>
+						</span>
+					</span>
+
+					<!-- Units Sold -->
+					<span role="cell" class="finlyzer-units-cell">
+						<?php echo esc_html(number_format($p_units)); ?>
+					</span>
+
+					<!-- Foreign Revenue -->
+					<span role="cell" class="finlyzer-rev-cell">
+						<?php echo wp_kses_post(wc_price($p_rev, ['currency' => $p_curr])); ?>
+					</span>
+
+					<!-- Share of Drag -->
+					<span role="cell" class="finlyzer-share-cell">
+						<div class="finlyzer-mini-bar">
+							<div class="finlyzer-mini-bar-fill" style="width: <?php echo esc_attr((string) $p_share); ?>%; background: <?php echo esc_attr($p_color); ?>;"></div>
+						</div>
+						<span class="finlyzer-share-text"><?php echo esc_html(number_format($p_share, 1)); ?>%</span>
+					</span>
+
+					<!-- Attributed Loss -->
+					<span role="cell" class="finlyzer-product-loss-cell finlyzer-text-right">
+						<strong><?php echo wp_kses_post(wc_price($p_loss, ['currency' => $store_currency])); ?></strong>
+					</span>
+				</div>
+			<?php endforeach; ?>
+		<?php endif; ?>
+	</div>
+</div>
+
+<script>
+(function() {
+	var filterBar = document.getElementById('finlyzerGwFilterBar');
+	if (!filterBar) return;
+	filterBar.addEventListener('click', function(e) {
+		var btn = e.target.closest('.finlyzer-gw-tab');
+		if (!btn) return;
+		var filter = btn.getAttribute('data-gw-filter');
+		filterBar.querySelectorAll('.finlyzer-gw-tab').forEach(function(b) {
+			b.classList.remove('finlyzer-gw-tab--active');
+		});
+		btn.classList.add('finlyzer-gw-tab--active');
+
+		var rows = document.querySelectorAll('.finlyzer-product-row');
+		rows.forEach(function(row) {
+			if (filter === 'all' || row.getAttribute('data-gateway') === filter) {
+				row.style.display = '';
+			} else {
+				row.style.display = 'none';
+			}
+		});
+	});
+})();
+</script>
 
