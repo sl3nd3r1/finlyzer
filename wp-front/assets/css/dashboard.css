@@ -40,10 +40,13 @@
 	--fl-accent-purple: #8B5CF6;
 	--fl-accent-indigo: #6366F1;
 
-	--fl-radius-sm: 6px;
-	--fl-radius-md: 10px;
-	--fl-radius-lg: 16px;
-	--fl-radius-full: 9999px;
+	/* Fluent 2 Design Tokens (Subtle modern rounded rectangles, no circular pills) */
+	--fl-radius-xs: 2px;
+	--fl-radius-badge: 4px; /* Fluent 2 badges, chips & status tags */
+	--fl-radius-sm: 4px;    /* Fluent 2 buttons & form controls */
+	--fl-radius-md: 6px;    /* Fluent 2 cards, panels & dropdowns */
+	--fl-radius-lg: 8px;    /* Fluent 2 major container boundaries */
+	--fl-radius-full: 4px;  /* Deprecated circular pill replaced with Fluent 2 subtle 4px */
 
 	--fl-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
 	--fl-font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
@@ -128,14 +131,15 @@
 .finlyzer-badge {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
-	background: rgba(245, 158, 11, 0.12);
-	border: 1px solid rgba(245, 158, 11, 0.3);
-	padding: 4px 10px;
-	border-radius: var(--fl-radius-full);
+	gap: 6px;
+	background: rgba(245, 158, 11, 0.10);
+	border: 1px solid rgba(245, 158, 11, 0.25);
+	padding: 3px 8px;
+	border-radius: var(--fl-radius-badge);
+	font-family: var(--fl-font-ui);
 	font-size: 0.72rem;
-	font-weight: 700;
-	letter-spacing: 0.06em;
+	font-weight: 600;
+	letter-spacing: 0.04em;
 	color: var(--fl-warn-primary);
 	margin-bottom: 8px;
 }
@@ -265,10 +269,11 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	padding: 3px 10px;
-	border-radius: var(--fl-radius-full);
+	padding: 3px 8px;
+	border-radius: var(--fl-radius-badge);
+	font-family: var(--fl-font-ui);
 	font-size: 0.70rem;
-	font-weight: 700;
+	font-weight: 600;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
 }
@@ -579,15 +584,20 @@
 	margin-right: 8px;
 }
 
-/* AI Financial Risk Sentinel Box */
+/* Margin Risk Sentinel Box (Fluent 2 Style) */
 .finlyzer-sentinel-box {
-	background: radial-gradient(circle at top left, rgba(245, 158, 11, 0.12), transparent 50%), #121824;
-	border: 1px solid rgba(245, 158, 11, 0.35);
+	background: radial-gradient(circle at top left, rgba(245, 158, 11, 0.10), transparent 50%), #121824;
+	border: 1px solid rgba(245, 158, 11, 0.30);
 	border-radius: var(--fl-radius-md);
 	padding: 22px 24px;
 	margin-bottom: 24px;
 	box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.5);
 	position: relative;
+}
+
+.finlyzer-sentinel-box--optimal {
+	background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.08), transparent 50%), #121824;
+	border-color: rgba(16, 185, 129, 0.28);
 }
 
 .finlyzer-sentinel-header {
@@ -612,9 +622,15 @@
 	width: 36px;
 	height: 36px;
 	border-radius: var(--fl-radius-sm);
-	background: rgba(245, 158, 11, 0.15);
+	background: rgba(245, 158, 11, 0.12);
 	color: var(--fl-warn-primary);
-	border: 1px solid rgba(245, 158, 11, 0.3);
+	border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.finlyzer-sentinel-box--optimal .finlyzer-sentinel-icon-wrap {
+	background: rgba(16, 185, 129, 0.12);
+	color: #10B981;
+	border-color: rgba(16, 185, 129, 0.25);
 }
 
 .finlyzer-sentinel-title {
@@ -634,14 +650,22 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	background: rgba(245, 158, 11, 0.12);
-	border: 1px solid rgba(245, 158, 11, 0.3);
-	padding: 4px 10px;
-	border-radius: var(--fl-radius-full);
+	background: rgba(245, 158, 11, 0.10);
+	border: 1px solid rgba(245, 158, 11, 0.25);
+	padding: 3px 8px;
+	border-radius: var(--fl-radius-badge);
+	font-family: var(--fl-font-ui);
 	font-size: 0.70rem;
-	font-weight: 700;
+	font-weight: 600;
 	color: var(--fl-warn-primary);
 	letter-spacing: 0.04em;
+	white-space: nowrap;
+}
+
+.finlyzer-sentinel-tag--optimal {
+	background: rgba(16, 185, 129, 0.10);
+	border-color: rgba(16, 185, 129, 0.25);
+	color: #34D399;
 }
 
 .finlyzer-sentinel-pulse {
@@ -651,6 +675,15 @@
 	background: var(--fl-warn-primary);
 	box-shadow: 0 0 6px var(--fl-warn-primary);
 	animation: fl-pulse 1.8s infinite ease-in-out;
+}
+
+.finlyzer-sentinel-tag--optimal .finlyzer-sentinel-pulse {
+	background: #10B981;
+	box-shadow: 0 0 6px #10B981;
+}
+
+.finlyzer-sentinel-box--optimal .finlyzer-action-label {
+	color: #34D399;
 }
 
 .finlyzer-sentinel-body {
@@ -861,38 +894,50 @@
    Market Timing & Active Currency Markets Design System (v1.6.0)
    ========================================================================== */
 
-/* KPI Card Header & Badge Accents */
+/* KPI Card Header & Badge Accents (Fluent 2 Style) */
 .finlyzer-kpi-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 4px;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.finlyzer-kpi-header .finlyzer-kpi-label {
+	margin-bottom: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .finlyzer-badge-ecb {
-	font-family: var(--fl-font-mono);
-	font-size: 0.65rem;
-	font-weight: 700;
-	text-transform: uppercase;
-	padding: 2px 6px;
-	border-radius: var(--fl-radius-full);
-	background: rgba(6, 182, 212, 0.15);
-	border: 1px solid rgba(6, 182, 212, 0.35);
+	font-family: var(--fl-font-ui);
+	font-size: 0.68rem;
+	font-weight: 600;
+	white-space: nowrap;
+	flex-shrink: 0;
+	padding: 2px 7px;
+	border-radius: var(--fl-radius-badge);
+	background: rgba(6, 182, 212, 0.12);
+	border: 1px solid rgba(6, 182, 212, 0.30);
 	color: #22D3EE;
-	letter-spacing: 0.04em;
+	letter-spacing: 0.02em;
+	line-height: 1.3;
 }
 
 .finlyzer-badge-total {
-	font-family: var(--fl-font-mono);
-	font-size: 0.65rem;
-	font-weight: 700;
-	text-transform: uppercase;
-	padding: 2px 6px;
-	border-radius: var(--fl-radius-full);
-	background: rgba(244, 63, 94, 0.15);
-	border: 1px solid rgba(244, 63, 94, 0.35);
+	font-family: var(--fl-font-ui);
+	font-size: 0.68rem;
+	font-weight: 600;
+	white-space: nowrap;
+	flex-shrink: 0;
+	padding: 2px 7px;
+	border-radius: var(--fl-radius-badge);
+	background: rgba(244, 63, 94, 0.12);
+	border: 1px solid rgba(244, 63, 94, 0.30);
 	color: #FB7185;
-	letter-spacing: 0.04em;
+	letter-spacing: 0.02em;
+	line-height: 1.3;
 }
 
 .finlyzer-card--timing {
@@ -944,13 +989,14 @@
 }
 
 .finlyzer-badge-filter-notice {
-	font-size: 0.75rem;
+	font-family: var(--fl-font-ui);
+	font-size: 0.72rem;
 	font-weight: 600;
 	color: #38BDF8;
 	background: rgba(14, 165, 233, 0.12);
 	border: 1px solid rgba(14, 165, 233, 0.30);
-	padding: 4px 10px;
-	border-radius: var(--fl-radius-full);
+	padding: 3px 8px;
+	border-radius: var(--fl-radius-badge);
 	white-space: nowrap;
 }
 
@@ -1305,8 +1351,9 @@
 .finlyzer-gw-tab {
 	background: rgba(255, 255, 255, 0.04);
 	border: 1px solid var(--fl-border-subtle);
-	border-radius: var(--fl-radius-full);
-	padding: 5px 14px;
+	border-radius: var(--fl-radius-sm);
+	padding: 5px 12px;
+	font-family: var(--fl-font-ui);
 	font-size: 0.78rem;
 	font-weight: 600;
 	color: var(--fl-text-secondary);

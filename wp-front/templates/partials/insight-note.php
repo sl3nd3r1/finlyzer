@@ -7,37 +7,53 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Server-rendered, escaped HTML fragment for the Finlyzer AI Risk Sentinel.
- * Styled with an intentional, chic financial warning tone alerting merchants to capital leakage.
+ * Server-rendered, escaped HTML fragment for the Finlyzer Margin Sentinel.
+ * Styled with Microsoft Fluent 2 subtle rounded components and humanized executive copy.
  *
- * @var string|WP_Error $insight Sanitized insight or data-backed heuristic warning.
+ * @var string|WP_Error $insight Sanitized insight or data-backed advisory.
  * @var string|null      $error   Error message if Worker failed without fallback.
+ * @var bool|null        $is_optimal Optimal state flag.
  */
 
 $insight_text = is_string($insight) ? $insight : '';
+$is_optimal_state = isset($is_optimal)
+	? (bool) $is_optimal
+	: (stripos($insight_text, 'base currency') !== false
+		|| stripos($insight_text, 'no processor') !== false
+		|| stripos($insight_text, 'optimal') !== false
+		|| stripos($insight_text, 'no payment') !== false
+		|| stripos($insight_text, 'zero') !== false);
 ?>
-<div class="finlyzer-sentinel-box">
+<div class="finlyzer-sentinel-box <?php echo $is_optimal_state ? 'finlyzer-sentinel-box--optimal' : ''; ?>">
 
-	<!-- Header with glowing warning badge -->
+	<!-- Header with Fluent 2 rounded status badge -->
 	<div class="finlyzer-sentinel-header">
 		<div class="finlyzer-sentinel-title-wrap">
 			<div class="finlyzer-sentinel-icon-wrap">
-				<!-- Inline SVG alert sentinel icon (safe, no external request, zero XSS) -->
-				<svg class="finlyzer-sentinel-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-					<line x1="12" y1="9" x2="12" y2="13"></line>
-					<line x1="12" y1="17" x2="12.01" y2="17"></line>
-				</svg>
+				<?php if ($is_optimal_state) : ?>
+					<!-- Secure shield check icon for optimal margin state -->
+					<svg class="finlyzer-sentinel-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+						<polyline points="9 12 11 14 15 10"></polyline>
+					</svg>
+				<?php else : ?>
+					<!-- Alert triangle icon for active spread leakage -->
+					<svg class="finlyzer-sentinel-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+						<line x1="12" y1="9" x2="12" y2="13"></line>
+						<line x1="12" y1="17" x2="12.01" y2="17"></line>
+					</svg>
+				<?php endif; ?>
 			</div>
 			<div>
-				<h4 class="finlyzer-sentinel-title"><?php esc_html_e('AI Financial Risk Sentinel', 'finlyzer'); ?></h4>
-				<span class="finlyzer-sentinel-subtitle"><?php esc_html_e('Autonomous Currency & Margin Erosion Advisory', 'finlyzer'); ?></span>
+				<h4 class="finlyzer-sentinel-title"><?php esc_html_e('Margin Risk Sentinel', 'finlyzer'); ?></h4>
+				<span class="finlyzer-sentinel-subtitle"><?php esc_html_e('Real-time currency & gateway spread advisory', 'finlyzer'); ?></span>
 			</div>
 		</div>
 
-		<div class="finlyzer-sentinel-tag">
+		<div class="finlyzer-sentinel-tag <?php echo $is_optimal_state ? 'finlyzer-sentinel-tag--optimal' : ''; ?>">
 			<span class="finlyzer-sentinel-pulse"></span>
-			<span><?php esc_html_e('EXPOSURE WARNING', 'finlyzer'); ?></span>
+			<span><?php echo esc_html($is_optimal_state ? __('MARGIN SECURE', 'finlyzer') : __('ACTION RECOMMENDED', 'finlyzer')); ?></span>
 		</div>
 	</div>
 
@@ -45,7 +61,7 @@ $insight_text = is_string($insight) ? $insight : '';
 	<div class="finlyzer-sentinel-body">
 		<?php if (!empty($error) && empty($insight_text)) : ?>
 			<p class="finlyzer-sentinel-text finlyzer-sentinel-text--muted">
-				<?php esc_html_e('AI Sentinel temporarily offline — order analytics above remain verified.', 'finlyzer'); ?>
+				<?php esc_html_e('Advisory service temporarily unavailable — order analytics above remain verified.', 'finlyzer'); ?>
 			</p>
 		<?php else : ?>
 			<p class="finlyzer-sentinel-text">
@@ -54,11 +70,15 @@ $insight_text = is_string($insight) ? $insight : '';
 		<?php endif; ?>
 	</div>
 
-	<!-- Strategic Action Banner -->
+	<!-- Strategic Recommendation Banner -->
 	<div class="finlyzer-sentinel-action">
-		<span class="finlyzer-action-label"><?php esc_html_e('Strategic Remediation:', 'finlyzer'); ?></span>
+		<span class="finlyzer-action-label"><?php esc_html_e('Recommendation:', 'finlyzer'); ?></span>
 		<span class="finlyzer-action-text">
-			<?php esc_html_e('Configure local currency settlement or multi-currency pricing to capture gateway spreads into store profit.', 'finlyzer'); ?>
+			<?php if ($is_optimal_state) : ?>
+				<?php esc_html_e('Maintain base currency pricing or introduce multi-currency checkout to expand internationally while protecting margins.', 'finlyzer'); ?>
+			<?php else : ?>
+				<?php esc_html_e('Configure local currency settlement or enable multi-currency pricing to eliminate processor exchange fees.', 'finlyzer'); ?>
+			<?php endif; ?>
 		</span>
 	</div>
 

@@ -22,7 +22,7 @@ $rest_nonce = wp_create_nonce('wp_rest');
 			</div>
 			<h1 class="finlyzer-header__title"><?php esc_html_e('Finlyzer', 'finlyzer'); ?></h1>
 			<p class="finlyzer-header__sub">
-				<?php esc_html_e('Monitoring hidden payment gateway spreads and cross-border currency erosion in real time.', 'finlyzer'); ?>
+				<?php esc_html_e('Real-time FX spread audit and currency margin protection for WooCommerce.', 'finlyzer'); ?>
 			</p>
 		</div>
 
@@ -73,10 +73,7 @@ $rest_nonce = wp_create_nonce('wp_rest');
 	<!-- Security & Architecture Footer -->
 	<footer class="finlyzer-footer">
 		<div class="finlyzer-footer__left">
-			<span class="finlyzer-footer__icon">&#x1F512;</span>
-			<p>
-				<?php esc_html_e('Zero Money Movement Architecture. Read-only financial analytics computed from local store orders.', 'finlyzer'); ?>
-			</p>
+			<p>&copy; 2026 Finlyzer. All rights reserved.</p>
 		</div>
 		<div class="finlyzer-footer__right">
 			<span class="finlyzer-version-tag">v<?php echo esc_html(FINLYZER_VERSION); ?></span>

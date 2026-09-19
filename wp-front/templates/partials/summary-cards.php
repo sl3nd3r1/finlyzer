@@ -51,16 +51,16 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 		<span class="finlyzer-mode-dot"></span>
 		<span class="finlyzer-mode-text">
 			<?php if ($is_mock) : ?>
-				<strong><?php esc_html_e('DEVELOPMENT MOCK MODE', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Displaying simulated cross-currency order telemetry.', 'finlyzer'); ?>
+				<strong><?php esc_html_e('SIMULATION MODE', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Displaying simulated cross-currency orders', 'finlyzer'); ?>
 			<?php else : ?>
-				<strong><?php esc_html_e('PRODUCTION LIVE MODE', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Reading real WooCommerce HPOS database events.', 'finlyzer'); ?>
+				<strong><?php esc_html_e('LIVE STORE AUDIT', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Continuous transaction monitoring active', 'finlyzer'); ?>
 			<?php endif; ?>
 		</span>
 	</div>
 	<div class="finlyzer-mode-bar__action">
 		<?php if ($is_mock) : ?>
 			<a href="?finlyzer_mode=live" class="finlyzer-mode-switch-btn" title="<?php esc_attr_e('Switch to live store orders', 'finlyzer'); ?>">
-				<?php esc_html_e('Switch to Live Data', 'finlyzer'); ?> &rarr;
+				&larr; <?php esc_html_e('Switch to Live Data', 'finlyzer'); ?>
 			</a>
 		<?php else : ?>
 			<a href="?finlyzer_mode=mock" class="finlyzer-mode-switch-btn" title="<?php esc_attr_e('Switch to simulated mock telemetry', 'finlyzer'); ?>">
@@ -94,12 +94,16 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 				<?php echo wp_kses_post($formatted_total); ?>
 			</div>
 			<div class="finlyzer-hero__context">
-				<?php echo esc_html(sprintf(
-					/* translators: 1: order count, 2: store base currency */
-					_n('Drained across %1$d cross-currency order settling into %2$s', 'Drained across %1$d cross-currency orders settling into %2$s', $order_count, 'finlyzer'),
-					$order_count,
-					$store_currency
-				)); ?>
+				<?php if ($order_count === 0) : ?>
+					<?php echo esc_html(sprintf(__('No cross-border orders settling into %s', 'finlyzer'), $store_currency)); ?>
+				<?php else : ?>
+					<?php echo esc_html(sprintf(
+						/* translators: 1: order count, 2: store base currency */
+						_n('Across %1$d cross-border order settling into %2$s', 'Across %1$d cross-border orders settling into %2$s', $order_count, 'finlyzer'),
+						$order_count,
+						$store_currency
+					)); ?>
+				<?php endif; ?>
 			</div>
 		</div>
 	</div>
@@ -111,7 +115,7 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 			<span class="finlyzer-kpi-val finlyzer-val--loss">
 				<?php echo wp_kses_post($formatted_run_rate); ?>
 			</span>
-			<span class="finlyzer-kpi-sub"><?php esc_html_e('Projected 365-day capital leakage', 'finlyzer'); ?></span>
+			<span class="finlyzer-kpi-sub"><?php esc_html_e('Projected 12-month margin impact', 'finlyzer'); ?></span>
 		</div>
 
 		<div class="finlyzer-card finlyzer-kpi-card">
@@ -119,29 +123,29 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 			<span class="finlyzer-kpi-val">
 				<?php echo wp_kses_post($formatted_avg_order); ?>
 			</span>
-			<span class="finlyzer-kpi-sub"><?php esc_html_e('Gateway spread markup impact', 'finlyzer'); ?></span>
+			<span class="finlyzer-kpi-sub"><?php esc_html_e('Average conversion spread per order', 'finlyzer'); ?></span>
 		</div>
 
 		<div class="finlyzer-card finlyzer-kpi-card finlyzer-card--timing">
 			<div class="finlyzer-kpi-header">
 				<span class="finlyzer-kpi-label"><?php esc_html_e('MARKET TIMING LOSS', 'finlyzer'); ?></span>
-				<span class="finlyzer-badge-ecb" title="<?php esc_attr_e('ECB reference rate via api.frankfurter.dev', 'finlyzer'); ?>">ECB Spot</span>
+				<span class="finlyzer-badge-ecb" title="<?php esc_attr_e('ECB reference rate via api.frankfurter.dev', 'finlyzer'); ?>"><?php esc_html_e('ECB Spot', 'finlyzer'); ?></span>
 			</div>
 			<span class="finlyzer-kpi-val <?php echo $total_market_timing_loss > 0 ? 'finlyzer-val--timing' : ''; ?>">
 				<?php echo wp_kses_post($formatted_timing_loss); ?>
 			</span>
-			<span class="finlyzer-kpi-sub"><?php esc_html_e('Settlement holding & FX volatility drag', 'finlyzer'); ?></span>
+			<span class="finlyzer-kpi-sub"><?php esc_html_e('Settlement delay & rate shift', 'finlyzer'); ?></span>
 		</div>
 
 		<div class="finlyzer-card finlyzer-kpi-card finlyzer-card--drag">
 			<div class="finlyzer-kpi-header">
 				<span class="finlyzer-kpi-label"><?php esc_html_e('COMBINED CURRENCY DRAG', 'finlyzer'); ?></span>
-				<span class="finlyzer-badge-total"><?php esc_html_e('Total FX Drain', 'finlyzer'); ?></span>
+				<span class="finlyzer-badge-total"><?php esc_html_e('Total FX Drag', 'finlyzer'); ?></span>
 			</div>
 			<span class="finlyzer-kpi-val finlyzer-val--loss">
 				<?php echo wp_kses_post($formatted_combined_drag); ?>
 			</span>
-			<span class="finlyzer-kpi-sub"><?php esc_html_e('Spread markup + settlement volatility', 'finlyzer'); ?></span>
+			<span class="finlyzer-kpi-sub"><?php esc_html_e('Combined gateway markup & timing drag', 'finlyzer'); ?></span>
 		</div>
 	</div>
 
@@ -206,7 +210,7 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 			<div class="finlyzer-ledger__row finlyzer-ledger__empty" role="row">
 				<span role="cell" colspan="4">
 					<span class="finlyzer-empty-icon">&#x2714;</span>
-					<?php esc_html_e('Zero cross-border FX transactions detected in this window. No currency spread markup incurred.', 'finlyzer'); ?>
+					<?php esc_html_e('No foreign currency orders recorded in this period. Currency margins are preserved.', 'finlyzer'); ?>
 				</span>
 			</div>
 		<?php else : ?>
@@ -271,7 +275,7 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 			<div class="finlyzer-ledger__row finlyzer-ledger__empty" role="row">
 				<span role="cell" colspan="5">
 					<span class="finlyzer-empty-icon">&#x2714;</span>
-					<?php esc_html_e('Zero active foreign markets in this period. No market timing volatility detected.', 'finlyzer'); ?>
+					<?php esc_html_e('No active foreign markets in this period. Currency rates matched spot benchmarks.', 'finlyzer'); ?>
 				</span>
 			</div>
 		<?php else : ?>

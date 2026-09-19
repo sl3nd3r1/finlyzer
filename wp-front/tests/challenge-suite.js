@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.8.0', `FINLYZER_VERSION is bumped to 1.8.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.9.0', `FINLYZER_VERSION is bumped to 1.9.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.8.0'), 'readme.txt Stable tag matches v1.8.0');
+assert(readmeContent.includes('Stable tag: 1.9.0'), 'readme.txt Stable tag matches v1.9.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -610,10 +610,10 @@ function simulateHtmxBeforeSwap(serverResponse) {
 }
 
 // Case 1: WordPress default escaped JSON string with HTML entities and slashes
-const escapedWordPressJson = '"\\n\\n\\n\\t\\t<span>\\n\\t\\t\\t\\t\\t\\t\\t\\t<strong>PRODUCTION LIVE MODE<\\/strong> - Reading real WooCommerce HPOS database events...<\\/div>"';
+const escapedWordPressJson = '"\\n\\n\\n\\t\\t<span>\\n\\t\\t\\t\\t\\t\\t\\t\\t<strong>LIVE STORE AUDIT<\\/strong> - Reading real database events...<\\/div>"';
 const unwrappedHtml = simulateHtmxBeforeSwap(escapedWordPressJson);
 assert(
-	unwrappedHtml.includes('<strong>PRODUCTION LIVE MODE</strong>') && !unwrappedHtml.startsWith('"'),
+	unwrappedHtml.includes('<strong>LIVE STORE AUDIT</strong>') && !unwrappedHtml.startsWith('"'),
 	'Escaped WordPress JSON string successfully unwrapped into valid raw HTML fragment'
 );
 
@@ -635,6 +635,42 @@ for (let i = 0; i < 5000; i++) {
 }
 const stressDuration = performance.now() - stressStart;
 assert(stressDuration < 100, `High-throughput stress test: 5,000 unwraps executed in ${stressDuration.toFixed(2)}ms (< 100ms SLA)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 13: Microsoft Fluent 2 Subtle Rounded Design & Humanized Copy
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 13: Microsoft Fluent 2 Subtle Rounded Design & Humanized Copy');
+
+const insightNotePath = path.resolve(__dirname, '../templates/partials/insight-note.php');
+const summaryCardsPath = path.resolve(__dirname, '../templates/partials/summary-cards.php');
+
+assert(fs.existsSync(insightNotePath), 'insight-note.php template exists');
+assert(fs.existsSync(summaryCardsPath), 'summary-cards.php template exists');
+
+const insightNoteContent = fs.readFileSync(insightNotePath, 'utf8');
+const latestSummaryCardsContent = fs.readFileSync(summaryCardsPath, 'utf8');
+
+// 13.1 Fluent 2 Design Tokens & Badge Styling
+assert(dashboardCssContent.includes('--fl-radius-badge: 4px'), 'dashboard.css defines Fluent 2 --fl-radius-badge (4px)');
+assert(dashboardCssContent.includes('border-radius: var(--fl-radius-badge)'), 'dashboard.css binds KPI badges to Fluent 2 radius token');
+assert(dashboardCssContent.includes('white-space: nowrap'), 'dashboard.css enforces white-space nowrap on badges to prevent circular wrapping');
+
+// 13.2 Official Copyright Footer
+assert(
+	dashboardPhpContent.includes('© 2026 Finlyzer. All rights reserved.') || dashboardPhpContent.includes('&copy; 2026 Finlyzer. All rights reserved.'),
+	'dashboard.php declares official footer: © 2026 Finlyzer. All rights reserved.'
+);
+
+// 13.3 Humanized & Realistic Copy Verification
+assert(dashboardPhpContent.includes('Real-time FX spread audit and currency margin protection'), 'dashboard.php uses humanized fintech subtitle');
+assert(latestSummaryCardsContent.includes('LIVE STORE AUDIT'), 'summary-cards.php uses executive LIVE STORE AUDIT phrasing');
+assert(latestSummaryCardsContent.includes('Projected 12-month margin impact'), 'summary-cards.php uses humanized run-rate description');
+assert(latestSummaryCardsContent.includes('Average conversion spread per order'), 'summary-cards.php uses humanized average order description');
+assert(latestSummaryCardsContent.includes('Settlement delay & rate shift'), 'summary-cards.php uses humanized market timing description');
+assert(insightNoteContent.includes('Margin Risk Sentinel'), 'insight-note.php declares Margin Risk Sentinel title');
+assert(insightNoteContent.includes('MARGIN SECURE'), 'insight-note.php supports MARGIN SECURE optimal state badge');
+assert(insightNoteContent.includes('ACTION RECOMMENDED'), 'insight-note.php supports ACTION RECOMMENDED advisory badge');
+assert(insightNoteContent.includes('Recommendation:'), 'insight-note.php declares clean Recommendation: label');
 
 // -------------------------------------------------------------
 // SUMMARY

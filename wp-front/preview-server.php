@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.8.0');
+	define('FINLYZER_VERSION', '1.9.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
@@ -413,7 +413,8 @@ if ($uri === '/wp-json/finlyzer/v1/insight') {
 	$days = isset($_GET['days']) ? (int) $_GET['days'] : 30;
 
 	if ($current_mode === 'live') {
-		$insight = "EXPOSURE AUDIT OPTIMAL: Zero cross-currency orders recorded in the past {$days} days. Your store currently incurs no payment gateway FX markup erosion.";
+		$insight = "All transactions in the last {$days} days settled in your base currency. No processor spread markup or currency timing drag detected.";
+		$is_optimal = true;
 	} else {
 		$multiplier = match ($days) {
 			60 => 1.85,
@@ -423,7 +424,8 @@ if ($uri === '/wp-json/finlyzer/v1/insight') {
 		$totalLossFormatted = '$' . number_format(1420.50 * $multiplier, 2);
 		$runRateFormatted = '$' . number_format((1420.50 * $multiplier / $days) * 365, 2);
 
-		$insight = "CAPITAL EROSION WARNING: Your store quietly surrendered {$totalLossFormatted} in payment gateway spreads over the past {$days} days, driven primarily by EUR transactions (64.2% of total drain). At this current trajectory, unhedged spread markup represents an annualized profit drain of approximately {$runRateFormatted}. Immediate strategic remediation: configure native EUR settlement or enable multi-currency pricing to retain this margin in store profit.";
+		$insight = "Cross-border orders incurred {$totalLossFormatted} in processor exchange spreads over {$days} days, primarily on EUR settlements. Projected 12-month margin impact is approximately {$runRateFormatted}.";
+		$is_optimal = false;
 	}
 
 	$error = null;

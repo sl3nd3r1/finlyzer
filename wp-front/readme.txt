@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,11 @@ Finlyzer recognizes and models spread profiles for PayPal (3.8%), Stripe (2.2%),
 4. **Active Currency Markets & ECB Timing Impact**: European Central Bank reference rate shifts and settlement volatility.
 
 == Changelog ==
+
+= 1.9.0 =
+* Design: Refactored badge and pill system to Microsoft Fluent 2 design language with subtle 4px rounded rectangles and non-wrapping horizontal layout.
+* UX & Copy: Overhauled dashboard copy with concise, humanized executive fintech terminology; streamlined AI Margin Sentinel with dedicated optimal/warning status indicators.
+* Footer: Added official copyright footer: © 2026 Finlyzer. All rights reserved.
 
 = 1.8.0 =
 * Fix: WordPress REST API raw HTML fragment rendering for htmx dashboard swaps via rest_pre_serve_request hook, bypassing default wp_json_encode string serialization.
