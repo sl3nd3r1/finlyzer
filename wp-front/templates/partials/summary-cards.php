@@ -569,28 +569,3 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 	</div>
 </div>
 
-<script>
-(function() {
-	var filterBar = document.getElementById('finlyzerGwFilterBar');
-	if (!filterBar) return;
-	filterBar.addEventListener('click', function(e) {
-		var btn = e.target.closest('.finlyzer-gw-tab');
-		if (!btn) return;
-		var filter = btn.getAttribute('data-gw-filter');
-		filterBar.querySelectorAll('.finlyzer-gw-tab').forEach(function(b) {
-			b.classList.remove('finlyzer-gw-tab--active');
-		});
-		btn.classList.add('finlyzer-gw-tab--active');
-
-		var rows = document.querySelectorAll('.finlyzer-product-row');
-		rows.forEach(function(row) {
-			if (filter === 'all' || row.getAttribute('data-gateway') === filter) {
-				row.style.display = '';
-			} else {
-				row.style.display = 'none';
-			}
-		});
-	});
-})();
-</script>
-

@@ -10,6 +10,7 @@
  */
 
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 // test runner state
 let totalTests = 0;
@@ -519,6 +520,53 @@ assert(
 	totalLossDiff < relativeTolerance,
 	`Total product attribution matches total gateway loss within rounding tolerance ($${totalLossDiff.toFixed(2)} diff on $${totalSimulatedOrderLoss.toFixed(2)})`
 );
+
+// -------------------------------------------------------------
+// TEST GROUP 11: WordPress Installation & Packaging Integrity
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 11: WordPress Installation & Packaging Integrity');
+
+const readmePath = path.resolve(__dirname, '../readme.txt');
+const potPath = path.resolve(__dirname, '../languages/finlyzer.pot');
+const uninstallPath = path.resolve(__dirname, '../uninstall.php');
+const zipPath = path.resolve(__dirname, '../dist/finlyzer.zip');
+
+// 11.1 Verify standard WordPress readme.txt
+assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
+const readmeContent = fs.readFileSync(readmePath, 'utf8');
+assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
+assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
+assert(readmeContent.includes('Stable tag: 1.7.0'), 'readme.txt Stable tag matches v1.7.0');
+assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
+assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
+
+// 11.2 Verify internationalization & translation readiness
+assert(pluginPhpContent.includes('Domain Path:       /languages'), 'finlyzer.php declares Domain Path: /languages');
+assert(pluginPhpContent.includes('load_plugin_textdomain'), 'finlyzer.php executes load_plugin_textdomain');
+assert(fs.existsSync(potPath), 'languages/finlyzer.pot template exists for translators');
+
+// 11.3 Verify complete uninstall lifecycle
+assert(fs.existsSync(uninstallPath), 'uninstall.php exists for clean uninstallation');
+const uninstallContent = fs.readFileSync(uninstallPath, 'utf8');
+assert(uninstallContent.includes('WP_UNINSTALL_PLUGIN'), 'uninstall.php guards against direct invocation');
+assert(uninstallContent.includes('fxli_fx_events'), 'uninstall.php drops fxli_fx_events');
+assert(uninstallContent.includes('fxli_product_gateway_events'), 'uninstall.php drops fxli_product_gateway_events');
+assert(uninstallContent.includes('delete_option'), 'uninstall.php deletes schema version options');
+assert(uninstallContent.includes('wp_clear_scheduled_hook'), 'uninstall.php unschedules daily cron');
+
+// 11.4 Verify installable production zip package
+assert(fs.existsSync(zipPath), 'dist/finlyzer.zip exists and is ready for WordPress upload');
+const zipStat = fs.statSync(zipPath);
+assert(zipStat.size > 30000, `finlyzer.zip is complete (size: ${Math.round(zipStat.size / 1024)} KB)`);
+
+// Check that zip contains finlyzer/finlyzer.php
+const zipList = execSync(`unzip -l "${zipPath}"`).toString();
+assert(zipList.includes('finlyzer/finlyzer.php'), 'finlyzer.zip contains finlyzer/finlyzer.php as root plugin file');
+assert(zipList.includes('finlyzer/readme.txt'), 'finlyzer.zip contains finlyzer/readme.txt');
+assert(zipList.includes('finlyzer/uninstall.php'), 'finlyzer.zip contains finlyzer/uninstall.php');
+assert(zipList.includes('finlyzer/assets/js/vendor/htmx.min.js'), 'finlyzer.zip packages local htmx vendor bundle');
+assert(!zipList.includes('preview-server.php'), 'finlyzer.zip cleanly excludes dev preview server');
+assert(!zipList.includes('challenge-suite.js'), 'finlyzer.zip cleanly excludes test suites');
 
 // -------------------------------------------------------------
 // SUMMARY

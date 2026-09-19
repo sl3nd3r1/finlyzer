@@ -12,6 +12,7 @@
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       finlyzer
+ * Domain Path:       /languages
  *
  * Security architecture (per mandatory-secure-web-skills):
  *  - Zero client-side credentials: API keys and HMAC secrets never reach the browser.
@@ -79,6 +80,9 @@ function finlyzer_bootstrap(): void {
 		add_action('admin_notices', 'finlyzer_admin_missing_requirements_notice');
 		return;
 	}
+
+	// load internationalization translation files
+	load_plugin_textdomain('finlyzer', false, dirname(plugin_basename(__FILE__)) . '/languages');
 
 	// initialize singletons
 	FXLI_Order_Analyzer::instance();

@@ -8,10 +8,12 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 
 global $wpdb;
 
-// remove Finlyzer events table
-$table = $wpdb->prefix . 'fxli_fx_events';
+// remove Finlyzer events tables
+$events_table = $wpdb->prefix . 'fxli_fx_events';
+$products_table = $wpdb->prefix . 'fxli_product_gateway_events';
 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table identifier only
-$wpdb->query("DROP TABLE IF EXISTS {$table}");
+$wpdb->query("DROP TABLE IF EXISTS {$events_table}");
+$wpdb->query("DROP TABLE IF EXISTS {$products_table}");
 
 // delete version options
 delete_option('finlyzer_db_version');

@@ -1,0 +1,5 @@
+# Development & Staging build outputs
+dist/finlyzer/
+node_modules/
+.DS_Store
+*.log

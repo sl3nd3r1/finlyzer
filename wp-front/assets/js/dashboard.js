@@ -55,5 +55,33 @@
 				}
 			});
 		});
+
+		// handle interactive gateway filter tabs for products ledger (CSP compliant event delegation)
+		app.addEventListener('click', function (e) {
+			var tab = e.target.closest('.finlyzer-gw-tab');
+			if (!tab) {
+				return;
+			}
+			var filterBar = tab.closest('.finlyzer-gw-filter-bar');
+			if (!filterBar) {
+				return;
+			}
+
+			var filter = tab.getAttribute('data-gw-filter') || 'all';
+			filterBar.querySelectorAll('.finlyzer-gw-tab').forEach(function (btn) {
+				btn.classList.remove('finlyzer-gw-tab--active');
+			});
+			tab.classList.add('finlyzer-gw-tab--active');
+
+			var container = tab.closest('.finlyzer-products-section') || app;
+			var rows = container.querySelectorAll('.finlyzer-product-row');
+			rows.forEach(function (row) {
+				if (filter === 'all' || row.getAttribute('data-gateway') === filter) {
+					row.style.display = '';
+				} else {
+					row.style.display = 'none';
+				}
+			});
+		});
 	});
 })();
