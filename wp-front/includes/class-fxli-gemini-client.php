@@ -59,8 +59,13 @@ final class FXLI_Gemini_Client {
 			}
 		}
 
+		$site_url = function_exists('home_url') ? home_url() : '';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.4.0';
+
 		$payload = [
 			'site_id'        => self::site_id(),
+			'site_url'       => $site_url,
+			'plugin_version' => $plugin_version,
 			'store_currency' => FXLI_Security::sanitize_prompt_scalar($summary['store_currency'] ?? 'USD'),
 			'period_days'    => (int) ($summary['period_days'] ?? 30),
 			'total_loss'     => (float) ($summary['total_loss'] ?? 0.0),
@@ -86,10 +91,12 @@ final class FXLI_Gemini_Client {
 		$response = wp_remote_post($endpoint, [
 			'timeout' => 8,
 			'headers' => [
-				'Content-Type' => 'application/json',
-				'X-FXLI-Site'  => self::site_id(),
-				'X-FXLI-Time'  => (string) $timestamp,
-				'X-FXLI-Sig'   => $signature,
+				'Content-Type'      => 'application/json',
+				'X-FXLI-Site'       => self::site_id(),
+				'X-FXLI-Site-Url'   => $site_url,
+				'X-FXLI-Version'    => $plugin_version,
+				'X-FXLI-Time'       => (string) $timestamp,
+				'X-FXLI-Sig'        => $signature,
 			],
 			'body'    => $body,
 		]);
