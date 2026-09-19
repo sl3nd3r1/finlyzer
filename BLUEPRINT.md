@@ -10,7 +10,7 @@ Translation of the "Hedgehog" Phase 1 wedge from the [Cinkciarz.pl case study](h
 
 | Concern | Production Specification | Architectural Rationale |
 |---|---|---|
-| **Plugin Identity** | **Finlyzer** (v1.5.1) | High-performance, read-only analytics & AI exposure sentinel |
+| **Plugin Identity** | **Finlyzer** (v1.6.0) | High-performance, read-only analytics & AI exposure sentinel |
 | **Frontend UI** | Modern Chic Fintech Ledger | Obsidian/slate palette (`#090D16`), glowing severity badges, proportional multi-currency loss distribution bars, tabular mono figures |
 | **Interactivity** | Vendored `htmx` (v2.0.3) | Zero external CDN requests, no SPA build overhead, full CSP compatibility, no clash with WordPress React/jQuery |
 | **Order Storage** | WooCommerce HPOS Verified | High-Performance Order Storage compatible; no legacy post table dependencies |

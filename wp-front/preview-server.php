@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.2.0');
+	define('FINLYZER_VERSION', '1.6.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
@@ -125,16 +125,19 @@ if ($uri === '/wp-json/finlyzer/v1/summary') {
 	if ($current_mode === 'live') {
 		// simulate production WooCommerce store with zero foreign currency orders yet
 		$summary = [
-			'period_days'         => $days,
-			'store_currency'      => 'USD',
-			'total_loss'          => 0.0,
-			'order_count'         => 0,
-			'avg_loss_per_order'  => 0.0,
-			'annualized_run_rate' => 0.0,
-			'severity_level'      => 'optimal',
-			'top_currency'        => '',
-			'by_currency'         => [],
-			'is_mock'             => false,
+			'period_days'                  => $days,
+			'store_currency'               => 'USD',
+			'total_loss'                   => 0.0,
+			'order_count'                  => 0,
+			'avg_loss_per_order'           => 0.0,
+			'annualized_run_rate'          => 0.0,
+			'severity_level'               => 'optimal',
+			'top_currency'                 => '',
+			'by_currency'                  => [],
+			'total_market_timing_loss'     => 0.0,
+			'total_combined_currency_drag' => 0.0,
+			'active_markets'               => [],
+			'is_mock'                      => false,
 		];
 	} else {
 		// simulate development mode with rich multi-currency telemetry
@@ -147,22 +150,108 @@ if ($uri === '/wp-json/finlyzer/v1/summary') {
 		$baseLoss = 1420.50 * $multiplier;
 		$baseOrders = (int) round(48 * $multiplier);
 
-		$summary = [
-			'period_days'         => $days,
-			'store_currency'      => 'USD',
-			'total_loss'          => round($baseLoss, 2),
-			'order_count'         => $baseOrders,
-			'avg_loss_per_order'  => round($baseLoss / $baseOrders, 2),
-			'annualized_run_rate' => round(($baseLoss / $days) * 365, 2),
-			'severity_level'      => 'critical',
-			'top_currency'        => 'EUR',
-			'by_currency'         => [
-				'EUR' => ['currency' => 'EUR', 'orders' => (int) round(28 * $multiplier), 'loss' => round(912.20 * $multiplier, 2), 'share_pct' => 64.2],
-				'GBP' => ['currency' => 'GBP', 'orders' => (int) round(12 * $multiplier), 'loss' => round(328.10 * $multiplier, 2), 'share_pct' => 23.1],
-				'CAD' => ['currency' => 'CAD', 'orders' => (int) round(5 * $multiplier),  'loss' => round(114.30 * $multiplier, 2), 'share_pct' => 8.1],
-				'AUD' => ['currency' => 'AUD', 'orders' => (int) round(3 * $multiplier),  'loss' => round(65.90 * $multiplier, 2),  'share_pct' => 4.6],
+		$by_currency = [
+			'EUR' => ['currency' => 'EUR', 'orders' => (int) round(28 * $multiplier), 'loss' => round(912.20 * $multiplier, 2), 'share_pct' => 64.2],
+			'GBP' => ['currency' => 'GBP', 'orders' => (int) round(12 * $multiplier), 'loss' => round(328.10 * $multiplier, 2), 'share_pct' => 23.1],
+			'CAD' => ['currency' => 'CAD', 'orders' => (int) round(5 * $multiplier),  'loss' => round(114.30 * $multiplier, 2), 'share_pct' => 8.1],
+			'AUD' => ['currency' => 'AUD', 'orders' => (int) round(3 * $multiplier),  'loss' => round(65.90 * $multiplier, 2),  'share_pct' => 4.6],
+		];
+
+		$eur_timing_loss = round(840.84 * $multiplier, 2);
+		$gbp_timing_loss = round(238.23 * $multiplier, 2);
+		$cad_timing_loss = round(23.05 * $multiplier, 2);
+		$aud_timing_loss = 0.0;
+		$total_timing_loss = round($eur_timing_loss + $gbp_timing_loss + $cad_timing_loss + $aud_timing_loss, 2);
+
+		$active_markets = [
+			[
+				'currency'              => 'EUR',
+				'currency_name'         => 'Euro',
+				'country'               => 'Eurozone',
+				'country_code'          => 'EU',
+				'flag_emoji'            => '🇪🇺',
+				'foreign_volume'        => round(28000.0 * $multiplier, 2),
+				'order_count'           => (int) round(28 * $multiplier),
+				'order_exchange_rate'   => 0.900,
+				'spot_exchange_rate'    => 0.925,
+				'rate_change_pct'       => -2.7,
+				'expected_store_amount' => round(31111.11 * $multiplier, 2),
+				'current_store_value'   => round(30270.27 * $multiplier, 2),
+				'market_timing_loss'    => $eur_timing_loss,
+				'is_timing_loss'        => true,
+				'gateway_spread_loss'   => round(912.20 * $multiplier, 2),
+				'total_currency_drag'   => round(912.20 * $multiplier + $eur_timing_loss, 2),
 			],
-			'is_mock'             => true,
+			[
+				'currency'              => 'GBP',
+				'currency_name'         => 'British Pound',
+				'country'               => 'United Kingdom',
+				'country_code'          => 'GB',
+				'flag_emoji'            => '🇬🇧',
+				'foreign_volume'        => round(9600.0 * $multiplier, 2),
+				'order_count'           => (int) round(12 * $multiplier),
+				'order_exchange_rate'   => 0.770,
+				'spot_exchange_rate'    => 0.785,
+				'rate_change_pct'       => -1.9,
+				'expected_store_amount' => round(12467.53 * $multiplier, 2),
+				'current_store_value'   => round(12229.30 * $multiplier, 2),
+				'market_timing_loss'    => $gbp_timing_loss,
+				'is_timing_loss'        => true,
+				'gateway_spread_loss'   => round(328.10 * $multiplier, 2),
+				'total_currency_drag'   => round(328.10 * $multiplier + $gbp_timing_loss, 2),
+			],
+			[
+				'currency'              => 'CAD',
+				'currency_name'         => 'Canadian Dollar',
+				'country'               => 'Canada',
+				'country_code'          => 'CA',
+				'flag_emoji'            => '🇨🇦',
+				'foreign_volume'        => round(4200.0 * $multiplier, 2),
+				'order_count'           => (int) round(5 * $multiplier),
+				'order_exchange_rate'   => 1.345,
+				'spot_exchange_rate'    => 1.355,
+				'rate_change_pct'       => -0.7,
+				'expected_store_amount' => round(3122.68 * $multiplier, 2),
+				'current_store_value'   => round(3099.63 * $multiplier, 2),
+				'market_timing_loss'    => $cad_timing_loss,
+				'is_timing_loss'        => true,
+				'gateway_spread_loss'   => round(114.30 * $multiplier, 2),
+				'total_currency_drag'   => round(114.30 * $multiplier + $cad_timing_loss, 2),
+			],
+			[
+				'currency'              => 'AUD',
+				'currency_name'         => 'Australian Dollar',
+				'country'                => 'Australia',
+				'country_code'          => 'AU',
+				'flag_emoji'            => '🇦🇺',
+				'foreign_volume'        => round(2800.0 * $multiplier, 2),
+				'order_count'           => (int) round(3 * $multiplier),
+				'order_exchange_rate'   => 1.520,
+				'spot_exchange_rate'    => 1.515,
+				'rate_change_pct'       => 0.3,
+				'expected_store_amount' => round(1842.11 * $multiplier, 2),
+				'current_store_value'   => round(1848.18 * $multiplier, 2),
+				'market_timing_loss'    => 0.0,
+				'is_timing_loss'        => false,
+				'gateway_spread_loss'   => round(65.90 * $multiplier, 2),
+				'total_currency_drag'   => round(65.90 * $multiplier, 2),
+			],
+		];
+
+		$summary = [
+			'period_days'                  => $days,
+			'store_currency'               => 'USD',
+			'total_loss'                   => round($baseLoss, 2),
+			'order_count'                  => $baseOrders,
+			'avg_loss_per_order'           => round($baseLoss / $baseOrders, 2),
+			'annualized_run_rate'          => round(($baseLoss / $days) * 365, 2),
+			'severity_level'               => 'critical',
+			'top_currency'                 => 'EUR',
+			'by_currency'                  => $by_currency,
+			'total_market_timing_loss'     => $total_timing_loss,
+			'total_combined_currency_drag' => round($baseLoss + $total_timing_loss, 2),
+			'active_markets'               => $active_markets,
+			'is_mock'                      => true,
 		];
 	}
 

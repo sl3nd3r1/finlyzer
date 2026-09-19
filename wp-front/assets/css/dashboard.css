@@ -339,15 +339,21 @@
 	color: var(--fl-text-secondary);
 }
 
-/* KPI Secondary Stack */
+/* KPI Secondary Stack (2x2 Responsive Grid) */
 .finlyzer-kpi-stack {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
+}
+
+@media (max-width: 540px) {
+	.finlyzer-kpi-stack {
+		grid-template-columns: 1fr;
+	}
 }
 
 .finlyzer-kpi-card {
-	padding: 18px 20px;
+	padding: 16px 18px;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -851,3 +857,250 @@
 	text-decoration: none;
 }
 
+/* ==========================================================================
+   Market Timing & Active Currency Markets Design System (v1.6.0)
+   ========================================================================== */
+
+/* KPI Card Header & Badge Accents */
+.finlyzer-kpi-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 4px;
+}
+
+.finlyzer-badge-ecb {
+	font-family: var(--fl-font-mono);
+	font-size: 0.65rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	padding: 2px 6px;
+	border-radius: var(--fl-radius-full);
+	background: rgba(6, 182, 212, 0.15);
+	border: 1px solid rgba(6, 182, 212, 0.35);
+	color: #22D3EE;
+	letter-spacing: 0.04em;
+}
+
+.finlyzer-badge-total {
+	font-family: var(--fl-font-mono);
+	font-size: 0.65rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	padding: 2px 6px;
+	border-radius: var(--fl-radius-full);
+	background: rgba(244, 63, 94, 0.15);
+	border: 1px solid rgba(244, 63, 94, 0.35);
+	color: #FB7185;
+	letter-spacing: 0.04em;
+}
+
+.finlyzer-card--timing {
+	background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.07), transparent 70%), var(--fl-bg-surface);
+}
+
+.finlyzer-card--drag {
+	background: radial-gradient(circle at top right, rgba(244, 63, 94, 0.07), transparent 70%), var(--fl-bg-surface);
+}
+
+.finlyzer-kpi-val.finlyzer-val--timing {
+	color: #FBBF24;
+}
+
+/* Active Currency Markets Table Layout */
+.finlyzer-timing-card {
+	margin-top: 24px;
+	border-color: rgba(6, 182, 212, 0.20);
+	background: linear-gradient(180deg, rgba(6, 182, 212, 0.03) 0%, transparent 120px), var(--fl-bg-surface);
+}
+
+.finlyzer-timing-card .finlyzer-ledger-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.finlyzer-ledger-subtitle {
+	margin: 4px 0 0 0;
+	font-size: 0.82rem;
+	color: var(--fl-text-secondary);
+	max-width: 65ch;
+	line-height: 1.4;
+}
+
+.finlyzer-title-badge {
+	display: inline-block;
+	font-family: var(--fl-font-mono);
+	font-size: 0.68rem;
+	font-weight: 700;
+	padding: 2px 6px;
+	border-radius: var(--fl-radius-sm);
+	background: #0891B2;
+	color: #FFFFFF;
+	vertical-align: middle;
+	margin-right: 6px;
+}
+
+.finlyzer-badge-filter-notice {
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: #38BDF8;
+	background: rgba(14, 165, 233, 0.12);
+	border: 1px solid rgba(14, 165, 233, 0.30);
+	padding: 4px 10px;
+	border-radius: var(--fl-radius-full);
+	white-space: nowrap;
+}
+
+.finlyzer-timing-table .finlyzer-ledger__row {
+	display: grid;
+	grid-template-columns: 1.8fr 1.6fr 1fr 1.2fr 1.2fr;
+	align-items: center;
+	gap: 16px;
+}
+
+/* Market & Flag Cell */
+.finlyzer-market-cell {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.finlyzer-country-flag {
+	font-size: 1.45rem;
+	line-height: 1;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.finlyzer-market-info {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.finlyzer-country-name {
+	font-size: 0.90rem;
+	font-weight: 600;
+	color: #FFFFFF;
+}
+
+.finlyzer-curr-sub {
+	font-size: 0.72rem;
+	color: var(--fl-text-muted);
+	font-family: var(--fl-font-mono);
+}
+
+/* Rate Comparison Cell */
+.finlyzer-rate-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.finlyzer-rate-values {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--fl-font-mono);
+	font-size: 0.85rem;
+}
+
+.finlyzer-rate-val {
+	color: var(--fl-text-secondary);
+}
+
+.finlyzer-rate-val--spot {
+	color: #FFFFFF;
+	font-weight: 600;
+}
+
+.finlyzer-rate-arrow {
+	color: var(--fl-text-muted);
+	font-size: 0.75rem;
+}
+
+.finlyzer-shift-pill {
+	display: inline-flex;
+	align-items: center;
+	align-self: flex-start;
+	font-size: 0.70rem;
+	font-family: var(--fl-font-mono);
+	font-weight: 600;
+	padding: 2px 6px;
+	border-radius: var(--fl-radius-sm);
+}
+
+.finlyzer-shift--deprec {
+	background: rgba(245, 158, 11, 0.12);
+	border: 1px solid rgba(245, 158, 11, 0.30);
+	color: #FBBF24;
+}
+
+.finlyzer-shift--apprec {
+	background: rgba(16, 185, 129, 0.12);
+	border: 1px solid rgba(16, 185, 129, 0.30);
+	color: #34D399;
+}
+
+/* Timing Volatility Pill */
+.finlyzer-timing-tag {
+	display: inline-block;
+	font-family: var(--fl-font-mono);
+	font-size: 0.82rem;
+	font-weight: 600;
+	padding: 3px 8px;
+	border-radius: var(--fl-radius-sm);
+}
+
+.finlyzer-timing-tag--loss {
+	background: rgba(244, 63, 94, 0.12);
+	border: 1px solid rgba(244, 63, 94, 0.28);
+	color: #FB7185;
+}
+
+.finlyzer-timing-tag--neutral {
+	background: rgba(16, 185, 129, 0.10);
+	border: 1px solid rgba(16, 185, 129, 0.25);
+	color: #34D399;
+	font-size: 0.74rem;
+}
+
+.finlyzer-spread-cell {
+	font-family: var(--fl-font-mono);
+	font-size: 0.88rem;
+	color: var(--fl-text-secondary);
+}
+
+.finlyzer-drag-cell {
+	font-family: var(--fl-font-mono);
+	font-size: 0.96rem;
+	color: #FFFFFF;
+}
+
+@media (max-width: 768px) {
+	.finlyzer-timing-table .finlyzer-ledger__row {
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+	}
+
+	.finlyzer-timing-table .finlyzer-ledger__row--head {
+		display: none;
+	}
+
+	.finlyzer-market-cell {
+		grid-column: span 2;
+	}
+
+	.finlyzer-rate-cell {
+		grid-column: span 2;
+	}
+
+	.finlyzer-drag-cell {
+		grid-column: span 2;
+		text-align: left;
+		padding-top: 6px;
+		border-top: 1px solid var(--fl-border-subtle);
+	}
+}

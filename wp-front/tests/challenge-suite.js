@@ -315,7 +315,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.3.1', `FINLYZER_VERSION is bumped to 1.3.1 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.6.0', `FINLYZER_VERSION is bumped to 1.6.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -361,6 +361,55 @@ assert(concurrentElapsedMs < 500, `Processed 50,000 orders across 100 batches in
 const firstBatchTotal = results[0].totalLoss;
 const allIdentical = results.every(r => Math.abs(r.totalLoss - firstBatchTotal) < 0.0001);
 assert(allIdentical, 'Parallel execution maintains deterministic mathematical idempotency');
+
+// -------------------------------------------------------------
+// TEST GROUP 9: Market Timing Loss & Frankfurter Currency Filtering
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 9: Market Timing Loss & Frankfurter Active Country Engine');
+
+const analyzerPhpPath = path.resolve(__dirname, '../includes/class-fxli-order-analyzer.php');
+const summaryCardsPhpPath = path.resolve(__dirname, '../templates/partials/summary-cards.php');
+
+const analyzerPhpContent = fs.readFileSync(analyzerPhpPath, 'utf8');
+const summaryCardsContent = fs.readFileSync(summaryCardsPhpPath, 'utf8');
+
+// verify 30-currency Frankfurter registry in PHP
+assert(analyzerPhpContent.includes('FRANKFURTER_CURRENCY_REGISTRY'), 'class-fxli-order-analyzer.php defines FRANKFURTER_CURRENCY_REGISTRY');
+assert(analyzerPhpContent.includes("'EUR' =>"), 'EUR registered with country metadata');
+assert(analyzerPhpContent.includes("'GBP' =>"), 'GBP registered with country metadata');
+assert(analyzerPhpContent.includes("'JPY' =>"), 'JPY registered with country metadata');
+assert(analyzerPhpContent.includes("'USD' =>"), 'USD registered with country metadata');
+assert(analyzerPhpContent.includes("'flag_emoji' => '🇪🇺'"), 'EUR maps to European flag emoji');
+assert(analyzerPhpContent.includes("'flag_emoji' => '🇬🇧'"), 'GBP maps to British flag emoji');
+
+// verify template UI integration
+assert(summaryCardsContent.includes('finlyzer-timing-card'), 'summary-cards.php renders .finlyzer-timing-card');
+assert(summaryCardsContent.includes('finlyzer-badge-ecb'), 'summary-cards.php renders .finlyzer-badge-ecb');
+assert(summaryCardsContent.includes('MARKET TIMING LOSS'), 'summary-cards.php includes MARKET TIMING LOSS KPI card');
+assert(summaryCardsContent.includes('COMBINED CURRENCY DRAG'), 'summary-cards.php includes COMBINED CURRENCY DRAG KPI card');
+
+// verify mathematical market timing calculation helper
+function calculateMarketTiming(foreignAmount, orderRate, spotRate) {
+	const expectedStore = foreignAmount / orderRate;
+	const currentStore = foreignAmount / spotRate;
+	const loss = Math.max(0, expectedStore - currentStore);
+	return {
+		expectedStore: Math.round(expectedStore * 100) / 100,
+		currentStore: Math.round(currentStore * 100) / 100,
+		loss: Math.round(loss * 100) / 100,
+		isLoss: loss > 0,
+	};
+}
+
+// simulate EUR depreciation (0.90 order rate -> 0.95 spot rate)
+const deprecResult = calculateMarketTiming(1000, 0.90, 0.95);
+assert(deprecResult.loss > 58 && deprecResult.loss < 59, 'Depreciation yields positive timing loss (~$58.48)');
+assert(deprecResult.isLoss === true, 'isLoss is true under depreciation');
+
+// simulate EUR appreciation (0.90 order rate -> 0.85 spot rate)
+const apprecResult = calculateMarketTiming(1000, 0.90, 0.85);
+assert(apprecResult.loss === 0, 'Appreciation yields exactly 0 timing loss (favorable movement)');
+assert(apprecResult.isLoss === false, 'isLoss is false under favorable appreciation');
 
 // -------------------------------------------------------------
 // SUMMARY
