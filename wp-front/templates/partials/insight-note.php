@@ -46,14 +46,14 @@ $is_optimal_state = isset($is_optimal)
 				<?php endif; ?>
 			</div>
 			<div>
-				<h4 class="finlyzer-sentinel-title"><?php esc_html_e('Margin Risk Sentinel', 'finlyzer'); ?></h4>
-				<span class="finlyzer-sentinel-subtitle"><?php esc_html_e('Real-time currency & gateway spread advisory', 'finlyzer'); ?></span>
+				<h4 class="finlyzer-sentinel-title"><?php esc_html_e('Margin Sentinel', 'finlyzer'); ?></h4>
+				<span class="finlyzer-sentinel-subtitle"><?php esc_html_e('Automated foreign exchange fee audit', 'finlyzer'); ?></span>
 			</div>
 		</div>
 
 		<div class="finlyzer-sentinel-tag <?php echo $is_optimal_state ? 'finlyzer-sentinel-tag--optimal' : ''; ?>">
 			<span class="finlyzer-sentinel-pulse"></span>
-			<span><?php echo esc_html($is_optimal_state ? __('MARGIN SECURE', 'finlyzer') : __('ACTION RECOMMENDED', 'finlyzer')); ?></span>
+			<span><?php echo esc_html($is_optimal_state ? __('MARGIN SECURE', 'finlyzer') : __('FEES DETECTED', 'finlyzer')); ?></span>
 		</div>
 	</div>
 
@@ -61,25 +61,13 @@ $is_optimal_state = isset($is_optimal)
 	<div class="finlyzer-sentinel-body">
 		<?php if (!empty($error) && empty($insight_text)) : ?>
 			<p class="finlyzer-sentinel-text finlyzer-sentinel-text--muted">
-				<?php esc_html_e('Advisory service temporarily unavailable — order analytics above remain verified.', 'finlyzer'); ?>
+				<?php esc_html_e('Audit summary temporarily unavailable — order analytics above remain verified.', 'finlyzer'); ?>
 			</p>
 		<?php else : ?>
 			<p class="finlyzer-sentinel-text">
 				<?php echo esc_html($insight_text); ?>
 			</p>
 		<?php endif; ?>
-	</div>
-
-	<!-- Strategic Recommendation Banner -->
-	<div class="finlyzer-sentinel-action">
-		<span class="finlyzer-action-label"><?php esc_html_e('Recommendation:', 'finlyzer'); ?></span>
-		<span class="finlyzer-action-text">
-			<?php if ($is_optimal_state) : ?>
-				<?php esc_html_e('Maintain base currency pricing or introduce multi-currency checkout to expand internationally while protecting margins.', 'finlyzer'); ?>
-			<?php else : ?>
-				<?php esc_html_e('Configure local currency settlement or enable multi-currency pricing to eliminate processor exchange fees.', 'finlyzer'); ?>
-			<?php endif; ?>
-		</span>
 	</div>
 
 </div>

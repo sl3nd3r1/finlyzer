@@ -60,7 +60,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.9.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.10.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -141,7 +141,7 @@ final class FXLI_Gemini_Client {
 		if ($total_loss <= 0.0 || $orders === 0) {
 			return sprintf(
 				/* translators: %d: period in days */
-				__('All transactions in the last %d days settled in your base currency. No processor spread markup or currency timing drag detected.', 'finlyzer'),
+				__('All transactions in the last %d days settled in your base currency. No processor conversion fees or exchange rate shifts detected.', 'finlyzer'),
 				$days
 			);
 		}
@@ -151,11 +151,11 @@ final class FXLI_Gemini_Client {
 		$formatted_run_rate = function_exists('wc_price') ? wp_strip_all_tags(wc_price($run_rate, ['currency' => $currency])) : sprintf('%.2f %s', $run_rate, $currency);
 		$formatted_avg = function_exists('wc_price') ? wp_strip_all_tags(wc_price($avg_per_order, ['currency' => $currency])) : sprintf('%.2f %s', $avg_per_order, $currency);
 
-		$top_curr_note = $top_curr !== '' ? sprintf(' %s settlements drove the highest conversion drag.', $top_curr) : '';
+		$top_curr_note = $top_curr !== '' ? sprintf(' %s settlements drove the highest fee impact.', $top_curr) : '';
 
 		return sprintf(
 			/* translators: 1: total loss, 2: order count, 3: days, 4: avg loss per order, 5: top currency note, 6: annual run-rate */
-			__('Cross-border transactions incurred an estimated %1$s in processor spread markup across %2$d orders (~%4$s avg).%5$s Projected 12-month margin impact is approximately %6$s.', 'finlyzer'),
+			__('Cross-border transactions incurred an estimated %1$s in processor conversion fees across %2$d orders (~%4$s avg).%5$s Projected 12-month margin impact is approximately %6$s.', 'finlyzer'),
 			$formatted_loss,
 			$orders,
 			$days,

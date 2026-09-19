@@ -18,11 +18,11 @@ $rest_nonce = wp_create_nonce('wp_rest');
 		<div class="finlyzer-header__brand">
 			<div class="finlyzer-badge">
 				<span class="finlyzer-badge__dot"></span>
-				<span class="finlyzer-badge__text"><?php esc_html_e('FX SENTINEL ACTIVE', 'finlyzer'); ?></span>
+				<span class="finlyzer-badge__text"><?php esc_html_e('CURRENCY AUDIT ACTIVE', 'finlyzer'); ?></span>
 			</div>
 			<h1 class="finlyzer-header__title"><?php esc_html_e('Finlyzer', 'finlyzer'); ?></h1>
 			<p class="finlyzer-header__sub">
-				<?php esc_html_e('Real-time FX spread audit and currency margin protection for WooCommerce.', 'finlyzer'); ?>
+				<?php esc_html_e('Track hidden payment gateway conversion fees and currency loss across your international sales.', 'finlyzer'); ?>
 			</p>
 		</div>
 

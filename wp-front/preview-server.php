@@ -249,7 +249,7 @@ if ($uri === '/wp-json/finlyzer/v1/summary') {
 				'spread_rate_pct' => 3.8,
 				'fx_status'       => 'High Spread',
 				'badge_color'     => '#0284C7',
-				'fee_description' => 'Cross-border foreign exchange markup (~3.5% - 4.0% spread drag)',
+				'fee_description' => 'Standard international conversion fee (~3.5% - 4.0% spread markup)',
 				'orders'          => (int) round(24 * $multiplier),
 				'volume'          => round(28450.00 * $multiplier, 2),
 				'loss'            => round(825.20 * $multiplier, 2),
@@ -263,7 +263,7 @@ if ($uri === '/wp-json/finlyzer/v1/summary') {
 				'spread_rate_pct' => 2.2,
 				'fx_status'       => 'Moderate Spread',
 				'badge_color'     => '#6366F1',
-				'fee_description' => 'Standard cross-border conversion fee (1.0% intl + 1.2% FX markup)',
+				'fee_description' => 'Cross-border card conversion fee (1.0% international + 1.2% FX spread)',
 				'orders'          => (int) round(18 * $multiplier),
 				'volume'          => round(19200.00 * $multiplier, 2),
 				'loss'            => round(442.10 * $multiplier, 2),
@@ -277,7 +277,7 @@ if ($uri === '/wp-json/finlyzer/v1/summary') {
 				'spread_rate_pct' => 2.2,
 				'fx_status'       => 'Moderate Spread',
 				'badge_color'     => '#7C3AED',
-				'fee_description' => 'Multi-currency settlement markup (2.0% FX conversion drag)',
+				'fee_description' => 'Foreign currency conversion fee (2.0% exchange markup)',
 				'orders'          => (int) round(6 * $multiplier),
 				'volume'          => round(6850.00 * $multiplier, 2),
 				'loss'            => round(153.20 * $multiplier, 2),
@@ -413,7 +413,7 @@ if ($uri === '/wp-json/finlyzer/v1/insight') {
 	$days = isset($_GET['days']) ? (int) $_GET['days'] : 30;
 
 	if ($current_mode === 'live') {
-		$insight = "All transactions in the last {$days} days settled in your base currency. No processor spread markup or currency timing drag detected.";
+		$insight = "All transactions in the last {$days} days settled in your base currency. No processor conversion fees or exchange rate shifts detected.";
 		$is_optimal = true;
 	} else {
 		$multiplier = match ($days) {
@@ -424,7 +424,7 @@ if ($uri === '/wp-json/finlyzer/v1/insight') {
 		$totalLossFormatted = '$' . number_format(1420.50 * $multiplier, 2);
 		$runRateFormatted = '$' . number_format((1420.50 * $multiplier / $days) * 365, 2);
 
-		$insight = "Cross-border orders incurred {$totalLossFormatted} in processor exchange spreads over {$days} days, primarily on EUR settlements. Projected 12-month margin impact is approximately {$runRateFormatted}.";
+		$insight = "Cross-border orders incurred {$totalLossFormatted} in payment processor conversion fees over the past {$days} days, primarily on EUR sales. Projected 12-month margin impact is approximately {$runRateFormatted}.";
 		$is_optimal = false;
 	}
 

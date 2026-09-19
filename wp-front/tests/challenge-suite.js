@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.9.0', `FINLYZER_VERSION is bumped to 1.9.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.10.0', `FINLYZER_VERSION is bumped to 1.10.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -388,8 +388,8 @@ assert(analyzerPhpContent.includes("'flag_emoji' => '🇬🇧'"), 'GBP maps to B
 // verify template UI integration
 assert(summaryCardsContent.includes('finlyzer-timing-card'), 'summary-cards.php renders .finlyzer-timing-card');
 assert(summaryCardsContent.includes('finlyzer-badge-ecb'), 'summary-cards.php renders .finlyzer-badge-ecb');
-assert(summaryCardsContent.includes('MARKET TIMING LOSS'), 'summary-cards.php includes MARKET TIMING LOSS KPI card');
-assert(summaryCardsContent.includes('COMBINED CURRENCY DRAG'), 'summary-cards.php includes COMBINED CURRENCY DRAG KPI card');
+assert(summaryCardsContent.includes('EXCHANGE RATE SHIFT') || summaryCardsContent.includes('MARKET TIMING LOSS'), 'summary-cards.php includes exchange rate shift KPI card');
+assert(summaryCardsContent.includes('TOTAL ESTIMATED LOSS') || summaryCardsContent.includes('COMBINED CURRENCY DRAG'), 'summary-cards.php includes total estimated loss KPI card');
 
 // verify mathematical market timing calculation helper
 function calculateMarketTiming(foreignAmount, orderRate, spotRate) {
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.9.0'), 'readme.txt Stable tag matches v1.9.0');
+assert(readmeContent.includes('Stable tag: 1.10.0'), 'readme.txt Stable tag matches v1.10.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -661,16 +661,20 @@ assert(
 	'dashboard.php declares official footer: © 2026 Finlyzer. All rights reserved.'
 );
 
-// 13.3 Humanized & Realistic Copy Verification
-assert(dashboardPhpContent.includes('Real-time FX spread audit and currency margin protection'), 'dashboard.php uses humanized fintech subtitle');
-assert(latestSummaryCardsContent.includes('LIVE STORE AUDIT'), 'summary-cards.php uses executive LIVE STORE AUDIT phrasing');
-assert(latestSummaryCardsContent.includes('Projected 12-month margin impact'), 'summary-cards.php uses humanized run-rate description');
-assert(latestSummaryCardsContent.includes('Average conversion spread per order'), 'summary-cards.php uses humanized average order description');
-assert(latestSummaryCardsContent.includes('Settlement delay & rate shift'), 'summary-cards.php uses humanized market timing description');
-assert(insightNoteContent.includes('Margin Risk Sentinel'), 'insight-note.php declares Margin Risk Sentinel title');
+// 13.3 Humanized & Realistic Copy Verification across all sections
+assert(dashboardPhpContent.includes('Track hidden payment gateway conversion fees and currency loss'), 'dashboard.php uses humanized merchant subtitle');
+assert(latestSummaryCardsContent.includes('LIVE DATA'), 'summary-cards.php uses merchant-friendly LIVE DATA phrasing');
+assert(latestSummaryCardsContent.includes('Projected 12-month impact if volume holds'), 'summary-cards.php uses humanized annual impact description');
+assert(latestSummaryCardsContent.includes('Average gateway conversion fee per order'), 'summary-cards.php uses humanized average order description');
+assert(latestSummaryCardsContent.includes('Gain or loss from rate changes before settlement'), 'summary-cards.php uses humanized exchange rate shift description');
+assert(latestSummaryCardsContent.includes('Loss by Currency'), 'summary-cards.php uses clean Loss by Currency section header');
+assert(latestSummaryCardsContent.includes('Payment Processors'), 'summary-cards.php uses clear Payment Processors title');
+assert(latestSummaryCardsContent.includes('Top Products with Currency Fees'), 'summary-cards.php uses clear Top Products with Currency Fees title');
+assert(insightNoteContent.includes('Margin Sentinel'), 'insight-note.php declares Margin Sentinel title');
 assert(insightNoteContent.includes('MARGIN SECURE'), 'insight-note.php supports MARGIN SECURE optimal state badge');
-assert(insightNoteContent.includes('ACTION RECOMMENDED'), 'insight-note.php supports ACTION RECOMMENDED advisory badge');
-assert(insightNoteContent.includes('Recommendation:'), 'insight-note.php declares clean Recommendation: label');
+assert(insightNoteContent.includes('FEES DETECTED'), 'insight-note.php supports FEES DETECTED status badge');
+assert(!insightNoteContent.includes('finlyzer-sentinel-action'), 'insight-note.php strictly excludes solution recommendation banner in Phase 1');
+assert(!insightNoteContent.includes('Recommendation:'), 'insight-note.php strictly excludes Recommendation label in Phase 1');
 
 // -------------------------------------------------------------
 // SUMMARY
