@@ -77,6 +77,31 @@ final class FXLI_REST_API {
 		return FXLI_Security::verify_rest_nonce($request);
 	}
 
+	// serve clean HTML fragment directly to htmx, bypassing WordPress JSON serialization
+	private function serve_html(string $html): WP_REST_Response {
+		add_filter(
+			'rest_pre_serve_request',
+			static function (bool $served, WP_REST_Response $result, WP_REST_Request $request, WP_REST_Server $server) use ($html): bool {
+				// send text/html headers explicitly through WordPress server
+				$server->send_header('Content-Type', 'text/html; charset=utf-8');
+				$server->send_header('Cache-Control', 'no-cache, private');
+
+				// echo raw un-encoded HTML directly to output stream
+				echo $html;
+
+				// return true to signal WordPress core that response is fully served
+				return true;
+			},
+			10,
+			4
+		);
+
+		return new WP_REST_Response($html, 200, [
+			'Content-Type'  => 'text/html; charset=utf-8',
+			'Cache-Control' => 'no-cache, private',
+		]);
+	}
+
 	// handle summary request and render escaped summary cards fragment
 	public function handle_summary(WP_REST_Request $request): WP_REST_Response {
 		$days = (int) $request->get_param('days');
@@ -85,12 +110,9 @@ final class FXLI_REST_API {
 		// capture template output buffer
 		ob_start();
 		include FINLYZER_PLUGIN_DIR . 'templates/partials/summary-cards.php';
-		$html = ob_get_clean();
+		$html = (string) ob_get_clean();
 
-		return new WP_REST_Response($html, 200, [
-			'Content-Type'  => 'text/html; charset=utf-8',
-			'Cache-Control' => 'no-cache, private',
-		]);
+		return $this->serve_html($html);
 	}
 
 	// handle insight request and render escaped AI risk sentinel fragment
@@ -104,11 +126,8 @@ final class FXLI_REST_API {
 		// capture template output buffer
 		ob_start();
 		include FINLYZER_PLUGIN_DIR . 'templates/partials/insight-note.php';
-		$html = ob_get_clean();
+		$html = (string) ob_get_clean();
 
-		return new WP_REST_Response($html, 200, [
-			'Content-Type'  => 'text/html; charset=utf-8',
-			'Cache-Control' => 'no-cache, private',
-		]);
+		return $this->serve_html($html);
 	}
 }

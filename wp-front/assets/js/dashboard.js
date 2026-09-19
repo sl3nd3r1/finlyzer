@@ -9,6 +9,32 @@
 (function () {
 	'use strict';
 
+	// dynamically inject WordPress REST nonce into all htmx requests
+	document.addEventListener('htmx:configRequest', function (evt) {
+		var config = window.Finlyzer || window.FXLI;
+		if (config && config.nonce && evt.detail && evt.detail.headers) {
+			evt.detail.headers['X-WP-Nonce'] = config.nonce;
+		}
+	});
+
+	// defense-in-depth: unwrap JSON string literal if WordPress REST API ever serializes HTML
+	document.addEventListener('htmx:beforeSwap', function (evt) {
+		var response = evt.detail && evt.detail.serverResponse;
+		if (typeof response === 'string') {
+			var trimmed = response.trim();
+			if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+				try {
+					var parsed = JSON.parse(trimmed);
+					if (typeof parsed === 'string') {
+						evt.detail.serverResponse = parsed;
+					}
+				} catch (e) {
+					// response was not JSON encoded string; leave as is
+				}
+			}
+		}
+	});
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var app = document.getElementById('finlyzer-app') || document.getElementById('fxli-app');
 		var config = window.Finlyzer || window.FXLI;
@@ -16,13 +42,6 @@
 		if (!app || !config || !config.restUrl || !config.nonce) {
 			return;
 		}
-
-		// dynamically inject WordPress REST nonce into all htmx requests
-		document.body.addEventListener('htmx:configRequest', function (evt) {
-			if (evt.detail && evt.detail.headers) {
-				evt.detail.headers['X-WP-Nonce'] = config.nonce;
-			}
-		});
 
 		var buttons = app.querySelectorAll('.finlyzer-range-btn, .fxli-range-btn');
 		var summary = document.getElementById('finlyzer-summary') || document.getElementById('fxli-summary');

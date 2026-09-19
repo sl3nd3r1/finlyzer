@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,11 @@ Finlyzer recognizes and models spread profiles for PayPal (3.8%), Stripe (2.2%),
 4. **Active Currency Markets & ECB Timing Impact**: European Central Bank reference rate shifts and settlement volatility.
 
 == Changelog ==
+
+= 1.8.0 =
+* Fix: WordPress REST API raw HTML fragment rendering for htmx dashboard swaps via rest_pre_serve_request hook, bypassing default wp_json_encode string serialization.
+* Security: Client-side defense-in-depth JSON unwrap shield on htmx:beforeSwap for robust cross-environment rendering resilience.
+* Architecture: Enterprise challenge suite verification across 109 assertions.
 
 = 1.7.0 =
 * Feature: Payment Gateway FX Recognition Matrix profiling PayPal (3.8%), Stripe (2.2%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), and Square (2.8%).

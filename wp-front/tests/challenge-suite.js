@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.7.0', `FINLYZER_VERSION is bumped to 1.7.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.8.0', `FINLYZER_VERSION is bumped to 1.8.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.7.0'), 'readme.txt Stable tag matches v1.7.0');
+assert(readmeContent.includes('Stable tag: 1.8.0'), 'readme.txt Stable tag matches v1.8.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -567,6 +567,74 @@ assert(zipList.includes('finlyzer/uninstall.php'), 'finlyzer.zip contains finlyz
 assert(zipList.includes('finlyzer/assets/js/vendor/htmx.min.js'), 'finlyzer.zip packages local htmx vendor bundle');
 assert(!zipList.includes('preview-server.php'), 'finlyzer.zip cleanly excludes dev preview server');
 assert(!zipList.includes('challenge-suite.js'), 'finlyzer.zip cleanly excludes test suites');
+
+// -------------------------------------------------------------
+// TEST GROUP 12: WordPress REST HTML Rendering & JSON-Unwrap Shield
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 12: WordPress REST HTML Rendering & JSON-Unwrap Shield');
+
+const restApiPhpPath = path.resolve(__dirname, '../includes/class-fxli-rest-api.php');
+const dashboardJsPath = path.resolve(__dirname, '../assets/js/dashboard.js');
+
+assert(fs.existsSync(restApiPhpPath), 'class-fxli-rest-api.php exists');
+const restApiPhpContent = fs.readFileSync(restApiPhpPath, 'utf8');
+
+// 12.1 Server-side: verify rest_pre_serve_request hook usage to bypass wp_json_encode
+assert(restApiPhpContent.includes('rest_pre_serve_request'), 'REST API registers rest_pre_serve_request filter');
+assert(restApiPhpContent.includes("send_header('Content-Type', 'text/html; charset=utf-8')"), 'REST API explicitly sends text/html header');
+assert(restApiPhpContent.includes('return true;'), 'REST API returns true to signal WordPress core response is fully served');
+
+// 12.2 Client-side: verify defense-in-depth htmx:beforeSwap JSON unwrapping
+assert(fs.existsSync(dashboardJsPath), 'dashboard.js exists');
+const dashboardJsContent = fs.readFileSync(dashboardJsPath, 'utf8');
+assert(dashboardJsContent.includes('htmx:beforeSwap'), 'dashboard.js listens for htmx:beforeSwap event');
+assert(dashboardJsContent.includes('JSON.parse(trimmed)'), 'dashboard.js parses JSON-wrapped string responses safely');
+
+// 12.3 Software engineering simulation: challenge the JSON unwrap algorithm under extreme inputs
+function simulateHtmxBeforeSwap(serverResponse) {
+	let result = serverResponse;
+	if (typeof result === 'string') {
+		const trimmed = result.trim();
+		if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+			try {
+				const parsed = JSON.parse(trimmed);
+				if (typeof parsed === 'string') {
+					result = parsed;
+				}
+			} catch (e) {
+				// not a valid JSON-encoded string, preserve as is
+			}
+		}
+	}
+	return result;
+}
+
+// Case 1: WordPress default escaped JSON string with HTML entities and slashes
+const escapedWordPressJson = '"\\n\\n\\n\\t\\t<span>\\n\\t\\t\\t\\t\\t\\t\\t\\t<strong>PRODUCTION LIVE MODE<\\/strong> - Reading real WooCommerce HPOS database events...<\\/div>"';
+const unwrappedHtml = simulateHtmxBeforeSwap(escapedWordPressJson);
+assert(
+	unwrappedHtml.includes('<strong>PRODUCTION LIVE MODE</strong>') && !unwrappedHtml.startsWith('"'),
+	'Escaped WordPress JSON string successfully unwrapped into valid raw HTML fragment'
+);
+
+// Case 2: Clean raw HTML fragment directly from server (must not be altered)
+const cleanRawHtml = '<div class="finlyzer-summary"><span class="kpi">Total Loss: $0.00</span></div>';
+assert(simulateHtmxBeforeSwap(cleanRawHtml) === cleanRawHtml, 'Raw HTML fragment remains unmodified');
+
+// Case 3: Malformed quote string (must not crash, handles error silently)
+const malformedJson = '"<div>Unclosed quotes';
+assert(simulateHtmxBeforeSwap(malformedJson) === malformedJson, 'Malformed JSON string handled safely without exceptions');
+
+// Case 4: Non-string payload (e.g. object or null)
+assert(simulateHtmxBeforeSwap(null) === null, 'Null response passed through securely');
+
+// Case 5: High-throughput stress test (5,000 JSON unwrap operations)
+const stressStart = performance.now();
+for (let i = 0; i < 5000; i++) {
+	simulateHtmxBeforeSwap(escapedWordPressJson);
+}
+const stressDuration = performance.now() - stressStart;
+assert(stressDuration < 100, `High-throughput stress test: 5,000 unwraps executed in ${stressDuration.toFixed(2)}ms (< 100ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

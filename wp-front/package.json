@@ -1,7 +1,7 @@
 {
   "name": "finlyzer-woocommerce",
-  "version": "1.7.0",
-  "description": "Finlyzer — FX Loss & Margin Insights for WooCommerce Plugin",
+  "version": "1.8.0",
+  "description": "Enterprise Finlyzer FX Margin Sentinel for WooCommerce HPOS Plugin",
   "scripts": {
     "build": "node build-package.js",
     "package": "node build-package.js",
