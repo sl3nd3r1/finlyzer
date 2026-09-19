@@ -288,6 +288,9 @@ final class FXLI_Order_Generator {
 			// save order to database
 			$order_id = $order->save();
 			if ($order_id > 0) {
+				// immediately register order into Finlyzer event tables for instant dashboard visibility
+				FXLI_Order_Analyzer::instance()->cache_order_estimate($order, get_woocommerce_currency());
+
 				$created_orders[] = [
 					'id'             => $order_id,
 					'currency'       => $curr,

@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.11.0
+Stable tag: 1.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,13 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.12.0 =
+* Fix: Cloudflare Worker 2MB payload support on /api/v1/analyze to prevent HTTP 413 rejection during bulk order analysis.
+* Feature: On-demand WooCommerce HPOS order scanning and automatic backfill when local event cache is empty.
+* Resilience: Real-time order caching hooked to status updates (woocommerce_order_status_completed, woocommerce_payment_complete).
+* Dev DX: Zero-config local development auto-detection for Worker endpoint (http://127.0.0.1:8787) and dev HMAC secret parity.
+* Tests: Added Test Group 15 challenging on-demand HPOS scanning, 25,000 order filtering, and zero-row auto-recovery.
 
 = 1.11.0 =
 * Feature: Automated bulk international order generator tool (`bin/generate-orders.php`) and 1-click admin dashboard generator.

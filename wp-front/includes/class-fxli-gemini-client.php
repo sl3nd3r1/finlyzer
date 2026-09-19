@@ -23,9 +23,26 @@ final class FXLI_Gemini_Client {
 
 	private function __construct() {}
 
-	// resolve Cloudflare Worker endpoint URL
+	// resolve Cloudflare Worker endpoint URL with local environment auto-fallback
 	private function worker_endpoint(): string {
-		$endpoint = defined('FINLYZER_WORKER_ENDPOINT') ? FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? FXLI_WORKER_ENDPOINT : '');
+		// check modern constant override
+		$endpoint = defined('FINLYZER_WORKER_ENDPOINT') ? (string) FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? (string) FXLI_WORKER_ENDPOINT : '');
+
+		// check database option if constant is omitted
+		if ($endpoint === '' && function_exists('get_option')) {
+			$endpoint = (string) get_option('finlyzer_worker_endpoint', '');
+		}
+
+		// auto-detect local development environment (e.g. XAMPP on localhost or 127.0.0.1)
+		if ($endpoint === '') {
+			$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
+				|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
+			if ($is_local) {
+				$endpoint = 'http://127.0.0.1:8787/insight';
+			}
+		}
+
+		// apply filters allowing runtime modification by shop engineers
 		return apply_filters('finlyzer_worker_endpoint', apply_filters('fxli_worker_endpoint', $endpoint));
 	}
 
@@ -60,7 +77,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.11.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.12.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -165,18 +182,34 @@ final class FXLI_Gemini_Client {
 		);
 	}
 
-	// resolve Cloudflare Worker order analysis endpoint URL
+	// resolve Cloudflare Worker order analysis endpoint URL with local environment auto-fallback
 	public static function analyze_endpoint(): string {
-		if (defined('FINLYZER_WORKER_ANALYZE_ENDPOINT')) {
-			return (string) FINLYZER_WORKER_ANALYZE_ENDPOINT;
+		// check direct analyze endpoint constant override
+		if (defined('FINLYZER_WORKER_ANALYZE_ENDPOINT') && is_string(FINLYZER_WORKER_ANALYZE_ENDPOINT) && FINLYZER_WORKER_ANALYZE_ENDPOINT !== '') {
+			return apply_filters('finlyzer_worker_analyze_endpoint', (string) FINLYZER_WORKER_ANALYZE_ENDPOINT);
 		}
 
-		$base = defined('FINLYZER_WORKER_ENDPOINT') ? FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? FXLI_WORKER_ENDPOINT : '');
+		// resolve base endpoint from constants or options
+		$base = defined('FINLYZER_WORKER_ENDPOINT') ? (string) FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? (string) FXLI_WORKER_ENDPOINT : '');
+		if ($base === '' && function_exists('get_option')) {
+			$base = (string) get_option('finlyzer_worker_endpoint', '');
+		}
+
+		// auto-detect local development environment for serverless backend
 		if ($base === '') {
-			return '';
+			$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
+				|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
+			if ($is_local) {
+				$base = 'http://127.0.0.1:8787';
+			}
 		}
 
-		// strip /api/v1/insight or /insight or trailing slashes to obtain base worker URL
+		// return filtered empty string if still unconfigured in non-local environments
+		if ($base === '') {
+			return apply_filters('finlyzer_worker_analyze_endpoint', '');
+		}
+
+		// normalize base url by stripping trailing slashes or insight subpaths
 		$clean_base = preg_replace('#(/api/v1)?/insight/?$#', '', rtrim($base, '/'));
 		$endpoint = $clean_base . '/api/v1/analyze';
 
@@ -193,7 +226,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.11.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.12.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {

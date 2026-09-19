@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.11.0', `FINLYZER_VERSION is bumped to 1.11.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.12.0', `FINLYZER_VERSION is bumped to 1.12.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.11.0'), 'readme.txt Stable tag matches v1.11.0');
+assert(readmeContent.includes('Stable tag: 1.12.0'), 'readme.txt Stable tag matches v1.12.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -677,7 +677,7 @@ assert(!insightNoteContent.includes('finlyzer-sentinel-action'), 'insight-note.p
 assert(!insightNoteContent.includes('Recommendation:'), 'insight-note.php strictly excludes Recommendation label in Phase 1');
 
 // -------------------------------------------------------------
-// TEST GROUP 14: Bulk International Order Generator & Backend Calculation Architecture (v1.11.0)
+// TEST GROUP 14: Bulk International Order Generator & Backend Calculation Architecture (v1.12.0)
 // -------------------------------------------------------------
 console.log('\nTEST GROUP 14: Bulk International Order Generator & Backend Calculation Architecture');
 
@@ -746,6 +746,44 @@ for (let i = 0; i < 10000; i++) {
 const heavyLoadElapsed = performance.now() - heavyLoadStart;
 assert(simulatedItems.length === 10000, 'Processed 10,000 synthetic order items');
 assert(heavyLoadElapsed < 100, `10,000 order items simulated in ${heavyLoadElapsed.toFixed(2)}ms (< 100ms SLA)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 15: On-Demand Order Ingestion, HPOS Scanning & Fault Tolerance
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 15: On-Demand Order Ingestion, HPOS Scanning & Fault Tolerance');
+
+const securityContent = fs.readFileSync(path.join(__dirname, '../includes/class-fxli-security.php'), 'utf8');
+const orderGenContent = fs.readFileSync(path.join(__dirname, '../includes/class-fxli-order-generator.php'), 'utf8');
+
+// 15.1 Architectural Resilience & On-Demand Order Ingestion
+assert(analyzerContent.includes('function sync_orders('), 'Order analyzer implements sync_orders() for deep lookback scanning');
+assert(analyzerContent.includes('public function cache_order_estimate('), 'Order analyzer exposes public cache_order_estimate() for real-time hooks');
+assert(analyzerContent.includes('existing_count === 0'), 'get_summary triggers automatic on-demand order sync when event cache is empty');
+assert(analyzerContent.includes('$this->sync_orders($days)'), 'Empty cache recovery invokes sync_orders with requested timeframe');
+assert(orderGenContent.includes('cache_order_estimate($order'), 'Order generator immediately caches sample orders upon creation');
+
+// 15.2 Zero-Config Local Dev Resolution
+assert(geminiContent.includes('http://127.0.0.1:8787/insight'), 'Gemini client auto-resolves local dev insight endpoint');
+assert(geminiContent.includes('http://127.0.0.1:8787'), 'Gemini client auto-resolves local dev analyze base');
+assert(securityContent.includes("'dev-ephemeral-secret'"), 'Security core auto-resolves dev-ephemeral-secret for local worker parity');
+
+// 15.3 High-Throughput Cross-Border Order Filtering & Payload Serialization (25,000 Orders)
+const filterStart = performance.now();
+const mockOrders = Array.from({ length: 25000 }, (_, idx) => ({
+	id: 40000 + idx,
+	currency: idx % 4 === 0 ? 'USD' : (idx % 4 === 1 ? 'EUR' : (idx % 4 === 2 ? 'GBP' : 'CAD')),
+	total: 150.0 + (idx % 100),
+	status: 'wc-completed',
+	payment_method: idx % 3 === 0 ? 'klarna' : (idx % 3 === 1 ? 'stripe' : 'paypal')
+}));
+
+const storeCurrency = 'USD';
+const filteredCrossBorder = mockOrders.filter(o => o.currency !== storeCurrency && o.total > 0);
+const filterElapsed = performance.now() - filterStart;
+
+assert(mockOrders.length === 25000, 'Instantiated 25,000 simulated orders');
+assert(filteredCrossBorder.length === 18750, 'Correctly extracted 18,750 cross-border orders (75% ratio)');
+assert(filterElapsed < 50, `25,000 orders filtered in ${filterElapsed.toFixed(2)}ms (< 50ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

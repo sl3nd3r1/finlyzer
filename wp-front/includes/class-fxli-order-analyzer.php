@@ -31,8 +31,16 @@ final class FXLI_Order_Analyzer {
 		add_action('woocommerce_order_status_processing', [$this, 'on_order_status_changed'], 10, 1);
 	}
 
-	// invalidate cache when an order completes or updates
+	// update and cache order metrics in real-time when an order completes or updates
 	public function on_order_status_changed(int $order_id = 0): void {
+		// load order instance and cache spread loss calculation immediately
+		if ($order_id > 0 && function_exists('wc_get_order')) {
+			$order = wc_get_order($order_id);
+			if ($order instanceof WC_Order) {
+				$this->cache_order_estimate($order, get_woocommerce_currency());
+			}
+		}
+
 		$this->clear_summary_transients();
 	}
 
@@ -61,7 +69,7 @@ final class FXLI_Order_Analyzer {
 	}
 
 	// check if events table has zero records
-	private function is_database_empty(): bool {
+	public function is_database_empty(): bool {
 		global $wpdb;
 		$table = $wpdb->prefix . 'fxli_fx_events';
 		// if table doesn't exist yet or has no records
@@ -69,31 +77,56 @@ final class FXLI_Order_Analyzer {
 		return (int) ($count ?? 0) === 0;
 	}
 
-	// scan paid orders within the lookback window in memory-safe batches
+	// scan recent store orders (invoked via WP-Cron daily trigger)
 	public function scan_recent_orders(): void {
+		$this->sync_orders(30);
+	}
+
+	// scan and synchronize store orders within lookback window into local events tables
+	public function sync_orders(int $days = 30): int {
+		if (!function_exists('wc_get_orders')) {
+			return 0;
+		}
+
+		$days = max(7, min(90, $days));
 		$store_currency = get_woocommerce_currency();
-		$since = (new DateTimeImmutable('-2 days'))->format('Y-m-d\TH:i:s');
+		$since = (new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
+		$statuses = apply_filters('finlyzer_scanned_order_statuses', ['processing', 'completed', 'wc-processing', 'wc-completed']);
 
 		$page = 1;
 		$batch_size = 100;
-		$max_pages = 25; // hard boundary: max 2,500 orders per run to protect PHP memory
+		$max_pages = 25; // hard boundary: max 2,500 orders per scan to protect PHP memory
+		$total_synced = 0;
 
 		do {
 			// query orders through WooCommerce HPOS-safe repository
 			$orders = wc_get_orders([
-				'status'    => apply_filters('finlyzer_scanned_order_statuses', ['wc-processing', 'wc-completed']),
-				'date_paid' => '>' . strtotime($since),
-				'limit'     => $batch_size,
-				'page'      => $page,
-				'orderby'   => 'date',
-				'order'     => 'DESC',
-				'return'    => 'objects',
+				'status'       => $statuses,
+				'date_created' => '>=' . $since,
+				'limit'        => $batch_size,
+				'page'         => $page,
+				'orderby'      => 'date',
+				'order'        => 'DESC',
+				'return'       => 'objects',
 			]);
+
+			if (empty($orders) && $page === 1) {
+				// fallback query without date filter in case dates are formatted differently
+				$orders = wc_get_orders([
+					'status'  => $statuses,
+					'limit'   => $batch_size,
+					'page'    => $page,
+					'orderby' => 'date',
+					'order'   => 'DESC',
+					'return'  => 'objects',
+				]);
+			}
 
 			// process each order in the current batch
 			foreach ($orders as $order) {
 				if ($order instanceof WC_Order) {
 					$this->cache_order_estimate($order, $store_currency);
+					$total_synced++;
 				}
 			}
 
@@ -102,11 +135,12 @@ final class FXLI_Order_Analyzer {
 
 		// invalidate cached summary transients after new events are recorded
 		$this->clear_summary_transients();
+
+		return $total_synced;
 	}
 
-	// calculate and cache individual order FX spread loss
 	// calculate and cache individual order FX spread loss & line item attribution
-	private function cache_order_estimate(WC_Order $order, string $store_currency): void {
+	public function cache_order_estimate(WC_Order $order, string $store_currency): void {
 		global $wpdb;
 
 		// check currency mismatch
@@ -129,7 +163,7 @@ final class FXLI_Order_Analyzer {
 
 		// prepare database table target
 		$events_table = $wpdb->prefix . 'fxli_fx_events';
-		$paid_date = $order->get_date_paid()?->date('Y-m-d H:i:s') ?? current_time('mysql');
+		$paid_date = $order->get_date_paid()?->date('Y-m-d H:i:s') ?? $order->get_date_created()?->date('Y-m-d H:i:s') ?? current_time('mysql');
 
 		// insert or replace event record using integer minor units (cents)
 		$wpdb->replace(
@@ -200,21 +234,27 @@ final class FXLI_Order_Analyzer {
 			return null;
 		}
 
-		$since = (new DateTimeImmutable("-{$days} days"))->format('Y-m-d\TH:i:s');
+		$since = (new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
+		$statuses = apply_filters('finlyzer_scanned_order_statuses', ['processing', 'completed', 'wc-processing', 'wc-completed']);
+
+		// query store orders within reporting timeframe
 		$wc_orders = wc_get_orders([
-			'status'    => apply_filters('finlyzer_scanned_order_statuses', ['wc-processing', 'wc-completed']),
-			'date_paid' => '>' . strtotime($since),
-			'limit'     => 1000,
-			'return'    => 'objects',
+			'status'       => $statuses,
+			'date_created' => '>=' . $since,
+			'limit'        => 1000,
+			'orderby'      => 'date',
+			'order'        => 'DESC',
+			'return'       => 'objects',
 		]);
 
+		// fallback to unconstrained date query if none found with date_created
 		if (empty($wc_orders)) {
-			// check if any completed orders exist in date_created if date_paid was not explicitly recorded
 			$wc_orders = wc_get_orders([
-				'status'       => apply_filters('finlyzer_scanned_order_statuses', ['wc-processing', 'wc-completed']),
-				'date_created' => '>' . strtotime($since),
-				'limit'        => 1000,
-				'return'       => 'objects',
+				'status'  => $statuses,
+				'limit'   => 1000,
+				'orderby' => 'date',
+				'order'   => 'DESC',
+				'return'  => 'objects',
 			]);
 		}
 
@@ -224,7 +264,18 @@ final class FXLI_Order_Analyzer {
 				continue;
 			}
 
-			// extract product line items
+			// filter to cross-border orders only (mismatched currency)
+			$order_currency = (string) $ord->get_currency();
+			if ($order_currency === '' || $order_currency === $store_currency) {
+				continue;
+			}
+
+			$total = (float) $ord->get_total();
+			if ($total <= 0.0) {
+				continue;
+			}
+
+			// extract product line items safely
 			$items_payload = [];
 			foreach ($ord->get_items() as $item) {
 				if ($item instanceof WC_Order_Item_Product) {
@@ -240,8 +291,8 @@ final class FXLI_Order_Analyzer {
 			$orders_payload[] = [
 				'order_id'       => (int) $ord->get_id(),
 				'order_date'     => $ord->get_date_paid()?->date('c') ?? $ord->get_date_created()?->date('c') ?? current_time('c'),
-				'order_currency' => (string) $ord->get_currency(),
-				'order_total'    => (float) $ord->get_total(),
+				'order_currency' => $order_currency,
+				'order_total'    => $total,
 				'payment_method' => (string) ($ord->get_payment_method() ?: 'standard'),
 				'transaction_id' => (string) $ord->get_transaction_id(),
 				'items'          => $items_payload,
@@ -257,6 +308,12 @@ final class FXLI_Order_Analyzer {
 		// invoke serverless backend calculation via secure HMAC proxy
 		$response = FXLI_Gemini_Client::instance()->analyze_orders($payload);
 		if (!is_wp_error($response) && is_array($response) && isset($response['total_loss'])) {
+			// backfill local database events for offline fault tolerance
+			foreach ($wc_orders as $ord) {
+				if ($ord instanceof WC_Order) {
+					$this->cache_order_estimate($ord, $store_currency);
+				}
+			}
 			return $response;
 		}
 
@@ -290,6 +347,17 @@ final class FXLI_Order_Analyzer {
 
 		global $wpdb;
 		$table = $wpdb->prefix . 'fxli_fx_events';
+
+		// if local event cache is empty, trigger an immediate on-demand scan across store orders
+		$existing_count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE order_date >= %s",
+				(new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s')
+			)
+		);
+		if ($existing_count === 0) {
+			$this->sync_orders($days);
+		}
 
 		// execute indexed query grouping by currency
 		$rows = $wpdb->get_results(

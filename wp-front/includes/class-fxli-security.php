@@ -57,6 +57,21 @@ final class FXLI_Security {
 			return FXLI_WORKER_HMAC_SECRET;
 		}
 
+		// check database option
+		if (function_exists('get_option')) {
+			$opt = (string) get_option('finlyzer_worker_hmac_secret', '');
+			if ($opt !== '') {
+				return $opt;
+			}
+		}
+
+		// auto-detect local development environment matching Worker dev secret
+		$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
+			|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
+		if ($is_local) {
+			return 'dev-ephemeral-secret';
+		}
+
 		// fail closed and log configuration issue
 		error_log('[Finlyzer] FINLYZER_WORKER_HMAC_SECRET is not configured in wp-config.php.');
 		return '';
