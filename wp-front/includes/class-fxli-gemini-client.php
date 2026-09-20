@@ -335,7 +335,8 @@ final class FXLI_Gemini_Client {
 
 	// generate a stable, non-PII site hash identifier
 	public static function site_id(): string {
-		$salted = (defined('AUTH_KEY') ? AUTH_KEY : 'finlyzer_salt') . '|' . home_url();
+		$home = function_exists('home_url') ? home_url() : 'http://localhost';
+		$salted = (defined('AUTH_KEY') ? AUTH_KEY : 'finlyzer_salt') . '|' . $home;
 		return hash('sha256', $salted);
 	}
 }

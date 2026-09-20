@@ -30,6 +30,7 @@ if (!defined('FINLYZER_PLUGIN_DIR')) {
 require_once __DIR__ . '/includes/class-fxli-env.php';
 require_once __DIR__ . '/includes/class-fxli-security.php';
 require_once __DIR__ . '/includes/class-fxli-logger.php';
+require_once __DIR__ . '/includes/class-fxli-gemini-client.php';
 
 // -------------------------------------------------------------
 // WordPress & WooCommerce Environment Mock Primitives
@@ -113,6 +114,160 @@ function add_query_arg(string|array $key, mixed $value = false, string $url = ''
 	$base = !empty($parsed['scheme']) ? $parsed['scheme'] . '://' . ($parsed['host'] ?? '') : '';
 	$path = $parsed['path'] ?? '';
 	return $base . $path . '?' . http_build_query($query);
+}
+
+if (!function_exists('wp_json_encode')) {
+	function wp_json_encode(mixed $data, int $options = 0, int $depth = 512): string|false {
+		return json_encode($data, $options, $depth);
+	}
+}
+if (!function_exists('current_time')) {
+	function current_time(string $type, int|bool $gmt = 0): string|int {
+		return $type === 'mysql' ? date('Y-m-d H:i:s') : time();
+	}
+}
+if (!function_exists('wp_generate_uuid4')) {
+	function wp_generate_uuid4(): string {
+		return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+			mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+			mt_rand(0, 0xffff),
+			mt_rand(0, 0x0fff) | 0x4000,
+			mt_rand(0, 0x3fff) | 0x8000,
+			mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+		);
+	}
+}
+if (!function_exists('sanitize_text_field')) {
+	function sanitize_text_field(string $str): string {
+		return strip_tags(trim($str));
+	}
+}
+if (!class_exists('WP_Error')) {
+	class WP_Error {
+		public function __construct(private string $code = '', private string $message = '', private mixed $data = null) {}
+		public function get_error_message(): string { return $this->message; }
+		public function get_error_code(): string { return $this->code; }
+	}
+}
+if (!function_exists('is_wp_error')) {
+	function is_wp_error(mixed $thing): bool {
+		return is_object($thing) && ($thing instanceof WP_Error);
+	}
+}
+if (!function_exists('wp_remote_get')) {
+	function wp_remote_get(string $url, array $args = []): array|WP_Error {
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, $args['timeout'] ?? 5);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $args['sslverify'] ?? false);
+		if (!empty($args['headers'])) {
+			$headers = [];
+			foreach ($args['headers'] as $k => $v) {
+				$headers[] = is_int($k) ? $v : "$k: $v";
+			}
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		}
+		$response = curl_exec($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$err = curl_error($ch);
+		curl_close($ch);
+		if ($err) {
+			return new WP_Error('http_request_failed', $err);
+		}
+		return ['response' => ['code' => $httpCode], 'body' => (string) $response];
+	}
+}
+if (!function_exists('wp_remote_post')) {
+	function wp_remote_post(string $url, array $args = []): array|WP_Error {
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_POST, true);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, $args['timeout'] ?? 5);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $args['sslverify'] ?? false);
+		if (!empty($args['body'])) {
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $args['body']);
+		}
+		if (!empty($args['headers'])) {
+			$headers = [];
+			foreach ($args['headers'] as $k => $v) {
+				$headers[] = is_int($k) ? $v : "$k: $v";
+			}
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		}
+		$response = curl_exec($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$err = curl_error($ch);
+		curl_close($ch);
+		if ($err) {
+			return new WP_Error('http_request_failed', $err);
+		}
+		return ['response' => ['code' => $httpCode], 'body' => (string) $response];
+	}
+}
+if (!function_exists('wp_remote_retrieve_response_code')) {
+	function wp_remote_retrieve_response_code(array|WP_Error $response): int {
+		if (is_wp_error($response) || !isset($response['response']['code'])) {
+			return 0;
+		}
+		return (int) $response['response']['code'];
+	}
+}
+if (!function_exists('wp_remote_retrieve_body')) {
+	function wp_remote_retrieve_body(array|WP_Error $response): string {
+		if (is_wp_error($response) || !isset($response['body'])) {
+			return '';
+		}
+		return (string) $response['body'];
+	}
+}
+
+if (!function_exists('apply_filters')) {
+	function apply_filters(string $hook_name, mixed $value, mixed ...$args): mixed {
+		return $value;
+	}
+}
+if (!function_exists('add_filter')) {
+	function add_filter(string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1): bool {
+		return true;
+	}
+}
+if (!function_exists('do_action')) {
+	function do_action(string $hook_name, mixed ...$args): void {}
+}
+if (!function_exists('add_action')) {
+	function add_action(string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1): bool {
+		return true;
+	}
+}
+if (!function_exists('home_url')) {
+	function home_url(string $path = ''): string {
+		return 'http://127.0.0.1:8088' . ($path ? '/' . ltrim($path, '/') : '');
+	}
+}
+
+if (!function_exists('get_option')) {
+	function get_option(string $option, mixed $default = false): mixed {
+		$file = sys_get_temp_dir() . '/finlyzer_preview_options.json';
+		if (file_exists($file)) {
+			$data = json_decode((string) file_get_contents($file), true);
+			if (is_array($data) && array_key_exists($option, $data)) {
+				return $data[$option];
+			}
+		}
+		return $default;
+	}
+}
+if (!function_exists('update_option')) {
+	function update_option(string $option, mixed $value, mixed $autoload = null): bool {
+		$file = sys_get_temp_dir() . '/finlyzer_preview_options.json';
+		$data = file_exists($file) ? json_decode((string) file_get_contents($file), true) : [];
+		if (!is_array($data)) {
+			$data = [];
+		}
+		$data[$option] = $value;
+		file_put_contents($file, (string) json_encode($data, JSON_PRETTY_PRINT));
+		return true;
+	}
 }
 
 // -------------------------------------------------------------

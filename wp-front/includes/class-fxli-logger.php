@@ -57,13 +57,17 @@ final class FXLI_Logger {
 		// sanitize and redact sensitive context items
 		$clean_context = self::redact_sensitive_data($context);
 
+		$id  = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
+		$ts  = function_exists('current_time') ? current_time('mysql') : gmdate('Y-m-d H:i:s');
+		$msg = function_exists('sanitize_text_field') ? sanitize_text_field($message) : strip_tags($message);
+
 		$entry = [
-			'id'        => wp_generate_uuid4(),
-			'timestamp' => current_time('mysql'),
+			'id'        => $id,
+			'timestamp' => $ts,
 			'epoch_ms'  => (int) round(microtime(true) * 1000),
 			'level'     => strtolower($level),
 			'category'  => strtoupper($category),
-			'message'   => sanitize_text_field($message),
+			'message'   => $msg,
 			'context'   => $clean_context,
 		];
 
@@ -72,7 +76,8 @@ final class FXLI_Logger {
 
 		// write to standard PHP / WordPress error log when debugging or on error
 		if ($is_debug_enabled || in_array($level, [self::LEVEL_WARN, self::LEVEL_ERROR], true)) {
-			$formatted_context = !empty($clean_context) ? ' ' . wp_json_encode($clean_context, JSON_UNESCAPED_SLASHES) : '';
+			$encoded_context   = function_exists('wp_json_encode') ? wp_json_encode($clean_context, JSON_UNESCAPED_SLASHES) : json_encode($clean_context, JSON_UNESCAPED_SLASHES);
+			$formatted_context = !empty($clean_context) ? ' ' . $encoded_context : '';
 			error_log(sprintf('[Finlyzer %s][%s] %s%s', strtoupper($level), strtoupper($category), $message, $formatted_context));
 		}
 
@@ -135,7 +140,7 @@ final class FXLI_Logger {
 	// execute live diagnostic connectivity test against configured Cloudflare Worker endpoints
 	public static function test_connection(): array {
 		$results = [
-			'timestamp'         => current_time('mysql'),
+			'timestamp'         => function_exists('current_time') ? current_time('mysql') : gmdate('Y-m-d H:i:s'),
 			'environment'       => class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'unknown',
 			'worker_endpoint'   => class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '',
 			'analyze_endpoint'  => class_exists('FXLI_Env') ? FXLI_Env::analyze_endpoint() : '',
