@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.9.0');
+	define('FINLYZER_VERSION', '1.13.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
@@ -40,7 +40,7 @@ function esc_url(string $url): string {
 	return htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
 }
 function wp_kses_post(string $text): string {
-	return $text; // safe for trusted wc_price fragments in preview
+	return $text;
 }
 function wp_strip_all_tags(string $string, bool $remove_breaks = false): string {
 	$string = preg_replace('@<(script|style)[^>]*?>.*?</\1>@si', '', $string) ?? '';
@@ -84,13 +84,6 @@ function wc_price(float $price, array $args = []): string {
 		default => $currency . ' ',
 	};
 	return '<span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">' . esc_html($symbol) . '</span>' . number_format($price, 2) . '</bdi></span>';
-}
-
-// session or cookie to remember chosen mode in preview
-$current_mode = $_COOKIE['finlyzer_preview_mode'] ?? 'mock';
-if (isset($_GET['finlyzer_mode'])) {
-	$current_mode = $_GET['finlyzer_mode'] === 'live' ? 'live' : 'mock';
-	setcookie('finlyzer_preview_mode', $current_mode, time() + 86400, '/');
 }
 
 // -------------------------------------------------------------

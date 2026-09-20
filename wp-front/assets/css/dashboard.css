@@ -117,47 +117,35 @@
 }
 
 /* Header & Brand Section */
+/* Header & Brand Section */
 .finlyzer-header {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: space-between;
 	flex-wrap: wrap;
 	gap: 20px;
 	padding-bottom: 24px;
 	border-bottom: 1px solid var(--fl-border-subtle);
-	margin-bottom: 28px;
+	margin-bottom: 24px;
 }
 
-.finlyzer-badge {
-	display: inline-flex;
+.finlyzer-header__brand {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.finlyzer-header__controls {
+	display: flex;
 	align-items: center;
-	gap: 6px;
-	background: rgba(245, 158, 11, 0.10);
-	border: 1px solid rgba(245, 158, 11, 0.25);
-	padding: 3px 8px;
-	border-radius: var(--fl-radius-badge);
-	font-family: var(--fl-font-ui);
-	font-size: 0.72rem;
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	color: var(--fl-warn-primary);
-	margin-bottom: 8px;
-}
-
-.finlyzer-badge__dot {
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	background: var(--fl-warn-primary);
-	box-shadow: 0 0 8px var(--fl-warn-primary);
-	animation: fl-pulse 2s infinite ease-in-out;
+	gap: 12px;
 }
 
 .finlyzer-header__title {
 	font-size: 1.75rem;
 	font-weight: 700;
 	letter-spacing: -0.03em;
-	margin: 0 0 6px 0;
+	margin: 0;
 	color: #FFFFFF;
 }
 
@@ -824,70 +812,119 @@
 	}
 }
 
-/* Environment Mode Bar (Mock vs Live) */
-.finlyzer-mode-bar {
+/* ==========================================================================
+   API Connection Lifecycle & Status System (v1.13.0)
+   ========================================================================== */
+.finlyzer-connection-status {
+	margin-bottom: 24px;
+	border-radius: var(--fl-radius-md);
+	border: 1px solid var(--fl-border-subtle);
+	background: var(--fl-bg-surface);
+	transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+	overflow: hidden;
+}
+
+.finlyzer-connection-status__inner {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 10px 16px;
-	border-radius: var(--fl-radius-md);
-	margin-bottom: 20px;
-	font-size: 0.80rem;
-	border: 1px solid var(--fl-border-subtle);
-	background: var(--fl-bg-surface);
+	padding: 12px 18px;
+	gap: 16px;
 	flex-wrap: wrap;
-	gap: 12px;
 }
 
-.finlyzer-mode-bar--mock {
-	border-color: rgba(245, 158, 11, 0.35);
-	background: linear-gradient(90deg, rgba(245, 158, 11, 0.08), transparent 70%), var(--fl-bg-surface);
-}
-
-.finlyzer-mode-bar--live {
-	border-color: rgba(16, 185, 129, 0.35);
-	background: linear-gradient(90deg, rgba(16, 185, 129, 0.08), transparent 70%), var(--fl-bg-surface);
-}
-
-.finlyzer-mode-bar__status {
+.finlyzer-connection-status__left {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 12px;
+	font-size: 0.88rem;
 	color: var(--fl-text-secondary);
 }
 
-.finlyzer-mode-bar--mock .finlyzer-mode-dot {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
-	background: var(--fl-warn-primary);
-	box-shadow: 0 0 8px var(--fl-warn-primary);
+.finlyzer-connection-status--connecting {
+	border-color: rgba(56, 189, 248, 0.35);
+	background: linear-gradient(90deg, rgba(56, 189, 248, 0.08), transparent 70%), var(--fl-bg-surface);
 }
 
-.finlyzer-mode-bar--live .finlyzer-mode-dot {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
-	background: var(--fl-success-primary);
-	box-shadow: 0 0 8px var(--fl-success-primary);
+.finlyzer-connection-status--connecting .finlyzer-connection-status__text {
+	color: #E2E8F0;
+	font-weight: 500;
 }
 
-.finlyzer-mode-switch-btn {
-	color: #FFFFFF;
-	background: rgba(255, 255, 255, 0.08);
-	border: 1px solid var(--fl-border-medium);
-	padding: 4px 12px;
+.finlyzer-connection-status--connected {
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(-4px);
+}
+
+.finlyzer-connection-status--lost {
+	border-color: rgba(239, 68, 68, 0.45);
+	background: linear-gradient(90deg, rgba(239, 68, 68, 0.12), transparent 70%), var(--fl-bg-surface);
+}
+
+.finlyzer-connection-status--lost .finlyzer-connection-status__text {
+	color: #FCA5A5;
+	font-weight: 500;
+}
+
+.finlyzer-connection-spinner {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 2px solid rgba(56, 189, 248, 0.25);
+	border-top-color: #38BDF8;
+	border-radius: 50%;
+	animation: fl-spin 0.8s linear infinite;
+	flex-shrink: 0;
+}
+
+.finlyzer-connection-icon {
+	font-size: 1rem;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.finlyzer-retry-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	appearance: none;
+	background: rgba(239, 68, 68, 0.16);
+	border: 1px solid rgba(239, 68, 68, 0.45);
+	color: #FEE2E2;
+	padding: 6px 14px;
 	border-radius: var(--fl-radius-sm);
-	font-size: 0.74rem;
+	font-size: 0.80rem;
 	font-weight: 600;
-	text-decoration: none;
-	transition: all 0.2s ease;
+	cursor: pointer;
+	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.finlyzer-mode-switch-btn:hover {
-	background: rgba(255, 255, 255, 0.16);
+.finlyzer-retry-btn:hover {
+	background: rgba(239, 68, 68, 0.28);
+	border-color: #EF4444;
 	color: #FFFFFF;
-	text-decoration: none;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.finlyzer-retry-btn:active {
+	transform: translateY(0);
+}
+
+.finlyzer-retry-btn svg {
+	transition: transform 0.3s ease;
+}
+
+.finlyzer-retry-btn:hover svg {
+	transform: rotate(90deg);
+}
+
+@keyframes fl-spin {
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 /* ==========================================================================

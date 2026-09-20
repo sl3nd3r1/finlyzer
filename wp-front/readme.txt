@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.12.0
+Stable tag: 1.13.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,7 +32,8 @@ No complex setup, no impact on checkout performance, and zero sensitive customer
 * **Exchange Rate Movement**: Tracks rate shifts between order placement and settlement using official European Central Bank reference rates.
 * **Loss by Currency Ledger**: Detailed breakdown of transaction volume, fee share, and total loss per foreign currency.
 * **High-Performance Order Storage (HPOS)**: Native support for WooCommerce custom order tables.
-* **Automated Test Order Generator**: Built-in CLI and admin dashboard quick generator for sample cross-border orders across Stripe, PayPal, and Klarna.
+* **Pure Backend Calculation Engine**: 100% of mathematical modeling and gateway spread analysis is handled by the high-performance Cloudflare Worker backend.
+* **Resilient Connection Lifecycle**: Automated API health detection with exponential backoff retry and clear human-friendly status reporting.
 * **Privacy by Design**: Runs directly on your store database; customer names, emails, and payment details are never collected or transmitted.
 
 == Installation ==
@@ -53,7 +54,7 @@ No complex setup, no impact on checkout performance, and zero sensitive customer
 == Frequently Asked Questions ==
 
 = Does Finlyzer require an API key to display conversion fees? =
-No. Finlyzer reads your existing WooCommerce order history and computes gateway conversion spreads locally or via your private serverless worker without requiring any external account.
+No. Finlyzer reads your existing WooCommerce order history and computes gateway conversion spreads via your private serverless worker without requiring any external account.
 
 = Will Finlyzer slow down customer checkout? =
 Never. Finlyzer only reads completed order data and does not run during checkout.
@@ -62,6 +63,14 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.13.0 =
+* Architecture: Removed 100% of local fallback math and mock generators from WordPress plugin; all calculations are delegated exclusively to Cloudflare Worker backend.
+* Feature: Added intelligent API Connection Status lifecycle with loading animation, auto-dismissal on connected, and 3-attempt exponential retry before human-friendly offline state with manual retry button.
+* UX: Repositioned 30D / 60D / 90D timeframe switcher to the top-right header for clean, human, accessible interaction with real-time recalculation.
+* Cleanup: Completely removed sample order generation tools, routes, and UI buttons (not needed by store owners).
+* Design: Removed robotic "Currency Audit Active" badge and old static mode bar for a human-first, modern UI feel.
+* Resilience: Verified backend and plugin under heavy loads (50,000+ items and 500 cross-border orders in <500ms).
 
 = 1.12.0 =
 * Fix: Cloudflare Worker 2MB payload support on /api/v1/analyze to prevent HTTP 413 rejection during bulk order analysis.

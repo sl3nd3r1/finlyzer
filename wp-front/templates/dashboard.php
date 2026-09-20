@@ -16,28 +16,42 @@ $rest_nonce = wp_create_nonce('wp_rest');
 	<!-- Top Navigation and Header -->
 	<header class="finlyzer-header">
 		<div class="finlyzer-header__brand">
-			<div class="finlyzer-badge">
-				<span class="finlyzer-badge__dot"></span>
-				<span class="finlyzer-badge__text"><?php esc_html_e('CURRENCY AUDIT ACTIVE', 'finlyzer'); ?></span>
-			</div>
 			<h1 class="finlyzer-header__title"><?php esc_html_e('Finlyzer', 'finlyzer'); ?></h1>
 			<p class="finlyzer-header__sub">
 				<?php esc_html_e('Track hidden payment gateway conversion fees and currency loss across your international sales.', 'finlyzer'); ?>
 			</p>
 		</div>
 
-		<!-- Timeframe Selector & Test Generator Controls -->
-		<div class="finlyzer-header__controls" style="display:flex; align-items:center; gap:12px;">
-			<button type="button" id="finlyzer-gen-orders-btn" class="finlyzer-btn finlyzer-btn--ghost" style="font-size:12px; font-weight:600; padding:6px 14px; border-radius:6px; cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:#cbd5e1; transition:all 0.15s ease;" title="<?php esc_attr_e('Generate sample international orders with Stripe, PayPal, and Klarna', 'finlyzer'); ?>">
-				<span>⚡ <?php esc_html_e('Generate Sample Orders', 'finlyzer'); ?></span>
-			</button>
+		<!-- Timeframe Selector Controls -->
+		<div class="finlyzer-header__controls">
 			<div class="finlyzer-range-group" role="group" aria-label="<?php esc_attr_e('Reporting timeframe', 'finlyzer'); ?>">
-				<button type="button" class="finlyzer-range-btn is-active" data-days="30">30D</button>
-				<button type="button" class="finlyzer-range-btn" data-days="60">60D</button>
-				<button type="button" class="finlyzer-range-btn" data-days="90">90D</button>
+				<button type="button" class="finlyzer-range-btn is-active" data-days="30" aria-pressed="true" title="<?php esc_attr_e('View 30-day analytics', 'finlyzer'); ?>">30D</button>
+				<button type="button" class="finlyzer-range-btn" data-days="60" aria-pressed="false" title="<?php esc_attr_e('View 60-day analytics', 'finlyzer'); ?>">60D</button>
+				<button type="button" class="finlyzer-range-btn" data-days="90" aria-pressed="false" title="<?php esc_attr_e('View 90-day analytics', 'finlyzer'); ?>">90D</button>
 			</div>
 		</div>
 	</header>
+
+	<!-- API Connection Status Banner -->
+	<div id="finlyzer-connection-status" class="finlyzer-connection-status finlyzer-connection-status--connecting" role="status" aria-live="polite">
+		<div class="finlyzer-connection-status__inner">
+			<div class="finlyzer-connection-status__left">
+				<span class="finlyzer-connection-spinner" id="finlyzer-connection-spinner" aria-hidden="true"></span>
+				<span class="finlyzer-connection-icon" id="finlyzer-connection-icon" style="display:none;" aria-hidden="true">⚠️</span>
+				<span class="finlyzer-connection-status__text" id="finlyzer-connection-status-text">
+					<?php esc_html_e('Connecting to Finlyzer API...', 'finlyzer'); ?>
+				</span>
+			</div>
+			<div class="finlyzer-connection-status__right">
+				<button type="button" id="finlyzer-retry-btn" class="finlyzer-retry-btn" style="display:none;">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+					</svg>
+					<span><?php esc_html_e('Retry Connection', 'finlyzer'); ?></span>
+				</button>
+			</div>
+		</div>
+	</div>
 
 	<!-- Main Responsive Dashboard Layout (Horizontal on Desktop, Vertical on Mobile) -->
 	<div class="finlyzer-main-layout">

@@ -45,31 +45,6 @@ $severity_labels = [
 $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderate'];
 ?>
 
-<!-- Environment & Data Mode Indicator Bar -->
-<div class="finlyzer-mode-bar <?php echo $is_mock ? 'finlyzer-mode-bar--mock' : 'finlyzer-mode-bar--live'; ?>">
-	<div class="finlyzer-mode-bar__status">
-		<span class="finlyzer-mode-dot"></span>
-		<span class="finlyzer-mode-text">
-			<?php if ($is_mock) : ?>
-				<strong><?php esc_html_e('DEMO DATA', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Viewing sample international store orders', 'finlyzer'); ?>
-			<?php else : ?>
-				<strong><?php esc_html_e('LIVE DATA', 'finlyzer'); ?></strong> &bull; <?php esc_html_e('Monitoring real store orders', 'finlyzer'); ?>
-			<?php endif; ?>
-		</span>
-	</div>
-	<div class="finlyzer-mode-bar__action">
-		<?php if ($is_mock) : ?>
-			<a href="?finlyzer_mode=live" class="finlyzer-mode-switch-btn" title="<?php esc_attr_e('Switch to live store orders', 'finlyzer'); ?>">
-				&larr; <?php esc_html_e('Switch to Live Store Data', 'finlyzer'); ?>
-			</a>
-		<?php else : ?>
-			<a href="?finlyzer_mode=mock" class="finlyzer-mode-switch-btn" title="<?php esc_attr_e('Preview sample international orders', 'finlyzer'); ?>">
-				<?php esc_html_e('Preview Sample Data', 'finlyzer'); ?> &rarr;
-			</a>
-		<?php endif; ?>
-	</div>
-</div>
-
 <!-- Overview Grid -->
 <div class="finlyzer-grid">
 

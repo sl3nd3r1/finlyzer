@@ -62,27 +62,6 @@ final class FXLI_REST_API {
 						],
 					],
 				]);
-
-				// register sample order generation endpoint
-				register_rest_route($ns, '/generate-sample-orders', [
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => [$this, 'handle_generate_orders'],
-					'permission_callback' => [$this, 'permission_check'],
-					'args'                => [
-						'count' => [
-							'required'          => false,
-							'default'           => 25,
-							'type'              => 'integer',
-							'validate_callback' => static fn($v): bool => is_numeric($v) && (int) $v >= 1 && (int) $v <= 100,
-							'sanitize_callback' => static fn($v): int => max(1, min(100, (int) $v)),
-						],
-						'clean' => [
-							'required'          => false,
-							'default'           => false,
-							'type'              => 'boolean',
-						],
-					],
-				]);
 			}
 		});
 	}
@@ -99,11 +78,12 @@ final class FXLI_REST_API {
 	}
 
 	// serve clean HTML fragment directly to htmx, bypassing WordPress JSON serialization
-	private function serve_html(string $html): WP_REST_Response {
+	private function serve_html(string $html, int $status = 200): WP_REST_Response {
 		add_filter(
 			'rest_pre_serve_request',
-			static function (bool $served, WP_REST_Response $result, WP_REST_Request $request, WP_REST_Server $server) use ($html): bool {
+			static function (bool $served, WP_REST_Response $result, WP_REST_Request $request, WP_REST_Server $server) use ($html, $status): bool {
 				// send text/html headers explicitly through WordPress server
+				$server->set_status($status);
 				$server->send_header('Content-Type', 'text/html; charset=utf-8');
 				$server->send_header('Cache-Control', 'no-cache, private');
 
@@ -117,7 +97,7 @@ final class FXLI_REST_API {
 			4
 		);
 
-		return new WP_REST_Response($html, 200, [
+		return new WP_REST_Response($html, $status, [
 			'Content-Type'  => 'text/html; charset=utf-8',
 			'Cache-Control' => 'no-cache, private',
 		]);
@@ -128,20 +108,36 @@ final class FXLI_REST_API {
 		$days = (int) $request->get_param('days');
 		$summary = FXLI_Order_Analyzer::instance()->get_summary($days);
 
+		// return 503 Service Unavailable if backend calculation API is unreachable
+		if (is_wp_error($summary)) {
+			return new WP_REST_Response([
+				'code'    => $summary->get_error_code(),
+				'message' => $summary->get_error_message(),
+			], 503);
+		}
+
 		// capture template output buffer
 		ob_start();
 		include FINLYZER_PLUGIN_DIR . 'templates/partials/summary-cards.php';
 		$html = (string) ob_get_clean();
 
-		return $this->serve_html($html);
+		return $this->serve_html($html, 200);
 	}
 
 	// handle insight request and render escaped AI risk sentinel fragment
 	public function handle_insight(WP_REST_Request $request): WP_REST_Response {
 		$days = (int) $request->get_param('days');
 		$summary = FXLI_Order_Analyzer::instance()->get_summary($days);
-		$insight = FXLI_Gemini_Client::instance()->summarize($summary);
 
+		// return 503 Service Unavailable if backend calculation API is unreachable
+		if (is_wp_error($summary)) {
+			return new WP_REST_Response([
+				'code'    => $summary->get_error_code(),
+				'message' => $summary->get_error_message(),
+			], 503);
+		}
+
+		$insight = FXLI_Gemini_Client::instance()->summarize($summary);
 		$error = is_wp_error($insight) ? $insight->get_error_message() : null;
 
 		// capture template output buffer
@@ -149,22 +145,6 @@ final class FXLI_REST_API {
 		include FINLYZER_PLUGIN_DIR . 'templates/partials/insight-note.php';
 		$html = (string) ob_get_clean();
 
-		return $this->serve_html($html);
-	}
-
-	// handle sample order bulk generation request
-	public function handle_generate_orders(WP_REST_Request $request): WP_REST_Response {
-		$count = max(1, min(100, (int) ($request->get_param('count') ?: 25)));
-		$clean = (bool) $request->get_param('clean');
-
-		// clean previous test orders if requested
-		if ($clean) {
-			FXLI_Order_Generator::clean();
-		}
-
-		// generate sample international orders
-		$result = FXLI_Order_Generator::generate($count);
-
-		return new WP_REST_Response($result, $result['success'] ? 200 : 400);
+		return $this->serve_html($html, 200);
 	}
 }
