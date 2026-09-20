@@ -10,7 +10,8 @@ Translation of the "Hedgehog" Phase 1 wedge from the [Cinkciarz.pl case study](h
 
 | Concern | Production Specification | Architectural Rationale |
 |---|---|---|
-| **Plugin Identity** | **Finlyzer** (v1.6.0) | High-performance, read-only analytics & AI exposure sentinel |
+| **Plugin Identity** | **Finlyzer** (v1.14.0) | High-performance, read-only analytics & AI exposure sentinel |
+| **Build Architecture** | Dual Dev & Prod Profiles | `.env.development` (local/staging API, dev inspector) & `.env.production` (hardened HTTPS, SSRF-immune) |
 | **Frontend UI** | Modern Chic Fintech Ledger | Obsidian/slate palette (`#090D16`), glowing severity badges, proportional multi-currency loss distribution bars, tabular mono figures |
 | **Interactivity** | Vendored `htmx` (v2.0.3) | Zero external CDN requests, no SPA build overhead, full CSP compatibility, no clash with WordPress React/jQuery |
 | **Order Storage** | WooCommerce HPOS Verified | High-Performance Order Storage compatible; no legacy post table dependencies |
@@ -33,10 +34,14 @@ Translation of the "Hedgehog" Phase 1 wedge from the [Cinkciarz.pl case study](h
 
 ```
 frontend/wp-front/
-├── finlyzer.php                      # Bootstrap, HPOS declaration, lifecycle hooks (v1.0.0)
+├── finlyzer.php                      # Bootstrap, HPOS declaration, lifecycle hooks (v1.14.0)
 ├── uninstall.php                     # Complete DB & transient teardown on plugin deletion
+├── build-package.js                  # Multi-environment packager (--env=development | --env=production)
+├── .env.development                  # Developer environment endpoints and inspector controls
+├── .env.production                   # Hardened production endpoints and security constraints
 ├── wp-config-snippet.php             # Production environment constants
 ├── includes/
+│   ├── class-fxli-env.php            # Environment profile loader, SSRF defense, endpoint validator
 │   ├── class-fxli-security.php       # Capability checks, REST nonce verification, HMAC signing, prompt sanitization
 │   ├── class-fxli-installer.php      # Custom table installer with composite covering index (order_date, order_currency)
 │   ├── class-fxli-order-analyzer.php # HPOS-safe order scanner, transient-cached aggregations, run-rate projections
@@ -47,12 +52,13 @@ frontend/wp-front/
 │   ├── dashboard.php                 # Chic shell, live sentinel badge, period selectors
 │   └── partials/
 │       ├── summary-cards.php         # Hero loss figure, severity pills, run-rate cards, distribution bar, ledger
-│       └── insight-note.php          # AI Risk Sentinel alert box with warning icon & strategic remediation
+│       ├── insight-note.php          # AI Risk Sentinel alert box with warning icon & strategic remediation
+│       └── developer-section.php     # Live developer environment & API telemetry inspector (dev builds only)
 ├── assets/
 │   ├── css/dashboard.css             # Obsidian/slate design system, tabular numbers, shimmer skeletons
 │   └── js/dashboard.js               # htmx:configRequest nonce injector, tab switcher (100% CSP compliant)
 └── tests/
-    ├── challenge-suite.js            # Node.js stress testing (25,000 orders), boundary & injection challenge
+    ├── challenge-suite.js            # Node.js stress testing (50,000 orders), boundary, SSRF & env challenge
     └── test-order-analyzer.php       # PHPUnit/WP test compatibility assertions
 ```
 

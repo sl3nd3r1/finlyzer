@@ -87,6 +87,13 @@ $rest_nonce = wp_create_nonce('wp_rest');
 		</div>
 	</div>
 
+	<?php
+	// developer diagnostic section (rendered exclusively in development builds)
+	if (class_exists('FXLI_Env') && FXLI_Env::dev_tools_enabled()) {
+		include FINLYZER_PLUGIN_DIR . 'templates/partials/developer-section.php';
+	}
+	?>
+
 	<!-- Security & Architecture Footer -->
 	<footer class="finlyzer-footer">
 		<div class="finlyzer-footer__left">

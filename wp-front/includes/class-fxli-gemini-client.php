@@ -23,26 +23,31 @@ final class FXLI_Gemini_Client {
 
 	private function __construct() {}
 
-	// resolve Cloudflare Worker endpoint URL with local environment auto-fallback
+	// resolve Cloudflare Worker endpoint URL via FXLI_Env with security validation
 	private function worker_endpoint(): string {
-		// check modern constant override
-		$endpoint = defined('FINLYZER_WORKER_ENDPOINT') ? (string) FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? (string) FXLI_WORKER_ENDPOINT : '');
+		$endpoint = class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '';
 
-		// check database option if constant is omitted
-		if ($endpoint === '' && function_exists('get_option')) {
-			$endpoint = (string) get_option('finlyzer_worker_endpoint', '');
-		}
-
-		// auto-detect local development environment (e.g. XAMPP on localhost or 127.0.0.1)
 		if ($endpoint === '') {
-			$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
-				|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
-			if ($is_local) {
-				$endpoint = 'http://127.0.0.1:8787/insight';
+			$endpoint = defined('FINLYZER_WORKER_ENDPOINT') ? (string) FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? (string) FXLI_WORKER_ENDPOINT : '');
+			// auto-detect local development environment (e.g. XAMPP on localhost or 127.0.0.1)
+			if ($endpoint === '') {
+				$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
+					|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
+				if ($is_local) {
+					$endpoint = 'http://127.0.0.1:8787/insight';
+				}
 			}
 		}
 
-		// apply filters allowing runtime modification by shop engineers
+		// validate URL against SSRF and protocol policies
+		if ($endpoint !== '' && class_exists('FXLI_Env')) {
+			$validation = FXLI_Env::validate_endpoint_url($endpoint);
+			if (is_wp_error($validation)) {
+				error_log('[Finlyzer Security] Blocked insecure worker endpoint: ' . $validation->get_error_message());
+				return '';
+			}
+		}
+
 		return apply_filters('finlyzer_worker_endpoint', apply_filters('fxli_worker_endpoint', $endpoint));
 	}
 
@@ -57,8 +62,12 @@ final class FXLI_Gemini_Client {
 
 		$endpoint = $this->worker_endpoint();
 
-		// if worker is not yet configured, produce an intelligent heuristic risk warning
+		// if worker is unconfigured, handle according to environment policies
 		if ($endpoint === '') {
+			// in production with forced API calculation, fail closed
+			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
+				return new WP_Error('worker_unconfigured', __('Finlyzer AI Risk Sentinel API endpoint is not configured.', 'finlyzer'));
+			}
 			$fallback = $this->generate_heuristic_warning($summary);
 			set_transient($cache_key, $fallback, 6 * HOUR_IN_SECONDS);
 			return $fallback;
@@ -104,10 +113,14 @@ final class FXLI_Gemini_Client {
 			return $this->generate_heuristic_warning($summary);
 		}
 
+		$timeout = class_exists('FXLI_Env') ? FXLI_Env::api_timeout() : 8;
+		$strict_ssl = class_exists('FXLI_Env') ? FXLI_Env::strict_ssl() : true;
+
 		// dispatch server-to-server POST request to the Cloudflare Worker
 		$response = wp_remote_post($endpoint, [
-			'timeout' => 8,
-			'headers' => [
+			'timeout'   => $timeout,
+			'sslverify' => $strict_ssl,
+			'headers'   => [
 				'Content-Type'      => 'application/json',
 				'X-FXLI-Site'       => self::site_id(),
 				'X-FXLI-Site-Url'   => $site_url,
@@ -115,11 +128,15 @@ final class FXLI_Gemini_Client {
 				'X-FXLI-Time'       => (string) $timestamp,
 				'X-FXLI-Sig'        => $signature,
 			],
-			'body'    => $body,
+			'body'      => $body,
 		]);
 
-		// on network or HTTP error, fallback to data-backed heuristic warning
+		// on network or HTTP error, evaluate environment calculation policies
 		if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
+				$status = is_wp_error($response) ? 503 : (int) wp_remote_retrieve_response_code($response);
+				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable (HTTP %d).', 'finlyzer'), $status));
+			}
 			$fallback = $this->generate_heuristic_warning($summary);
 			set_transient($cache_key, $fallback, HOUR_IN_SECONDS);
 			return $fallback;
@@ -182,36 +199,40 @@ final class FXLI_Gemini_Client {
 		);
 	}
 
-	// resolve Cloudflare Worker order analysis endpoint URL with local environment auto-fallback
+	// resolve Cloudflare Worker order analysis endpoint URL via FXLI_Env with security validation
 	public static function analyze_endpoint(): string {
-		// check direct analyze endpoint constant override
-		if (defined('FINLYZER_WORKER_ANALYZE_ENDPOINT') && is_string(FINLYZER_WORKER_ANALYZE_ENDPOINT) && FINLYZER_WORKER_ANALYZE_ENDPOINT !== '') {
-			return apply_filters('finlyzer_worker_analyze_endpoint', (string) FINLYZER_WORKER_ANALYZE_ENDPOINT);
-		}
+		$endpoint = class_exists('FXLI_Env') ? FXLI_Env::analyze_endpoint() : '';
 
-		// resolve base endpoint from constants or options
-		$base = defined('FINLYZER_WORKER_ENDPOINT') ? (string) FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? (string) FXLI_WORKER_ENDPOINT : '');
-		if ($base === '' && function_exists('get_option')) {
-			$base = (string) get_option('finlyzer_worker_endpoint', '');
-		}
-
-		// auto-detect local development environment for serverless backend
-		if ($base === '') {
-			$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
-				|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
-			if ($is_local) {
-				$base = 'http://127.0.0.1:8787';
+		if ($endpoint === '') {
+			if (defined('FINLYZER_WORKER_ANALYZE_ENDPOINT') && is_string(FINLYZER_WORKER_ANALYZE_ENDPOINT) && FINLYZER_WORKER_ANALYZE_ENDPOINT !== '') {
+				$endpoint = (string) FINLYZER_WORKER_ANALYZE_ENDPOINT;
+			} else {
+				$base = defined('FINLYZER_WORKER_ENDPOINT') ? (string) FINLYZER_WORKER_ENDPOINT : (defined('FXLI_WORKER_ENDPOINT') ? (string) FXLI_WORKER_ENDPOINT : '');
+				if ($base === '' && function_exists('get_option')) {
+					$base = (string) get_option('finlyzer_worker_endpoint', '');
+				}
+				if ($base === '') {
+					$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
+						|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
+					if ($is_local) {
+						$base = 'http://127.0.0.1:8787';
+					}
+				}
+				if ($base !== '') {
+					$clean_base = preg_replace('#(/api/v1)?/insight/?$#', '', rtrim($base, '/'));
+					$endpoint = $clean_base . '/api/v1/analyze';
+				}
 			}
 		}
 
-		// return filtered empty string if still unconfigured in non-local environments
-		if ($base === '') {
-			return apply_filters('finlyzer_worker_analyze_endpoint', '');
+		// validate URL against SSRF and protocol policies
+		if ($endpoint !== '' && class_exists('FXLI_Env')) {
+			$validation = FXLI_Env::validate_endpoint_url($endpoint);
+			if (is_wp_error($validation)) {
+				error_log('[Finlyzer Security] Blocked insecure analyze endpoint: ' . $validation->get_error_message());
+				return '';
+			}
 		}
-
-		// normalize base url by stripping trailing slashes or insight subpaths
-		$clean_base = preg_replace('#(/api/v1)?/insight/?$#', '', rtrim($base, '/'));
-		$endpoint = $clean_base . '/api/v1/analyze';
 
 		return apply_filters('finlyzer_worker_analyze_endpoint', $endpoint);
 	}
@@ -220,30 +241,34 @@ final class FXLI_Gemini_Client {
 	public function analyze_orders(array $payload): array|WP_Error {
 		$endpoint = self::analyze_endpoint();
 		if ($endpoint === '') {
-			return new WP_Error('worker_unconfigured', 'Cloudflare Worker endpoint is unconfigured.');
+			return new WP_Error('worker_unconfigured', __('Cloudflare Worker analysis endpoint is unconfigured or blocked by security policy.', 'finlyzer'));
 		}
 
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.13.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.14.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
-			return new WP_Error('json_encode_error', 'Failed to encode order analysis payload.');
+			return new WP_Error('json_encode_error', __('Failed to encode order analysis payload.', 'finlyzer'));
 		}
 
 		// generate timestamped HMAC signature
 		$timestamp = time();
 		$signature = FXLI_Security::sign_worker_payload($body, $timestamp);
 		if ($signature === '') {
-			return new WP_Error('hmac_unconfigured', 'Worker HMAC signing secret is unconfigured.');
+			return new WP_Error('hmac_unconfigured', __('Worker HMAC signing secret is unconfigured or has insufficient entropy.', 'finlyzer'));
 		}
+
+		$timeout = class_exists('FXLI_Env') ? FXLI_Env::api_timeout() : 12;
+		$strict_ssl = class_exists('FXLI_Env') ? FXLI_Env::strict_ssl() : true;
 
 		// dispatch server-to-server POST request to the Cloudflare Worker isolate
 		$response = wp_remote_post($endpoint, [
-			'timeout' => 12,
-			'headers' => [
+			'timeout'   => $timeout,
+			'sslverify' => $strict_ssl,
+			'headers'   => [
 				'Content-Type'    => 'application/json',
 				'X-FXLI-Site'     => self::site_id(),
 				'X-FXLI-Site-Url' => $payload['site_url'],
@@ -251,7 +276,7 @@ final class FXLI_Gemini_Client {
 				'X-FXLI-Time'     => (string) $timestamp,
 				'X-FXLI-Sig'      => $signature,
 			],
-			'body'    => $body,
+			'body'      => $body,
 		]);
 
 		if (is_wp_error($response)) {
@@ -267,7 +292,7 @@ final class FXLI_Gemini_Client {
 
 		$data = json_decode($raw_body, true);
 		if (!is_array($data) || !isset($data['total_loss'])) {
-			return new WP_Error('invalid_worker_response', 'Malformed financial analysis response from Worker.');
+			return new WP_Error('invalid_worker_response', __('Malformed financial analysis response from Worker.', 'finlyzer'));
 		}
 
 		return $data;

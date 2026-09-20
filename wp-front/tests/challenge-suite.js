@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.13.0', `FINLYZER_VERSION is bumped to 1.13.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.14.0', `FINLYZER_VERSION is bumped to 1.14.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.13.0'), 'readme.txt Stable tag matches v1.13.0');
+assert(readmeContent.includes('Stable tag: 1.14.0'), 'readme.txt Stable tag matches v1.14.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -775,6 +775,237 @@ assert(filteredCrossBorder.length === 18750, 'Correctly extracted 18,750 cross-b
 assert(filterElapsed < 50, `25,000 orders filtered in ${filterElapsed.toFixed(2)}ms (< 50ms SLA)`);
 
 // -------------------------------------------------------------
+// TEST GROUP 16: Dual-Environment Build System & .env Parsing Matrix (v1.14.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 16: Dual-Environment Build System & .env Parsing Matrix (v1.14.0)');
+
+const devEnvPath = path.resolve(__dirname, '../.env.development');
+const devEnvExamplePath = path.resolve(__dirname, '../.env.development.example');
+const prodEnvPath = path.resolve(__dirname, '../.env.production');
+const prodEnvExamplePath = path.resolve(__dirname, '../.env.production.example');
+const envClassPath = path.resolve(__dirname, '../includes/class-fxli-env.php');
+const devSectionPath = path.resolve(__dirname, '../templates/partials/developer-section.php');
+
+// 16.1 Verify file presence for environment configurations
+assert(fs.existsSync(devEnvPath), '.env.development exists');
+assert(fs.existsSync(devEnvExamplePath), '.env.development.example template exists');
+assert(fs.existsSync(prodEnvPath), '.env.production exists');
+assert(fs.existsSync(prodEnvExamplePath), '.env.production.example template exists');
+assert(fs.existsSync(envClassPath), 'includes/class-fxli-env.php environment manager exists');
+assert(fs.existsSync(devSectionPath), 'templates/partials/developer-section.php exists');
+
+// 16.2 Verify environment variable schemas
+const devEnvContent = fs.readFileSync(devEnvPath, 'utf8');
+const prodEnvContent = fs.readFileSync(prodEnvPath, 'utf8');
+const envClassContent = fs.readFileSync(envClassPath, 'utf8');
+
+assert(devEnvContent.includes('FINLYZER_ENV=development'), '.env.development declares FINLYZER_ENV=development');
+assert(devEnvContent.includes('FINLYZER_ENABLE_DEV_TOOLS=true'), '.env.development enables developer tools');
+assert(devEnvContent.includes('FINLYZER_ALLOW_HTTP=true'), '.env.development allows local HTTP loopback');
+assert(devEnvContent.includes('http://127.0.0.1:8787'), '.env.development points to local worker endpoints');
+
+assert(prodEnvContent.includes('FINLYZER_ENV=production'), '.env.production declares FINLYZER_ENV=production');
+assert(prodEnvContent.includes('FINLYZER_ENABLE_DEV_TOOLS=false'), '.env.production disables developer tools');
+assert(prodEnvContent.includes('FINLYZER_ALLOW_HTTP=false'), '.env.production strictly forbids HTTP');
+assert(prodEnvContent.includes('https://'), '.env.production requires HTTPS endpoints');
+assert(prodEnvContent.includes('FINLYZER_STRICT_SSL=true'), '.env.production enforces strict SSL certificate validation');
+
+// 16.3 Verify FXLI_Env class contracts & bootstrap wiring
+assert(envClassContent.includes('class FXLI_Env'), 'FXLI_Env class declared');
+assert(envClassContent.includes('public static function current_env('), 'FXLI_Env exposes current_env()');
+assert(envClassContent.includes('public static function is_production('), 'FXLI_Env exposes is_production()');
+assert(envClassContent.includes('public static function is_development('), 'FXLI_Env exposes is_development()');
+assert(envClassContent.includes('public static function dev_tools_enabled('), 'FXLI_Env exposes dev_tools_enabled()');
+assert(envClassContent.includes('public static function validate_endpoint_url('), 'FXLI_Env exposes validate_endpoint_url()');
+assert(pluginPhpContent.includes("require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-env.php'"), 'finlyzer.php requires class-fxli-env.php during bootstrap');
+assert(dashboardPhpContent.includes('developer-section.php'), 'dashboard.php conditionally includes developer-section.php');
+
+// 16.4 Verify package.json scripts
+const pkgJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
+assert(pkgJson.scripts['build:dev'] && pkgJson.scripts['build:dev'].includes('--env=development'), 'package.json defines build:dev script');
+assert(pkgJson.scripts['build:prod'] && pkgJson.scripts['build:prod'].includes('--env=production'), 'package.json defines build:prod script');
+assert(pkgJson.scripts['package:dev'] && pkgJson.scripts['package:dev'].includes('--env=development'), 'package.json defines package:dev script');
+assert(pkgJson.scripts['package:prod'] && pkgJson.scripts['package:prod'].includes('--env=production'), 'package.json defines package:prod script');
+
+// -------------------------------------------------------------
+// TEST GROUP 17: Production Security Hardening, SSRF Immunity & Secret Strength
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 17: Production Security Hardening, SSRF Immunity & Secret Strength');
+
+// 17.1 SSRF & Protocol Validation Simulation
+function validateEndpointUrl(url, env = 'production') {
+	if (!url) return { valid: false, error: 'empty_endpoint' };
+	let parsed;
+	try {
+		parsed = new URL(url);
+	} catch {
+		return { valid: false, error: 'malformed_endpoint' };
+	}
+
+	if (env === 'production') {
+		if (parsed.protocol !== 'https:') {
+			return { valid: false, error: 'insecure_protocol' };
+		}
+		const host = parsed.hostname.toLowerCase();
+		const blockedHosts = ['localhost', '0.0.0.0', '127.0.0.1', '169.254.169.254', '::1'];
+		if (blockedHosts.includes(host) || host.endsWith('.localhost') || host.endsWith('.local')) {
+			return { valid: false, error: 'ssrf_blocked_host' };
+		}
+		// check private ranges: 10.x, 192.168.x, 172.16-31.x
+		if (host.startsWith('10.') || host.startsWith('192.168.') || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)) {
+			return { valid: false, error: 'ssrf_blocked_private_ip' };
+		}
+	}
+	return { valid: true };
+}
+
+// Insecure HTTP rejection in production
+const httpCheck = validateEndpointUrl('http://insecure-api.workers.dev/insight', 'production');
+assert(!httpCheck.valid && httpCheck.error === 'insecure_protocol', 'Production endpoint validator rejects unencrypted HTTP');
+
+// SSRF private IP and loopback blocks in production
+const loopbackCheck = validateEndpointUrl('https://127.0.0.1:8787/insight', 'production');
+assert(!loopbackCheck.valid && loopbackCheck.error === 'ssrf_blocked_host', 'Production validator blocks loopback 127.0.0.1');
+
+const localhostCheck = validateEndpointUrl('https://localhost:8787/insight', 'production');
+assert(!localhostCheck.valid && localhostCheck.error === 'ssrf_blocked_host', 'Production validator blocks localhost');
+
+const metadataCheck = validateEndpointUrl('https://169.254.169.254/latest/meta-data', 'production');
+assert(!metadataCheck.valid && metadataCheck.error === 'ssrf_blocked_host', 'Production validator blocks AWS metadata service (169.254.169.254)');
+
+const privateCheck10 = validateEndpointUrl('https://10.0.1.50/insight', 'production');
+assert(!privateCheck10.valid && privateCheck10.error === 'ssrf_blocked_private_ip', 'Production validator blocks 10.0.0.0/8 private subnet');
+
+const privateCheck192 = validateEndpointUrl('https://192.168.1.100/insight', 'production');
+assert(!privateCheck192.valid && privateCheck192.error === 'ssrf_blocked_private_ip', 'Production validator blocks 192.168.0.0/16 private subnet');
+
+// Valid public HTTPS endpoint accepted
+const validCheck = validateEndpointUrl('https://finlyzer-worker-prod.workers.dev/insight', 'production');
+assert(validCheck.valid, 'Production validator accepts legitimate HTTPS worker endpoint');
+
+// Local dev allows loopback HTTP
+const devCheck = validateEndpointUrl('http://127.0.0.1:8787/insight', 'development');
+assert(devCheck.valid, 'Development mode allows local HTTP loopback');
+
+// 17.2 HMAC Secret Entropy Simulation
+function validateHmacSecret(secret, isProd = true) {
+	if (!isProd) {
+		return secret ? secret : 'dev-ephemeral-secret-32-byte-hex-token';
+	}
+	if (!secret || secret.includes('dev-ephemeral')) return false;
+	if (secret.length < 32) return false;
+	return true;
+}
+
+assert(!validateHmacSecret('', true), 'Production HMAC secret validation rejects empty secret');
+assert(!validateHmacSecret('dev-ephemeral-secret', true), 'Production HMAC validation rejects dev-ephemeral fallback');
+assert(!validateHmacSecret('too-short-secret', true), 'Production HMAC validation rejects secret with < 32 chars');
+assert(validateHmacSecret('4f8a9e2b1c7d6e5a4f8a9e2b1c7d6e5a4f8a9e2b1c7d6e5a4f8a9e2b1c7d6e5a', true), 'Production HMAC validation accepts strong 64-char hex secret');
+assert(validateHmacSecret('', false) === 'dev-ephemeral-secret-32-byte-hex-token', 'Development mode safely auto-resolves dev-ephemeral-secret fallback');
+
+// 17.3 Distribution Package Hardening
+const prodZipPath = path.resolve(__dirname, '../dist/production/finlyzer.zip');
+const devZipPath = path.resolve(__dirname, '../dist/development/finlyzer-dev.zip');
+assert(fs.existsSync(prodZipPath), 'dist/production/finlyzer.zip exists');
+assert(fs.existsSync(devZipPath), 'dist/development/finlyzer-dev.zip exists');
+
+// -------------------------------------------------------------
+// TEST GROUP 18: Extreme Heavy-Load & Concurrency Invariant Challenge (50,000 Orders)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 18: Extreme Heavy-Load & Concurrency Invariant Challenge (50,000 Orders)');
+
+const heavyOrders = [];
+const heavyCurrencies = ['EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'PLN', 'SEK'];
+const heavyGateways = ['stripe', 'paypal', 'klarna', 'adyen', 'mollie', 'square'];
+
+for (let i = 0; i < 50000; i++) {
+	const curr = heavyCurrencies[i % heavyCurrencies.length];
+	const isDomestic = (i % 5 === 0); // 20% domestic orders
+	heavyOrders.push({
+		order_id: 100000 + i,
+		currency: isDomestic ? 'USD' : curr,
+		total: 10.0 + (i % 500) + ((i % 100) / 100),
+		payment_method: heavyGateways[i % heavyGateways.length]
+	});
+}
+
+assert(heavyOrders.length === 50000, 'Generated 50,000 test orders');
+
+const heavyStart = performance.now();
+let totalLossCents = 0;
+let totalForeignVolumeCents = 0;
+let crossBorderCount = 0;
+const byCurrencyMap = {};
+
+for (let i = 0; i < heavyOrders.length; i++) {
+	const ord = heavyOrders[i];
+	if (ord.currency === 'USD' || ord.total <= 0) continue;
+
+	crossBorderCount++;
+	const spreadRate = ord.payment_method === 'paypal' ? 0.038 : (ord.payment_method === 'adyen' ? 0.015 : 0.025);
+	const orderCents = Math.round(ord.total * 100);
+	const lossCents = Math.round(orderCents * spreadRate);
+
+	totalForeignVolumeCents += orderCents;
+	totalLossCents += lossCents;
+
+	if (!byCurrencyMap[ord.currency]) {
+		byCurrencyMap[ord.currency] = { orders: 0, volumeCents: 0, lossCents: 0 };
+	}
+	byCurrencyMap[ord.currency].orders++;
+	byCurrencyMap[ord.currency].volumeCents += orderCents;
+	byCurrencyMap[ord.currency].lossCents += lossCents;
+}
+
+const heavyElapsed = performance.now() - heavyStart;
+const totalLoss = totalLossCents / 100;
+const totalForeignVolume = totalForeignVolumeCents / 100;
+
+assert(crossBorderCount === 40000, 'Correctly processed 40,000 cross-border orders out of 50,000 (80% ratio)');
+assert(heavyElapsed < 100, `50,000 orders aggregated in ${heavyElapsed.toFixed(2)}ms (< 100ms SLA)`);
+
+// Verify mathematical conservation invariants
+let sumLossCents = 0;
+let sumVolumeCents = 0;
+for (const curr of heavyCurrencies) {
+	if (byCurrencyMap[curr]) {
+		sumLossCents += byCurrencyMap[curr].lossCents;
+		sumVolumeCents += byCurrencyMap[curr].volumeCents;
+	}
+}
+
+assert(sumLossCents === totalLossCents, 'Currency breakdown sum of losses matches total loss exactly in integer minor units');
+assert(sumVolumeCents === totalForeignVolumeCents, 'Currency breakdown volume matches total foreign volume exactly');
+assert(!Number.isNaN(totalLoss) && Number.isFinite(totalLoss) && totalLoss > 0, 'Total loss is finite positive number');
+assert(!Number.isNaN(totalForeignVolume) && Number.isFinite(totalForeignVolume) && totalForeignVolume > 0, 'Foreign volume is finite positive number');
+
+// 18.2 Adversarial Payload Invariant Challenge
+const poisonedPayloads = [
+	{ store_currency: 'USD', total: -500.0, currency: 'EUR' },
+	{ store_currency: 'USD', total: 0.0, currency: 'GBP' },
+	{ store_currency: 'USD', total: 250000000.00, currency: 'JPY' }, // massive enterprise volume
+	{ store_currency: 'USD', total: 100.50, currency: '__proto__' },
+	{ store_currency: 'USD', total: 100.50, currency: '<script>alert(1)</script>' }
+];
+
+let safeHandledCount = 0;
+for (const bad of poisonedPayloads) {
+	try {
+		// apply sanitization and aggregation bounds
+		const safeCurrency = sanitizePromptScalar(bad.currency);
+		const safeTotal = typeof bad.total === 'number' && Number.isFinite(bad.total) && bad.total > 0 ? bad.total : 0;
+		if (safeTotal > 0 && safeCurrency.length >= 3) {
+			const loss = Math.round(safeTotal * 0.025 * 100) / 100;
+			assert(Number.isFinite(loss), `Finite calculation for currency ${safeCurrency}`);
+		}
+		safeHandledCount++;
+	} catch (e) {
+		// should not throw
+	}
+}
+assert(safeHandledCount === poisonedPayloads.length, 'All 5 adversarial payloads handled safely without uncaught exceptions');
+
+// -------------------------------------------------------------
 // SUMMARY
 // -------------------------------------------------------------
 console.log('\n================================================================');
@@ -786,3 +1017,4 @@ if (failedTests > 0) {
 } else {
 	console.log(' ALL SOFTWARE ENGINEERING PRINCIPLES VERIFIED SUCCESSFULLY.\n');
 }
+

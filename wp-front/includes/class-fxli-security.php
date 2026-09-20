@@ -47,34 +47,38 @@ final class FXLI_Security {
 
 	// retrieve the worker shared secret from environment or wp-config constants
 	public static function worker_shared_secret(): string {
-		// check modern Finlyzer constant
-		if (defined('FINLYZER_WORKER_HMAC_SECRET') && is_string(FINLYZER_WORKER_HMAC_SECRET) && FINLYZER_WORKER_HMAC_SECRET !== '') {
-			return FINLYZER_WORKER_HMAC_SECRET;
-		}
+		// retrieve configured secret via FXLI_Env
+		$secret = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
 
-		// check legacy constant fallback
-		if (defined('FXLI_WORKER_HMAC_SECRET') && is_string(FXLI_WORKER_HMAC_SECRET) && FXLI_WORKER_HMAC_SECRET !== '') {
-			return FXLI_WORKER_HMAC_SECRET;
-		}
-
-		// check database option
-		if (function_exists('get_option')) {
-			$opt = (string) get_option('finlyzer_worker_hmac_secret', '');
-			if ($opt !== '') {
-				return $opt;
+		if ($secret === '') {
+			// legacy direct constant fallback
+			if (defined('FINLYZER_WORKER_HMAC_SECRET') && is_string(FINLYZER_WORKER_HMAC_SECRET) && FINLYZER_WORKER_HMAC_SECRET !== '') {
+				$secret = FINLYZER_WORKER_HMAC_SECRET;
+			} elseif (defined('FXLI_WORKER_HMAC_SECRET') && is_string(FXLI_WORKER_HMAC_SECRET) && FXLI_WORKER_HMAC_SECRET !== '') {
+				$secret = FXLI_WORKER_HMAC_SECRET;
 			}
 		}
 
-		// auto-detect local development environment matching Worker dev secret
-		$is_local = (function_exists('wp_get_environment_type') && in_array(wp_get_environment_type(), ['development', 'local'], true))
-			|| (function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1')));
-		if ($is_local) {
-			return 'dev-ephemeral-secret';
+		// in production mode, enforce strict secret entropy and prohibit development defaults
+		$is_prod = class_exists('FXLI_Env') ? FXLI_Env::is_production() : true;
+		if ($is_prod) {
+			if ($secret === '' || str_contains($secret, 'dev-ephemeral')) {
+				error_log('[Finlyzer Security] Production HMAC secret is unconfigured or using weak dev fallback.');
+				return '';
+			}
+			if (strlen($secret) < 32) {
+				error_log('[Finlyzer Security] Production HMAC secret has insufficient entropy (< 32 chars).');
+				return '';
+			}
+			return $secret;
 		}
 
-		// fail closed and log configuration issue
-		error_log('[Finlyzer] FINLYZER_WORKER_HMAC_SECRET is not configured in wp-config.php.');
-		return '';
+		// development mode: if secret is empty, allow dev ephemeral fallback for seamless DX
+		if ($secret === '') {
+			$secret = 'dev-ephemeral-secret';
+		}
+
+		return $secret;
 	}
 
 	// strict allow-list sanitization for prompt values sent to LLM proxy

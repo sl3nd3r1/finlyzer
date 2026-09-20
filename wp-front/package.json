@@ -1,11 +1,14 @@
 {
   "name": "finlyzer-woocommerce",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Enterprise Finlyzer FX Margin Sentinel for WooCommerce HPOS Plugin",
   "scripts": {
-    "build": "node build-package.js",
-    "package": "node build-package.js",
-    "pack": "node build-package.js",
+    "build": "node build-package.js --env=production",
+    "build:dev": "node build-package.js --env=development",
+    "build:prod": "node build-package.js --env=production",
+    "package": "node build-package.js --env=production",
+    "package:dev": "node build-package.js --env=development",
+    "package:prod": "node build-package.js --env=production",
     "test": "node tests/challenge-suite.js",
     "preview": "php -S localhost:8080 preview-server.php"
   },

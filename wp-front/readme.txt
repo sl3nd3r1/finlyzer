@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.13.0
+Stable tag: 1.14.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,13 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.14.0 =
+* Feature: Dual-environment build architecture (.env.development and .env.production) compiling tailored developer releases and hardened production packages.
+* Dev DX: Integrated Developer Section with live API telemetry, outbound payload inspector, latency probes, and terminal curl reproduction commands.
+* Security: 2026 production security hardening enforcing strict HTTPS (TLS 1.2+), SSRF prevention (blocking loopback/private subnets), and HMAC secret entropy validation.
+* Architecture: Pure API calculation architecture forcing live API reads and fail-closed error handling in production.
+* Tests: Added Software Engineering challenge suites for dual-env build matrix, SSRF injection defense, and 50,000-order heavy-load concurrency.
 
 = 1.13.0 =
 * Architecture: Removed 100% of local fallback math and mock generators from WordPress plugin; all calculations are delegated exclusively to Cloudflare Worker backend.

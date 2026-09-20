@@ -3,7 +3,7 @@
  * Plugin Name:       Finlyzer — FX Loss & Margin Insights for WooCommerce
  * Plugin URI:        https://example.com/finlyzer
  * Description:       Track hidden payment gateway conversion fees and currency loss across your international WooCommerce sales.
- * Version:           1.13.0
+ * Version:           1.14.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
@@ -17,6 +17,7 @@
  * Security architecture (per mandatory-secure-web-skills):
  *  - Zero client-side credentials: API keys and HMAC secrets never reach the browser.
  *  - Server-to-server AI communication: WP -> Cloudflare Worker -> Gemini API.
+ *  - Dual build architecture: isolated development & hardened production environment profiles.
  *  - Capability and nonce verification on all REST endpoints (manage_woocommerce + wp_rest).
  *  - Prepared SQL queries ($wpdb->prepare()) and strictly escaped template rendering.
  *  - Full High-Performance Order Storage (HPOS) compatibility declared.
@@ -30,7 +31,7 @@ if (!defined('ABSPATH')) {
 }
 
 // core plugin constants
-define('FINLYZER_VERSION', '1.13.0');
+define('FINLYZER_VERSION', '1.14.0');
 define('FINLYZER_DB_VERSION', '3');
 define('FINLYZER_PLUGIN_FILE', __FILE__);
 define('FINLYZER_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -44,6 +45,7 @@ define('FXLI_PLUGIN_DIR', FINLYZER_PLUGIN_DIR);
 define('FXLI_PLUGIN_URL', FINLYZER_PLUGIN_URL);
 
 // explicit file inclusion to keep attack surface minimal and auditable
+require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-env.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-security.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-installer.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-order-analyzer.php';
