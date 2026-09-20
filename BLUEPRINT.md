@@ -10,7 +10,7 @@ Translation of the "Hedgehog" Phase 1 wedge from the [Cinkciarz.pl case study](h
 
 | Concern | Production Specification | Architectural Rationale |
 |---|---|---|
-| **Plugin Identity** | **Finlyzer** (v1.14.0) | High-performance, read-only analytics & AI exposure sentinel |
+| **Plugin Identity** | **Finlyzer** (v1.15.0) | High-performance, read-only analytics & AI exposure sentinel |
 | **Build Architecture** | Dual Dev & Prod Profiles | `.env.development` (local/staging API, dev inspector) & `.env.production` (hardened HTTPS, SSRF-immune) |
 | **Frontend UI** | Modern Chic Fintech Ledger | Obsidian/slate palette (`#090D16`), glowing severity badges, proportional multi-currency loss distribution bars, tabular mono figures |
 | **Interactivity** | Vendored `htmx` (v2.0.3) | Zero external CDN requests, no SPA build overhead, full CSP compatibility, no clash with WordPress React/jQuery |
@@ -34,7 +34,7 @@ Translation of the "Hedgehog" Phase 1 wedge from the [Cinkciarz.pl case study](h
 
 ```
 frontend/wp-front/
-├── finlyzer.php                      # Bootstrap, HPOS declaration, lifecycle hooks (v1.14.0)
+├── finlyzer.php                      # Bootstrap, HPOS declaration, lifecycle hooks (v1.15.0)
 ├── uninstall.php                     # Complete DB & transient teardown on plugin deletion
 ├── build-package.js                  # Multi-environment packager (--env=development | --env=production)
 ├── .env.development                  # Developer environment endpoints and inspector controls

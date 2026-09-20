@@ -85,6 +85,25 @@ function wc_price(float $price, array $args = []): string {
 	};
 	return '<span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">' . esc_html($symbol) . '</span>' . number_format($price, 2) . '</bdi></span>';
 }
+function add_query_arg(string|array $key, mixed $value = false, string $url = ''): string {
+	if (is_array($key)) {
+		$url = is_string($value) ? $value : ($_SERVER['REQUEST_URI'] ?? '');
+		$params = $key;
+	} else {
+		$params = [$key => $value];
+	}
+	$parsed = parse_url($url);
+	$query = [];
+	if (!empty($parsed['query'])) {
+		parse_str($parsed['query'], $query);
+	}
+	foreach ($params as $k => $v) {
+		$query[$k] = $v;
+	}
+	$base = !empty($parsed['scheme']) ? $parsed['scheme'] . '://' . ($parsed['host'] ?? '') : '';
+	$path = $parsed['path'] ?? '';
+	return $base . $path . '?' . http_build_query($query);
+}
 
 // -------------------------------------------------------------
 // HTTP Router

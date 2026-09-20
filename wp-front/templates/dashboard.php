@@ -7,8 +7,8 @@ if (!defined('ABSPATH')) {
 }
 
 $default_days = 30;
-$rest_summary_url = rest_url('finlyzer/v1/summary') . '?days=' . $default_days;
-$rest_insight_url = rest_url('finlyzer/v1/insight') . '?days=' . $default_days;
+$rest_summary_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/summary'));
+$rest_insight_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/insight'));
 $rest_nonce = wp_create_nonce('wp_rest');
 ?>
 <div class="finlyzer-app" id="finlyzer-app">

@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.14.0
+Stable tag: 1.15.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,14 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.15.0 =
+* Fix: Resolved client controller DOMContentLoaded race condition in footer scripts by implementing an idempotent DOM readiness dispatcher.
+* Fix: Enforced withCredentials=true in htmx:configRequest to preserve session cookies across cross-domain development instances.
+* Feature: Top-level HTMX event registration ensuring zero missed DOM fragment swaps and instant connection banner dismissal.
+* Reliability: Added connection watchdog timer to detect stalled DOM states and trigger automatic recovery fetch.
+* DX: Pre-signed timestamped HMAC SHA-256 headers in developer inspector curl command for 100% instant terminal verification.
+* Compatibility: Used add_query_arg for REST endpoints in templates to guarantee support for plain permalinks.
 
 = 1.14.0 =
 * Feature: Dual-environment build architecture (.env.development and .env.production) compiling tailored developer releases and hardened production packages.

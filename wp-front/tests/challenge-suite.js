@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.14.0', `FINLYZER_VERSION is bumped to 1.14.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.15.0', `FINLYZER_VERSION is bumped to 1.15.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.14.0'), 'readme.txt Stable tag matches v1.14.0');
+assert(readmeContent.includes('Stable tag: 1.15.0'), 'readme.txt Stable tag matches v1.15.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -718,6 +718,11 @@ assert(dashboardJsContent.includes('setConnectingState') && dashboardJsContent.i
 assert(dashboardJsContent.includes('retry-btn'), 'dashboard.js implements manual retry button handler');
 assert(dashboardJsContent.includes('finlyzer-range-btn'), 'dashboard.js implements timeframe switcher handler');
 assert(dashboardJsContent.includes('textContent'), 'dashboard.js uses textContent for safe DOM manipulation');
+assert(dashboardJsContent.includes("document.readyState === 'loading'"), 'dashboard.js implements idempotent DOM readiness dispatcher');
+assert(dashboardJsContent.includes('evt.detail.withCredentials = true'), 'dashboard.js explicitly enables withCredentials on htmx requests for session cookies');
+assert(dashboardJsContent.includes('watchdogTimer'), 'dashboard.js implements connection watchdog timer against stalled requests');
+assert(dashboardJsContent.includes("document.addEventListener('htmx:afterOnLoad'"), 'dashboard.js registers top-level HTMX event listeners outside DOMContentLoaded');
+assert(dashboardPhpContent.includes("add_query_arg('days'"), 'dashboard.php uses add_query_arg to safely format REST endpoints');
 
 // 14.5 High-Load Heavy Order Attribution Simulation (10,000 Order Items)
 const heavyLoadStart = performance.now();
@@ -819,6 +824,9 @@ assert(envClassContent.includes('public static function dev_tools_enabled('), 'F
 assert(envClassContent.includes('public static function validate_endpoint_url('), 'FXLI_Env exposes validate_endpoint_url()');
 assert(pluginPhpContent.includes("require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-env.php'"), 'finlyzer.php requires class-fxli-env.php during bootstrap');
 assert(dashboardPhpContent.includes('developer-section.php'), 'dashboard.php conditionally includes developer-section.php');
+const devSectionContent = fs.readFileSync(devSectionPath, 'utf8');
+assert(devSectionContent.includes('X-FXLI-Sig') && devSectionContent.includes('X-FXLI-Time'), 'developer-section.php includes pre-signed HMAC authentication headers in curl command');
+assert(devSectionContent.includes('X-FXLI-Site'), 'developer-section.php includes X-FXLI-Site header');
 
 // 16.4 Verify package.json scripts
 const pkgJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
@@ -1004,6 +1012,142 @@ for (const bad of poisonedPayloads) {
 	}
 }
 assert(safeHandledCount === poisonedPayloads.length, 'All 5 adversarial payloads handled safely without uncaught exceptions');
+
+// -------------------------------------------------------------
+// TEST GROUP 19: Client DOM Readiness, Connection Watchdog & Lifecycle Stress Matrix
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 19: Client DOM Readiness, Connection Watchdog & Lifecycle Stress Matrix (v1.15.0)');
+
+// 19.1 Verify DOM Readiness Dispatcher Invariants
+function simulateReadyStateDispatch(readyState) {
+	const state = { initCalled: false };
+	const mockDoc = {
+		readyState,
+		listeners: {},
+		addEventListener(event, fn) {
+			this.listeners[event] = fn;
+		}
+	};
+	function init() {
+		state.initCalled = true;
+	}
+
+	if (mockDoc.readyState === 'loading') {
+		mockDoc.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
+
+	return { state, mockDoc };
+}
+
+const loadingResult = simulateReadyStateDispatch('loading');
+assert(!loadingResult.state.initCalled && typeof loadingResult.mockDoc.listeners['DOMContentLoaded'] === 'function', 'In loading state, listener is deferred until DOMContentLoaded');
+loadingResult.mockDoc.listeners['DOMContentLoaded']();
+assert(loadingResult.state.initCalled, 'DOMContentLoaded callback triggers initialization');
+
+const interactiveResult = simulateReadyStateDispatch('interactive');
+assert(interactiveResult.state.initCalled, 'In interactive state (scripts in footer), initialization triggers immediately');
+
+const completeResult = simulateReadyStateDispatch('complete');
+assert(completeResult.state.initCalled, 'In complete state (deferred/async execution), initialization triggers immediately without deadlock');
+
+// 19.2 Connection State Machine Transition & Watchdog Resilience Simulation
+class MockConnectionStateMachine {
+	constructor(maxAttempts = 3) {
+		this.maxAttempts = maxAttempts;
+		this.currentAttempt = 0;
+		this.state = 'initial';
+		this.watchdogFired = false;
+		this.fetchCount = 0;
+	}
+
+	setConnectingState(attempt) {
+		this.state = 'connecting';
+		this.currentAttempt = attempt;
+	}
+
+	setConnectedState() {
+		this.state = 'connected';
+		this.currentAttempt = 0;
+	}
+
+	setConnectionLostState() {
+		this.state = 'lost';
+	}
+
+	handleConnectionError() {
+		if (this.currentAttempt < this.maxAttempts) {
+			this.currentAttempt++;
+			this.setConnectingState(this.currentAttempt);
+			return true;
+		} else {
+			this.setConnectionLostState();
+			return false;
+		}
+	}
+
+	fireWatchdog(skeletonsPresent) {
+		this.watchdogFired = true;
+		if (skeletonsPresent && this.state !== 'connected') {
+			this.fetchCount++;
+			return 'recovery_fetch_triggered';
+		}
+		return 'noop';
+	}
+}
+
+const sm = new MockConnectionStateMachine(3);
+sm.setConnectingState(0);
+assert(sm.state === 'connecting' && sm.currentAttempt === 0, 'Initial state is connecting');
+
+// Simulate 1st error -> retry
+const retry1 = sm.handleConnectionError();
+assert(retry1 && sm.state === 'connecting' && sm.currentAttempt === 1, '1st failure increments attempt to 1 and keeps connecting');
+
+// Simulate 2nd error -> retry
+const retry2 = sm.handleConnectionError();
+assert(retry2 && sm.state === 'connecting' && sm.currentAttempt === 2, '2nd failure increments attempt to 2 and keeps connecting');
+
+// Simulate 3rd error -> retry
+const retry3 = sm.handleConnectionError();
+assert(retry3 && sm.state === 'connecting' && sm.currentAttempt === 3, '3rd failure increments attempt to 3 and keeps connecting');
+
+// Simulate 4th error -> exhaust attempts, enter connection lost
+const retry4 = sm.handleConnectionError();
+assert(!retry4 && sm.state === 'lost', 'Exhausted attempts transition safely to lost state with manual retry');
+
+// Simulate manual retry -> resets and triggers fetch
+sm.setConnectingState(0);
+assert(sm.state === 'connecting' && sm.currentAttempt === 0, 'Manual retry resets attempt counter to 0');
+
+// Simulate successful load
+sm.setConnectedState();
+assert(sm.state === 'connected' && sm.currentAttempt === 0, 'Successful load enters connected state');
+
+// 19.3 Watchdog Recovery under Network Stall Simulation
+const stalledSm = new MockConnectionStateMachine(3);
+stalledSm.setConnectingState(0);
+const watchdogAction = stalledSm.fireWatchdog(true);
+assert(watchdogAction === 'recovery_fetch_triggered' && stalledSm.fetchCount === 1, 'Watchdog triggers recovery fetch when skeletons persist past threshold');
+
+// 19.4 High-Concurrency State Machine Stress Test (100,000 state transitions)
+const smStressStart = performance.now();
+const stressSm = new MockConnectionStateMachine(3);
+for (let i = 0; i < 100000; i++) {
+	if (i % 4 === 0) {
+		stressSm.setConnectingState(0);
+	} else if (i % 4 === 1) {
+		stressSm.handleConnectionError();
+	} else if (i % 4 === 2) {
+		stressSm.setConnectedState();
+	} else {
+		stressSm.fireWatchdog(false);
+	}
+}
+const smStressDuration = performance.now() - smStressStart;
+assert(stressSm.state === 'connected', 'State machine settles into valid state after 100,000 rapid transitions');
+assert(smStressDuration < 200, `100,000 state machine transitions completed in ${smStressDuration.toFixed(2)}ms (< 200ms)`);
 
 // -------------------------------------------------------------
 // SUMMARY

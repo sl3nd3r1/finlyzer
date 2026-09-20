@@ -1,6 +1,6 @@
 <?php
 /**
- * Finlyzer — Developer Diagnostic & API Inspector Section (v1.14.0)
+ * Finlyzer — Developer Diagnostic & API Inspector Section (v1.15.0)
  *
  * Exclusively included and rendered in Development Builds (FINLYZER_ENV=development).
  * Provides plugin developers with live endpoint inspection, outbound payload schemas,
@@ -26,6 +26,17 @@ $analyze_endpoint = FXLI_Env::analyze_endpoint();
 $api_timeout = FXLI_Env::api_timeout();
 $current_env = FXLI_Env::current_env();
 $store_curr = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
+
+// compute live HMAC signature fixture for terminal verification
+$dev_time = time();
+$sample_body = (string) wp_json_encode([
+	'store_currency' => $store_curr,
+	'period_days'    => 30,
+	'orders'         => [],
+], JSON_UNESCAPED_SLASHES);
+$dev_sig = class_exists('FXLI_Security') ? FXLI_Security::sign_worker_payload($sample_body, $dev_time) : '';
+$dev_site_id = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : 'dev-site-verifier';
+$dev_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.15.0';
 ?>
 
 <div class="finlyzer-dev-section" id="finlyzer-dev-section" style="margin-top: 28px; border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; background: rgba(245, 158, 11, 0.03); padding: 20px;">
@@ -100,12 +111,14 @@ $store_curr = function_exists('get_woocommerce_currency') ? get_woocommerce_curr
 			<?php esc_html_e('🔍 View Outgoing Payload Architecture & Terminal Curl Command', 'finlyzer'); ?>
 		</summary>
 		<div style="margin-top: 12px;">
-			<div style="font-size: 11px; color: #94A3B8; margin-bottom: 4px;"><?php esc_html_e('Terminal verification curl command:', 'finlyzer'); ?></div>
+			<div style="font-size: 11px; color: #94A3B8; margin-bottom: 4px;"><?php esc_html_e('Terminal verification curl command (pre-signed HMAC SHA-256):', 'finlyzer'); ?></div>
 			<pre style="background: #020617; border: 1px solid rgba(255,255,255,0.06); color: #A5F3FC; padding: 10px; border-radius: 4px; font-size: 11px; overflow-x: auto; margin: 0 0 10px 0;">curl -X POST "<?php echo esc_attr($analyze_endpoint ?: 'http://127.0.0.1:8787/api/v1/analyze'); ?>" \
   -H "Content-Type: application/json" \
-  -H "X-FXLI-Site: dev-site-verifier" \
-  -H "X-FXLI-Version: 1.14.0" \
-  -d '{"store_currency":"<?php echo esc_attr($store_curr); ?>","period_days":30,"orders":[]}'</pre>
+  -H "X-FXLI-Site: <?php echo esc_attr($dev_site_id); ?>" \
+  -H "X-FXLI-Version: <?php echo esc_attr($dev_version); ?>" \
+  -H "X-FXLI-Time: <?php echo esc_attr((string) $dev_time); ?>" \
+  -H "X-FXLI-Sig: <?php echo esc_attr($dev_sig); ?>" \
+  -d '<?php echo esc_attr($sample_body); ?>'</pre>
 		</div>
 	</details>
 </div>
