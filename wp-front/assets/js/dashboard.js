@@ -1,5 +1,5 @@
 /**
- * Finlyzer — Dashboard Client Controller (v1.15.0)
+ * Finlyzer — Dashboard Client Controller (v1.16.0)
  *
  * Implements strict Content-Security-Policy and modern web security standards:
  *  - Idempotent DOM readiness lifecycle (handles 'loading', 'interactive', and 'complete' states)
@@ -8,8 +8,8 @@
  *  - Nonce & session credentials dynamically injected into every outgoing htmx request
  *  - Pure backend API calculation architecture with connection lifecycle state machine
  *  - Top-level HTMX event registration ensuring zero missed lifecycle swaps or error events
- *  - Resilient connection watchdog timer detecting stalled initial loads and forcing auto-fetch
- *  - Resilient automatic retry (up to 3 attempts with backoff) on network or server interruption
+ *  - Abort-immune network state machine (status 0 / intentional cancellations never trigger false offline states)
+ *  - Resilient automatic retry (up to 3 attempts with backoff) on verified network or server interruption
  *  - Human-crafted manual retry fallback
  */
 (function () {
@@ -237,22 +237,41 @@
 		}
 	});
 
+	// intercept HTTP response errors (e.g. 500, 503) while strictly ignoring client aborts/cancellations (status 0)
 	document.addEventListener('htmx:responseError', function (evt) {
 		var target = evt.detail && evt.detail.target;
 		var summary = document.getElementById('finlyzer-summary') || document.getElementById('fxli-summary');
 		var insight = document.getElementById('finlyzer-insight') || document.getElementById('fxli-insight');
 		if (target === summary || target === insight) {
+			var xhr = evt.detail && evt.detail.xhr;
+			// ignore cancelled/aborted requests (status 0 or readyState 0)
+			if (!xhr || xhr.status === 0 || xhr.readyState === 0) {
+				return;
+			}
+			console.warn('[Finlyzer API Error] HTTP status ' + xhr.status + ' received for dashboard fragment.');
 			handleConnectionError();
 		}
 	});
 
+	// intercept network transport failures while strictly ignoring intentional aborts
 	document.addEventListener('htmx:sendError', function (evt) {
 		var target = evt.detail && evt.detail.target;
 		var summary = document.getElementById('finlyzer-summary') || document.getElementById('fxli-summary');
 		var insight = document.getElementById('finlyzer-insight') || document.getElementById('fxli-insight');
 		if (target === summary || target === insight) {
+			var xhr = evt.detail && evt.detail.xhr;
+			// ignore cancelled/aborted requests
+			if (xhr && (xhr.status === 0 || xhr.readyState === 0)) {
+				return;
+			}
+			console.warn('[Finlyzer Network Error] Failed to transmit request to calculation API.');
 			handleConnectionError();
 		}
+	});
+
+	// handle explicit HTMX sendAbort event cleanly
+	document.addEventListener('htmx:sendAbort', function (evt) {
+		// intentional client-side abort (e.g. timeframe switch); suppress error state
 	});
 
 	// -------------------------------------------------------------
@@ -293,16 +312,23 @@
 			setConnectingState(0);
 		}
 
-		// connection watchdog: if skeletons persist after 3.5s, trigger explicit fetch fallback
+		// passive safety timer: check after 20s if fragments stalled with no active network activity
 		watchdogTimer = setTimeout(function () {
+			var isSummaryBusy = summary && summary.classList.contains('htmx-request');
+			var isInsightBusy = insight && insight.classList.contains('htmx-request');
+			if (isSummaryBusy || isInsightBusy) {
+				// network request is still actively streaming from server; do not abort
+				return;
+			}
 			var stillSkeleton = (summary && summary.querySelector('.finlyzer-skeleton')) ||
 								(insight && insight.querySelector('.finlyzer-skeleton'));
 			if (stillSkeleton && (!summaryLoaded || !insightLoaded)) {
+				console.warn('[Finlyzer] Initial request timed out after 20s without network response. Initiating retry.');
 				fetchData(currentDays);
 			} else if (!stillSkeleton) {
 				setConnectedState();
 			}
-		}, 3500);
+		}, 20000);
 
 		// bind manual retry button
 		if (retryBtn) {

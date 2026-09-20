@@ -75,7 +75,7 @@ final class FXLI_Security {
 
 		// development mode: if secret is empty, allow dev ephemeral fallback for seamless DX
 		if ($secret === '') {
-			$secret = 'dev-ephemeral-secret';
+			$secret = 'dev-ephemeral-secret-32-byte-hex-token';
 		}
 
 		return $secret;

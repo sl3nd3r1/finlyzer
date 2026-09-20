@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Finlyzer — Multi-Environment WordPress Package Builder (v1.15.0)
+ * Finlyzer — Multi-Environment WordPress Package Builder (v1.16.0)
  *
  * Compiles and packages the Finlyzer plugin using environment-specific (.env) profiles:
  *

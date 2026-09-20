@@ -1,6 +1,6 @@
 <?php
 /**
- * Finlyzer — Developer Diagnostic & API Inspector Section (v1.15.0)
+ * Finlyzer — Developer Diagnostic & API Inspector Section (v1.16.0)
  *
  * Exclusively included and rendered in Development Builds (FINLYZER_ENV=development).
  * Provides plugin developers with live endpoint inspection, outbound payload schemas,
@@ -36,7 +36,7 @@ $sample_body = (string) wp_json_encode([
 ], JSON_UNESCAPED_SLASHES);
 $dev_sig = class_exists('FXLI_Security') ? FXLI_Security::sign_worker_payload($sample_body, $dev_time) : '';
 $dev_site_id = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : 'dev-site-verifier';
-$dev_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.15.0';
+$dev_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.16.0';
 ?>
 
 <div class="finlyzer-dev-section" id="finlyzer-dev-section" style="margin-top: 28px; border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; background: rgba(245, 158, 11, 0.03); padding: 20px;">

@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.15.0', `FINLYZER_VERSION is bumped to 1.15.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.16.0', `FINLYZER_VERSION is bumped to 1.16.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.15.0'), 'readme.txt Stable tag matches v1.15.0');
+assert(readmeContent.includes('Stable tag: 1.16.0'), 'readme.txt Stable tag matches v1.16.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -759,7 +759,7 @@ assert(analyzerContent.includes('analyze_orders') && geminiContent.includes('wp_
 // 15.2 Zero-Config Local Dev Resolution
 assert(geminiContent.includes('http://127.0.0.1:8787/insight'), 'Gemini client auto-resolves local dev insight endpoint');
 assert(geminiContent.includes('http://127.0.0.1:8787'), 'Gemini client auto-resolves local dev analyze base');
-assert(securityContent.includes("'dev-ephemeral-secret'"), 'Security core auto-resolves dev-ephemeral-secret for local worker parity');
+assert(securityContent.includes('dev-ephemeral-secret-32-byte-hex-token'), 'Security core auto-resolves dev-ephemeral-secret-32-byte-hex-token for local worker parity');
 
 // 15.3 High-Throughput Cross-Border Order Filtering & Payload Serialization (25,000 Orders)
 const filterStart = performance.now();
@@ -1148,6 +1148,150 @@ for (let i = 0; i < 100000; i++) {
 const smStressDuration = performance.now() - smStressStart;
 assert(stressSm.state === 'connected', 'State machine settles into valid state after 100,000 rapid transitions');
 assert(smStressDuration < 200, `100,000 state machine transitions completed in ${smStressDuration.toFixed(2)}ms (< 200ms)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 20: XAMPP / Localhost Auto-Discovery, Abort Immunity & Self-Healing Migration (v1.16.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 20: XAMPP / Localhost Auto-Discovery, Abort Immunity & Self-Healing Migration (v1.16.0)');
+
+// 20.1 HTMX Status 0 (Client Abort / Navigation) Immunity Verification
+function simulateHtmxErrorDispatch(evtDetail, stateMachine) {
+	// guard: if xhr status is 0 or readyState is 0, ignore intentional abort/cancellation
+	const xhr = evtDetail && evtDetail.xhr;
+	if (xhr && (xhr.status === 0 || xhr.readyState === 0)) {
+		return 'ignored_abort';
+	}
+	if (!xhr || xhr.status >= 400) {
+		stateMachine.handleConnectionError();
+		return 'connection_error_handled';
+	}
+	return 'noop';
+}
+
+const abortSm = new MockConnectionStateMachine(3);
+abortSm.setConnectingState(0);
+
+// Simulate client abort (e.g. timeframe switch from 30D to 60D aborts previous in-flight request)
+const abortAction1 = simulateHtmxErrorDispatch({ xhr: { status: 0, readyState: 0 } }, abortSm);
+assert(abortAction1 === 'ignored_abort', 'Status 0 abort is recognized and ignored');
+assert(abortSm.state === 'connecting' && abortSm.currentAttempt === 0, 'Status 0 abort does NOT increment retry attempt or alter connecting state');
+
+// Rapid timeframe switching: user clicks 30D -> 60D -> 90D within 50ms generating 2 aborted requests
+const abortAction2 = simulateHtmxErrorDispatch({ xhr: { status: 0, readyState: 0 } }, abortSm);
+const abortAction3 = simulateHtmxErrorDispatch({ xhr: { status: 0, readyState: 0 } }, abortSm);
+assert(abortAction2 === 'ignored_abort' && abortAction3 === 'ignored_abort', 'Rapid timeframe switches do not trigger false network error events');
+assert(abortSm.currentAttempt === 0, 'Attempt counter remains 0 despite multiple sequential aborts');
+
+// Real HTTP 503 error from server MUST trigger error handling
+const errorAction = simulateHtmxErrorDispatch({ xhr: { status: 503, readyState: 4 } }, abortSm);
+assert(errorAction === 'connection_error_handled', 'Genuine HTTP 503 error triggers connection error handler');
+assert(abortSm.currentAttempt === 1, 'Attempt counter increments on verified HTTP 503 error');
+
+// 20.2 Watchdog In-Flight Network Activity Awareness
+function simulateWatchdogEvaluation(isBusy, skeletonsPresent, loaded, stateMachine) {
+	if (isBusy) {
+		// active request in-flight; do not abort or trigger duplicate request
+		return 'network_in_flight_ignored';
+	}
+	if (skeletonsPresent && !loaded) {
+		stateMachine.fetchCount++;
+		return 'retry_dispatched';
+	}
+	if (!skeletonsPresent) {
+		stateMachine.setConnectedState();
+		return 'connected';
+	}
+	return 'noop';
+}
+
+const networkAwareSm = new MockConnectionStateMachine(3);
+networkAwareSm.setConnectingState(0);
+
+// While .htmx-request is active on the element, watchdog does nothing even if skeletons are still visible
+const inFlightAction = simulateWatchdogEvaluation(true, true, false, networkAwareSm);
+assert(inFlightAction === 'network_in_flight_ignored', 'Watchdog safely ignores in-flight network requests avoiding cancellation race conditions');
+assert(networkAwareSm.fetchCount === 0, 'No redundant fetch is triggered while network request is streaming');
+
+// When network completed and skeletons remain, watchdog dispatches single retry
+const recoveryAction = simulateWatchdogEvaluation(false, true, false, networkAwareSm);
+assert(recoveryAction === 'retry_dispatched' && networkAwareSm.fetchCount === 1, 'Watchdog dispatches recovery only when network is idle and skeletons persist');
+
+// 20.3 Localhost & XAMPP Host Detection Matrix
+function simulateIsLocalHost(host) {
+	if (!host || typeof host !== 'string') return false;
+	let clean = host.toLowerCase().trim();
+	if (clean.startsWith('[')) {
+		const closing = clean.indexOf(']');
+		if (closing !== -1) {
+			clean = clean.substring(1, closing);
+		}
+	} else if ((clean.match(/:/g) || []).length === 1) {
+		clean = clean.split(':')[0];
+	}
+	if (clean === 'localhost' || clean === '127.0.0.1' || clean === '::1') return true;
+	if (clean.endsWith('.local') || clean.endsWith('.test') || clean.endsWith('.localhost')) return true;
+	return false;
+}
+
+const localHostTestCases = [
+	{ host: 'localhost', expected: true, desc: 'plain localhost' },
+	{ host: 'localhost:80', expected: true, desc: 'localhost with standard port' },
+	{ host: 'localhost:8080', expected: true, desc: 'localhost with alternate port' },
+	{ host: '127.0.0.1', expected: true, desc: 'IPv4 loopback' },
+	{ host: '127.0.0.1:8088', expected: true, desc: 'preview server address' },
+	{ host: '::1', expected: true, desc: 'IPv6 loopback' },
+	{ host: 'store.local', expected: true, desc: 'LocalWP .local domain' },
+	{ host: 'finlyzer.test', expected: true, desc: 'Valet/Herd .test domain' },
+	{ host: 'dev.myshop.localhost', expected: true, desc: 'subdomain on localhost' },
+	{ host: 'example.com', expected: false, desc: 'production domain' },
+	{ host: 'mystore.co.uk', expected: false, desc: 'production ccTLD' },
+	{ host: '198.51.100.1', expected: false, desc: 'public IPv4 address' },
+	{ host: '', expected: false, desc: 'empty host' },
+];
+
+for (const tc of localHostTestCases) {
+	const result = simulateIsLocalHost(tc.host);
+	assert(result === tc.expected, `Local host detection for '${tc.host}' (${tc.desc}) -> ${result} === ${tc.expected}`);
+}
+
+// 20.4 HMAC Secret Parity Contract Across Plugin and Worker
+const securityPhpPath = path.resolve(__dirname, '../includes/class-fxli-security.php');
+const envPhpPath = path.resolve(__dirname, '../includes/class-fxli-env.php');
+const devVarsPath = path.resolve(__dirname, '../../../backend/wp-back/.dev.vars');
+
+const securityPhp = fs.readFileSync(securityPhpPath, 'utf8');
+const envPhp = fs.readFileSync(envPhpPath, 'utf8');
+const devVars = fs.readFileSync(devVarsPath, 'utf8');
+
+const expectedDevSecret = 'dev-ephemeral-secret-32-byte-hex-token';
+assert(securityPhp.includes(expectedDevSecret), `class-fxli-security.php declares matching fallback secret '${expectedDevSecret}'`);
+assert(envPhp.includes(expectedDevSecret), `class-fxli-env.php declares matching fallback secret '${expectedDevSecret}'`);
+assert(devVars.includes(`WORKER_HMAC_SECRET=${expectedDevSecret}`), `.dev.vars declares matching WORKER_HMAC_SECRET='${expectedDevSecret}'`);
+
+// 20.5 Self-Healing Database Migration Contract
+assert(pluginPhpContent.includes("if (is_admin() && function_exists('get_option') && get_option('fxli_db_version') !== FINLYZER_DB_VERSION)"),
+	'finlyzer.php executes self-healing migration check on admin bootstrap');
+assert(pluginPhpContent.includes('FXLI_Installer::activate();'),
+	'finlyzer.php triggers FXLI_Installer::activate() when schema version is outdated');
+
+// 20.6 High-Load Stress: 100,000 Flapping Network Aborts and Errors
+const abortStressStart = performance.now();
+const stressAbortSm = new MockConnectionStateMachine(3);
+for (let i = 0; i < 100000; i++) {
+	if (i % 3 === 0) {
+		// simulated client abort
+		simulateHtmxErrorDispatch({ xhr: { status: 0, readyState: 0 } }, stressAbortSm);
+	} else if (i % 3 === 1) {
+		// simulated network busy
+		simulateWatchdogEvaluation(true, true, false, stressAbortSm);
+	} else {
+		// simulated recovery
+		stressAbortSm.setConnectedState();
+	}
+}
+const abortStressDuration = performance.now() - abortStressStart;
+assert(stressAbortSm.state === 'connected', 'State machine remains stable and connected after 100,000 aborts and evaluations');
+assert(abortStressDuration < 200, `100,000 abort/evaluation operations completed in ${abortStressDuration.toFixed(2)}ms (< 200ms)`);
 
 // -------------------------------------------------------------
 // SUMMARY

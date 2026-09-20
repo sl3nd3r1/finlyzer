@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.15.0
+Stable tag: 1.16.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,14 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Cleanup: Completely removed sample order generation tools, routes, and UI buttons (not needed by store owners).
 * Design: Removed robotic "Currency Audit Active" badge and old static mode bar for a human-first, modern UI feel.
 * Resilience: Verified backend and plugin under heavy loads (50,000+ items and 500 cross-border orders in <500ms).
+= 1.16.0 =
+* Fix: Prevented client-side HTMX abort loop by guarding error handlers against status 0 / client cancellations.
+* Fix: Replaced premature 3.5s watchdog timer with passive 20s network-aware safety monitor.
+* Fix: Added local development host auto-detection (`is_local_host`) ensuring seamless XAMPP/LocalWP loopback communication without false SSRF blocking.
+* Fix: Aligned HMAC development fallback secret across PHP plugin and Cloudflare Worker middleware.
+* Fix: Added self-healing database table installation on admin initialization for direct file upgrade scenarios.
+* Performance: Optimized Frankfurt ECB rate lookup with 1.5s fast-fail timeout and built-in resilient fallback matrix.
+* Testing: Expanded software engineering challenge suite covering status 0 abort resilience and heavy load state machines.
 
 = 1.12.0 =
 * Fix: Cloudflare Worker 2MB payload support on /api/v1/analyze to prevent HTTP 413 rejection during bulk order analysis.

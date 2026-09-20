@@ -18,6 +18,43 @@ final class FXLI_Env {
 
 	private static ?array $parsed_env_cache = null;
 
+	// check if the current server host represents a local development environment (e.g. XAMPP, WAMP, LocalWP, Docker)
+	public static function is_local_host(): bool {
+		// inspect server host variables
+		$host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+		if ($host === '' && function_exists('home_url')) {
+			$parsed = parse_url(home_url(), PHP_URL_HOST);
+			$host = is_string($parsed) ? $parsed : '';
+		}
+
+		if ($host === '') {
+			return false;
+		}
+
+		// clean host from port and IPv6 brackets
+		$clean = strtolower(trim($host));
+		if (str_starts_with($clean, '[')) {
+			$closing = strpos($clean, ']');
+			if ($closing !== false) {
+				$clean = substr($clean, 1, $closing - 1);
+			}
+		} elseif (substr_count($clean, ':') === 1) {
+			$clean = explode(':', $clean)[0];
+		}
+
+		// check standard loopback addresses (IPv4 & IPv6)
+		if ($clean === 'localhost' || $clean === '127.0.0.1' || $clean === '::1') {
+			return true;
+		}
+
+		// check standard local development domain suffixes
+		if (str_ends_with($clean, '.local') || str_ends_with($clean, '.test') || str_ends_with($clean, '.localhost')) {
+			return true;
+		}
+
+		return false;
+	}
+
 	// determine current environment mode (defaults to production if ambiguous)
 	public static function current_env(): string {
 		// 1. check wp-config constant override if explicitly declared
@@ -44,7 +81,13 @@ final class FXLI_Env {
 			}
 		}
 
-		// 5. check local .env.development file presence as fallback for local dev
+		// 5. auto-detect local developer host (XAMPP, LocalWP, Docker on localhost)
+		// unless explicitly marked as production, local hosts always operate in development mode
+		if (self::is_local_host()) {
+			return self::ENV_DEVELOPMENT;
+		}
+
+		// 6. check local .env.development file presence as fallback for local dev
 		$dev_env_file = FINLYZER_PLUGIN_DIR . '.env.development';
 		if (file_exists($dev_env_file) && !file_exists(FINLYZER_PLUGIN_DIR . '.env.production')) {
 			return self::ENV_DEVELOPMENT;
