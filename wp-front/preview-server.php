@@ -21,11 +21,15 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.13.0');
+	define('FINLYZER_VERSION', '1.17.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
 }
+
+require_once __DIR__ . '/includes/class-fxli-env.php';
+require_once __DIR__ . '/includes/class-fxli-security.php';
+require_once __DIR__ . '/includes/class-fxli-logger.php';
 
 // -------------------------------------------------------------
 // WordPress & WooCommerce Environment Mock Primitives
@@ -73,6 +77,12 @@ function wp_create_nonce(string $action = ''): string {
 }
 function rest_url(string $path = ''): string {
 	return '/wp-json/' . ltrim($path, '/');
+}
+function esc_url_raw(string $url): string {
+	return esc_url($url);
+}
+function esc_js(string $text): string {
+	return addslashes($text);
 }
 function wc_price(float $price, array $args = []): string {
 	$currency = $args['currency'] ?? 'USD';
@@ -446,7 +456,33 @@ if ($uri === '/wp-json/finlyzer/v1/insight') {
 	exit;
 }
 
-// 4. Main Admin Preview Shell
+// 4. Handle Developer Section Telemetry REST Endpoints
+if ($uri === '/wp-json/finlyzer/v1/test-connection') {
+	header('Content-Type: application/json; charset=utf-8');
+	$result = FXLI_Logger::get_instance()->test_connection();
+	echo json_encode($result);
+	exit;
+}
+
+if ($uri === '/wp-json/finlyzer/v1/logs') {
+	header('Content-Type: application/json; charset=utf-8');
+	$logs = FXLI_Logger::get_instance()->get_recent_logs();
+	echo json_encode([
+		'success' => true,
+		'count'   => count($logs),
+		'logs'    => $logs,
+	]);
+	exit;
+}
+
+if ($uri === '/wp-json/finlyzer/v1/clear-logs') {
+	header('Content-Type: application/json; charset=utf-8');
+	FXLI_Logger::get_instance()->clear_logs();
+	echo json_encode(['success' => true, 'message' => 'Telemetry buffer cleared']);
+	exit;
+}
+
+// 5. Main Admin Preview Shell
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!DOCTYPE html>

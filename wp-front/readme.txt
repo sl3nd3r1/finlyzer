@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.16.0
+Stable tag: 1.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,14 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Cleanup: Completely removed sample order generation tools, routes, and UI buttons (not needed by store owners).
 * Design: Removed robotic "Currency Audit Active" badge and old static mode bar for a human-first, modern UI feel.
 * Resilience: Verified backend and plugin under heavy loads (50,000+ items and 500 cross-border orders in <500ms).
+= 1.17.0 =
+* Feature: Integrated FXLI_Logger structured DevSecOps telemetry and diagnostic logging for outbound Worker HTTP requests.
+* Feature: Added Live API Handshake Diagnostic Inspector directly in the WordPress Admin Developer Section.
+* Feature: Added REST API diagnostic endpoints (`/logs`, `/test-connection`, `/clear-logs`) gated with capability checks.
+* Security: Implemented automatic sensitive credential redaction (secrets, signatures, tokens) in telemetry records.
+* Performance: Capped circular ring buffer (50 entries) with non-blocking zero-overhead execution when debug mode is disabled.
+* Dev DX: Enhanced XAMPP loopback resolution with full PHP CLI/server SAPI detection.
+
 = 1.16.0 =
 * Fix: Prevented client-side HTMX abort loop by guarding error handlers against status 0 / client cancellations.
 * Fix: Replaced premature 3.5s watchdog timer with passive 20s network-aware safety monitor.

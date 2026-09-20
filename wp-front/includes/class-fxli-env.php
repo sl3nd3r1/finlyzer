@@ -18,8 +18,13 @@ final class FXLI_Env {
 
 	private static ?array $parsed_env_cache = null;
 
-	// check if the current server host represents a local development environment (e.g. XAMPP, WAMP, LocalWP, Docker)
+	// check if the current server host represents a local development environment (e.g. XAMPP, WAMP, LocalWP, Docker, CLI)
 	public static function is_local_host(): bool {
+		// check if running in PHP CLI or built-in web server
+		if (php_sapi_name() === 'cli' || php_sapi_name() === 'cli-server') {
+			return true;
+		}
+
 		// inspect server host variables
 		$host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
 		if ($host === '' && function_exists('home_url')) {

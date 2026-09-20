@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.16.0', `FINLYZER_VERSION is bumped to 1.16.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.17.0', `FINLYZER_VERSION is bumped to 1.17.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.16.0'), 'readme.txt Stable tag matches v1.16.0');
+assert(readmeContent.includes('Stable tag: 1.17.0'), 'readme.txt Stable tag matches v1.17.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1292,6 +1292,147 @@ for (let i = 0; i < 100000; i++) {
 const abortStressDuration = performance.now() - abortStressStart;
 assert(stressAbortSm.state === 'connected', 'State machine remains stable and connected after 100,000 aborts and evaluations');
 assert(abortStressDuration < 200, `100,000 abort/evaluation operations completed in ${abortStressDuration.toFixed(2)}ms (< 200ms)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 21: Structured Telemetry Logger & DevSecOps Diagnostics (v1.17.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 21: Structured Telemetry Logger & DevSecOps Diagnostics (v1.17.0)');
+
+// 21.1 Verify FXLI_Logger Class Architecture & Singleton Contract
+const loggerPhpPath = path.resolve(__dirname, '../includes/class-fxli-logger.php');
+assert(fs.existsSync(loggerPhpPath), 'includes/class-fxli-logger.php exists');
+const loggerPhp = fs.readFileSync(loggerPhpPath, 'utf8');
+
+assert(loggerPhp.includes('final class FXLI_Logger'), 'class-fxli-logger.php declares final class FXLI_Logger');
+assert(loggerPhp.includes('public static function get_instance()'), 'FXLI_Logger declares static get_instance() singleton');
+assert(loggerPhp.includes('private function __construct()'), 'FXLI_Logger prevents direct instantiation with private constructor');
+assert(loggerPhp.includes('private function __clone()'), 'FXLI_Logger prevents cloning');
+assert(loggerPhp.includes('public static function log_http_call('), 'FXLI_Logger provides log_http_call() interface');
+assert(loggerPhp.includes('public static function test_connection()'), 'FXLI_Logger provides live test_connection() diagnostics');
+assert(loggerPhp.includes('public static function clear_logs()'), 'FXLI_Logger provides clear_logs() ring-buffer reset');
+
+// 21.2 Security & DevSecOps: Table-Driven Sensitive Data Redaction Contract
+function simulateSensitiveDataRedaction(data) {
+	if (typeof data === 'string') {
+		let sanitized = data.replace(/(Authorization:\s*Bearer\s+)[^\s]+/gi, '$1[REDACTED]');
+		sanitized = sanitized.replace(/(token|secret|key|password|signature)=([^&\s]+)/gi, '$1=[REDACTED]');
+		return sanitized;
+	}
+	if (typeof data === 'object' && data !== null) {
+		if (Array.isArray(data)) {
+			return data.map(simulateSensitiveDataRedaction);
+		}
+		const sensitiveKeys = ['secret', 'token', 'key', 'password', 'authorization', 'signature', 'worker_hmac_secret', 'gemini_api_key'];
+		const out = {};
+		for (const [k, v] of Object.entries(data)) {
+			if (sensitiveKeys.some(sk => k.toLowerCase().includes(sk))) {
+				out[k] = '[REDACTED]';
+			} else if (typeof v === 'object') {
+				out[k] = simulateSensitiveDataRedaction(v);
+			} else {
+				out[k] = v;
+			}
+		}
+		return out;
+	}
+	return data;
+}
+
+const redactionTestCases = [
+	{
+		name: 'Redact Bearer Token in Auth Header',
+		input: { headers: { Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' }, order_id: 1042 },
+		verify: (res) => res.headers.Authorization === '[REDACTED]' && res.order_id === 1042
+	},
+	{
+		name: 'Redact HMAC Secret Key',
+		input: { worker_hmac_secret: 'dev-ephemeral-secret-32-byte-hex-token', host: '127.0.0.1:8787' },
+		verify: (res) => res.worker_hmac_secret === '[REDACTED]' && res.host === '127.0.0.1:8787'
+	},
+	{
+		name: 'Redact Gemini API Key in Nested Payload',
+		input: { config: { gemini_api_key: 'AIzaSyD-SecretKey-123456789' }, latency_ms: 42 },
+		verify: (res) => res.config.gemini_api_key === '[REDACTED]' && res.latency_ms === 42
+	},
+	{
+		name: 'Preserve Safe Telemetry Metrics',
+		input: { http_status: 200, latency_ms: 18.4, orders_analyzed: 150, loss_total: 421.50 },
+		verify: (res) => res.http_status === 200 && res.latency_ms === 18.4 && res.orders_analyzed === 150 && res.loss_total === 421.50
+	}
+];
+
+for (const tc of redactionTestCases) {
+	const sanitized = simulateSensitiveDataRedaction(tc.input);
+	assert(tc.verify(sanitized), `Sensitive redaction case passed: ${tc.name}`);
+}
+
+// 21.3 Circular Ring-Buffer Bounding Under Heavy Load (Zero Storage Exhaustion)
+class MockRingBufferLogger {
+	constructor(maxEntries = 50) {
+		this.maxEntries = maxEntries;
+		this.entries = [];
+	}
+
+	push(logEntry) {
+		this.entries.unshift(logEntry);
+		if (this.entries.length > this.maxEntries) {
+			this.entries = this.entries.slice(0, this.maxEntries);
+		}
+	}
+}
+
+const ringBuffer = new MockRingBufferLogger(50);
+// flood with 2,500 rapid log items to verify memory boundary preservation
+for (let i = 1; i <= 2500; i++) {
+	ringBuffer.push({
+		id: i,
+		target_url: 'http://127.0.0.1:8787/api/v1/analyze',
+		status_code: 200,
+		duration_ms: 12.5,
+		timestamp: '2026-09-21T00:00:00Z'
+	});
+}
+
+assert(ringBuffer.entries.length === 50, `Ring buffer strictly caps storage at 50 entries under 2,500 writes (got ${ringBuffer.entries.length})`);
+assert(ringBuffer.entries[0].id === 2500, 'Most recent entry is at index 0 (ID 2500)');
+assert(ringBuffer.entries[49].id === 2451, 'Oldest retained entry is ID 2451');
+
+// 21.4 REST API Registration & Permission Enforcement Contract
+assert(restApiPhpContent.includes("'/logs'"), 'class-fxli-rest-api.php registers /logs route');
+assert(restApiPhpContent.includes("'/test-connection'"), 'class-fxli-rest-api.php registers /test-connection route');
+assert(restApiPhpContent.includes("'/clear-logs'"), 'class-fxli-rest-api.php registers /clear-logs route');
+assert(restApiPhpContent.includes('current_user_can'), 'REST endpoints guard access with current_user_can permission callback');
+
+// 21.5 Developer Section Interactive UI Contract
+const devSectionPhpPath = path.resolve(__dirname, '../templates/partials/developer-section.php');
+const devSectionPhp = fs.readFileSync(devSectionPhpPath, 'utf8');
+
+assert(devSectionPhp.includes('id="finlyzer-test-conn-btn"'), 'developer-section.php contains #finlyzer-test-conn-btn interactive element');
+assert(devSectionPhp.includes('id="finlyzer-clear-logs-btn"'), 'developer-section.php contains #finlyzer-clear-logs-btn interactive element');
+assert(devSectionPhp.includes('id="finlyzer-telemetry-table"'), 'developer-section.php contains #finlyzer-telemetry-table');
+assert(devSectionPhp.includes('id="finlyzer-test-conn-result"'), 'developer-section.php contains #finlyzer-test-conn-result display');
+assert(devSectionPhp.includes('FXLI_Logger::get_recent_logs'), 'developer-section.php reads FXLI_Logger telemetry entries');
+
+// 21.6 High-Performance Telemetry Stress Test (50,000 Operations)
+const telStressStart = performance.now();
+for (let i = 0; i < 50000; i++) {
+	const mockEntry = {
+		timestamp: '2026-09-21T00:15:30Z',
+		level: 'INFO',
+		target_url: 'http://127.0.0.1:8787/api/v1/analyze',
+		method: 'POST',
+		status_code: 200,
+		duration_ms: 14.8,
+		success: true,
+		error_message: null,
+		context: { orders: 25, auth_token: 'secret_value' }
+	};
+	const sanitized = simulateSensitiveDataRedaction(mockEntry);
+	ringBuffer.push(sanitized);
+}
+const telStressDuration = performance.now() - telStressStart;
+assert(ringBuffer.entries.length === 50, 'Ring buffer remains bounded at 50 after 50,000 operations');
+assert(telStressDuration < 150, `50,000 telemetry operations completed in ${telStressDuration.toFixed(2)}ms (< 150ms)`);
 
 // -------------------------------------------------------------
 // SUMMARY

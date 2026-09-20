@@ -62,6 +62,27 @@ final class FXLI_REST_API {
 						],
 					],
 				]);
+
+				// register telemetry diagnostic logs endpoint
+				register_rest_route($ns, '/logs', [
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [$this, 'handle_get_logs'],
+					'permission_callback' => [$this, 'permission_check'],
+				]);
+
+				// register live connection test endpoint
+				register_rest_route($ns, '/test-connection', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_test_connection'],
+					'permission_callback' => [$this, 'permission_check'],
+				]);
+
+				// register clear logs endpoint
+				register_rest_route($ns, '/clear-logs', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_clear_logs'],
+					'permission_callback' => [$this, 'permission_check'],
+				]);
 			}
 		});
 	}
@@ -146,5 +167,35 @@ final class FXLI_REST_API {
 		$html = (string) ob_get_clean();
 
 		return $this->serve_html($html, 200);
+	}
+
+	// retrieve recent telemetry diagnostic logs
+	public function handle_get_logs(WP_REST_Request $request): WP_REST_Response {
+		$logs = class_exists('FXLI_Logger') ? FXLI_Logger::get_recent_logs(50) : [];
+		return new WP_REST_Response([
+			'success' => true,
+			'count'   => count($logs),
+			'logs'    => $logs,
+		], 200);
+	}
+
+	// execute live connection diagnostic handshake
+	public function handle_test_connection(WP_REST_Request $request): WP_REST_Response {
+		$diagnostics = class_exists('FXLI_Logger') ? FXLI_Logger::test_connection() : [
+			'success' => false,
+			'error'   => 'FXLI_Logger class is not loaded',
+		];
+
+		$status_code = !empty($diagnostics['success']) ? 200 : 503;
+		return new WP_REST_Response($diagnostics, $status_code);
+	}
+
+	// clear stored telemetry diagnostic logs
+	public function handle_clear_logs(WP_REST_Request $request): WP_REST_Response {
+		$cleared = class_exists('FXLI_Logger') ? FXLI_Logger::clear_logs() : false;
+		return new WP_REST_Response([
+			'success' => $cleared,
+			'message' => 'Telemetry logs cleared successfully.',
+		], 200);
 	}
 }

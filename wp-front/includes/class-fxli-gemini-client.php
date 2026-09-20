@@ -86,7 +86,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.16.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.17.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -116,6 +116,7 @@ final class FXLI_Gemini_Client {
 		$timeout = class_exists('FXLI_Env') ? FXLI_Env::api_timeout() : 8;
 		$strict_ssl = class_exists('FXLI_Env') ? FXLI_Env::strict_ssl() : true;
 
+		$t0 = microtime(true);
 		// dispatch server-to-server POST request to the Cloudflare Worker
 		$response = wp_remote_post($endpoint, [
 			'timeout'   => $timeout,
@@ -130,12 +131,29 @@ final class FXLI_Gemini_Client {
 			],
 			'body'      => $body,
 		]);
+		$duration = round((microtime(true) - $t0) * 1000, 2);
 
 		// on network or HTTP error, evaluate environment calculation policies
-		if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+		if (is_wp_error($response)) {
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log_http_call($endpoint, 'POST', 'ERR', $duration, $response->get_error_message(), ['type' => 'insight']);
+			}
 			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
-				$status = is_wp_error($response) ? 503 : (int) wp_remote_retrieve_response_code($response);
-				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable (HTTP %d).', 'finlyzer'), $status));
+				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable: %s', 'finlyzer'), $response->get_error_message()));
+			}
+			$fallback = $this->generate_heuristic_warning($summary);
+			set_transient($cache_key, $fallback, HOUR_IN_SECONDS);
+			return $fallback;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code($response);
+		if (class_exists('FXLI_Logger')) {
+			FXLI_Logger::log_http_call($endpoint, 'POST', $code, $duration, $code === 200 ? null : wp_remote_retrieve_body($response), ['type' => 'insight']);
+		}
+
+		if ($code !== 200) {
+			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
+				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable (HTTP %d).', 'finlyzer'), $code));
 			}
 			$fallback = $this->generate_heuristic_warning($summary);
 			set_transient($cache_key, $fallback, HOUR_IN_SECONDS);
@@ -247,7 +265,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.16.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.17.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -264,6 +282,7 @@ final class FXLI_Gemini_Client {
 		$timeout = class_exists('FXLI_Env') ? FXLI_Env::api_timeout() : 12;
 		$strict_ssl = class_exists('FXLI_Env') ? FXLI_Env::strict_ssl() : true;
 
+		$t0 = microtime(true);
 		// dispatch server-to-server POST request to the Cloudflare Worker isolate
 		$response = wp_remote_post($endpoint, [
 			'timeout'   => $timeout,
@@ -278,13 +297,29 @@ final class FXLI_Gemini_Client {
 			],
 			'body'      => $body,
 		]);
+		$duration = round((microtime(true) - $t0) * 1000, 2);
 
 		if (is_wp_error($response)) {
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log_http_call($endpoint, 'POST', 'ERR', $duration, $response->get_error_message(), [
+					'type'        => 'analyze',
+					'order_count' => count($payload['orders'] ?? []),
+					'currency'    => $payload['store_currency'] ?? 'USD',
+				]);
+			}
 			return $response;
 		}
 
-		$code = wp_remote_retrieve_response_code($response);
+		$code = (int) wp_remote_retrieve_response_code($response);
 		$raw_body = wp_remote_retrieve_body($response);
+
+		if (class_exists('FXLI_Logger')) {
+			FXLI_Logger::log_http_call($endpoint, 'POST', $code, $duration, $code === 200 ? null : substr($raw_body, 0, 256), [
+				'type'        => 'analyze',
+				'order_count' => count($payload['orders'] ?? []),
+				'currency'    => $payload['store_currency'] ?? 'USD',
+			]);
+		}
 
 		if ($code !== 200) {
 			return new WP_Error('worker_http_error', "Worker returned HTTP status {$code}: {$raw_body}");
