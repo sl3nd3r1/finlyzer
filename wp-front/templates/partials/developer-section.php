@@ -42,6 +42,7 @@ $dev_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.16.0';
 $recent_logs = class_exists('FXLI_Logger') ? FXLI_Logger::get_recent_logs(15) : [];
 $nonce = wp_create_nonce('wp_rest');
 $test_endpoint = rest_url('finlyzer/v1/test-connection');
+$logs_endpoint = rest_url('finlyzer/v1/logs');
 $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 ?>
 
@@ -140,12 +141,14 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 	</div>
 
 	<!-- Outbound Telemetry Log Table -->
-	<div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 14px; margin-bottom: 16px;">
+	<div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 14px; margin-bottom: 16px;" id="finlyzer-telemetry-container">
 		<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
 			<div style="font-size: 11px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em;">
 				<?php esc_html_e('Recent Outbound HTTP Telemetry Log', 'finlyzer'); ?>
-				<span style="color: #94A3B8; font-weight: 400;">(<?php echo count($recent_logs); ?> <?php esc_html_e('entries', 'finlyzer'); ?>)</span>
+				<span id="finlyzer-telemetry-count" style="color: #94A3B8; font-weight: 400;">(<?php echo count($recent_logs); ?> <?php esc_html_e('entries', 'finlyzer'); ?>)</span>
 			</div>
+			<span style="font-size: 11px; color: #64748B;"><?php esc_html_e('Auto-captured on all outbound API calls', 'finlyzer'); ?></span>
+		</div>
 			<span style="font-size: 11px; color: #64748B;"><?php esc_html_e('Auto-captured on all outbound API calls', 'finlyzer'); ?></span>
 		</div>
 
@@ -229,8 +232,116 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 	var clearBtn = document.getElementById('finlyzer-clear-logs-btn');
 	var resultBox = document.getElementById('finlyzer-test-conn-result');
 	var testUrl = '<?php echo esc_url_raw($test_endpoint); ?>';
+	var logsUrl = '<?php echo esc_url_raw($logs_endpoint); ?>';
 	var clearUrl = '<?php echo esc_url_raw($clear_endpoint); ?>';
 	var nonce = '<?php echo esc_js($nonce); ?>';
+
+	// dynamic DOM updater for telemetry records without page reload (XSS-safe via textContent)
+	function refreshTelemetryTable() {
+		fetch(logsUrl, {
+			method: 'GET',
+			headers: {
+				'X-WP-Nonce': nonce
+			},
+			credentials: 'include'
+		})
+		.then(function(res) {
+			return res.json();
+		})
+		.then(function(data) {
+			if (!data || !Array.isArray(data.logs)) return;
+
+			var container = document.getElementById('finlyzer-telemetry-container');
+			if (!container) return;
+
+			var counter = document.getElementById('finlyzer-telemetry-count');
+			if (counter) {
+				counter.textContent = '(' + data.logs.length + ' entries)';
+			}
+
+			var tbody = container.querySelector('tbody');
+			if (!tbody) {
+				// if table was empty, reload to render table structure
+				window.location.reload();
+				return;
+			}
+
+			tbody.replaceChildren();
+
+			data.logs.forEach(function(entry) {
+				var status = (entry.context && entry.context.status !== undefined) ? entry.context.status : 'N/A';
+				var isOk = !isNaN(status) && parseInt(status, 10) === 200;
+				var badgeBg = isOk ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+				var badgeColor = isOk ? '#34D399' : '#F87171';
+				var duration = (entry.context && entry.context.duration_ms !== undefined) ? entry.context.duration_ms : 0;
+				var err = (entry.context && entry.context.error) ? entry.context.error : '';
+				var url = (entry.context && entry.context.endpoint) ? entry.context.endpoint : entry.message;
+				var timeStr = entry.timestamp ? entry.timestamp.slice(11) : '';
+
+				var tr = document.createElement('tr');
+				tr.style.borderBottom = '1px solid rgba(255, 255, 255, 0.04)';
+				tr.style.fontFamily = 'ui-monospace, SFMono-Regular, monospace';
+
+				var tdTime = document.createElement('td');
+				tdTime.style.padding = '6px 8px';
+				tdTime.style.color = '#64748B';
+				tdTime.style.whiteSpace = 'nowrap';
+				tdTime.textContent = timeStr;
+				tr.appendChild(tdTime);
+
+				var tdMethod = document.createElement('td');
+				tdMethod.style.padding = '6px 8px';
+				tdMethod.style.color = '#CBD5E1';
+				tdMethod.style.fontWeight = '600';
+				tdMethod.textContent = (entry.context && entry.context.method) ? entry.context.method : 'POST';
+				tr.appendChild(tdMethod);
+
+				var tdUrl = document.createElement('td');
+				tdUrl.style.padding = '6px 8px';
+				tdUrl.style.color = '#38BDF8';
+				tdUrl.style.maxWidth = '220px';
+				tdUrl.style.overflow = 'hidden';
+				tdUrl.style.textOverflow = 'ellipsis';
+				tdUrl.style.whiteSpace = 'nowrap';
+				tdUrl.textContent = url;
+				tr.appendChild(tdUrl);
+
+				var tdStatus = document.createElement('td');
+				tdStatus.style.padding = '6px 8px';
+				var spanBadge = document.createElement('span');
+				spanBadge.style.background = badgeBg;
+				spanBadge.style.color = badgeColor;
+				spanBadge.style.padding = '2px 6px';
+				spanBadge.style.borderRadius = '3px';
+				spanBadge.style.fontWeight = '600';
+				spanBadge.textContent = String(status);
+				tdStatus.appendChild(spanBadge);
+				tr.appendChild(tdStatus);
+
+				var tdLat = document.createElement('td');
+				tdLat.style.padding = '6px 8px';
+				tdLat.style.color = '#FBBF24';
+				tdLat.style.whiteSpace = 'nowrap';
+				tdLat.textContent = parseFloat(duration).toFixed(1) + ' ms';
+				tr.appendChild(tdLat);
+
+				var tdDetails = document.createElement('td');
+				tdDetails.style.padding = '6px 8px';
+				tdDetails.style.color = err ? '#F87171' : '#94A3B8';
+				tdDetails.style.maxWidth = '300px';
+				tdDetails.style.overflow = 'hidden';
+				tdDetails.style.textOverflow = 'ellipsis';
+				tdDetails.style.whiteSpace = 'nowrap';
+				tdDetails.textContent = err ? err : (isOk ? 'Handshake Verified' : entry.message);
+				tr.appendChild(tdDetails);
+
+				tbody.appendChild(tr);
+			});
+		})
+		.catch(function(e) {
+			console.warn('[Finlyzer Telemetry Error]', e);
+		});
+	}
 
 	if (testBtn && resultBox) {
 		testBtn.addEventListener('click', function() {
@@ -244,7 +355,8 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 				headers: {
 					'Content-Type': 'application/json',
 					'X-WP-Nonce': nonce
-				}
+				},
+				credentials: 'include'
 			})
 			.then(function(res) {
 				return res.json().then(function(data) {
@@ -283,6 +395,8 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 				}
 
 				resultBox.innerHTML = html;
+				// automatically refresh telemetry table to immediately display recorded outbound calls
+				refreshTelemetryTable();
 			})
 			.catch(function(err) {
 				testBtn.disabled = false;
@@ -300,7 +414,8 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 				headers: {
 					'Content-Type': 'application/json',
 					'X-WP-Nonce': nonce
-				}
+				},
+				credentials: 'include'
 			})
 			.then(function() {
 				window.location.reload();

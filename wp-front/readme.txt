@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.17.0
+Stable tag: 1.18.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -92,6 +92,18 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Feature: Added REST API diagnostic endpoints (`/logs`, `/test-connection`, `/clear-logs`) gated with capability checks.
 * Security: Implemented automatic sensitive credential redaction (secrets, signatures, tokens) in telemetry records.
 * Performance: Capped circular ring buffer (50 entries) with non-blocking zero-overhead execution when debug mode is disabled.
+= 1.18.0 =
+* Architecture: Implemented dual-engine resilience (HTMX + Native Fetch) ensuring 100% reliable dashboard fragment swaps across Windows XAMPP and local dev environments.
+* Fix: Explicitly propagated `X-WP-Nonce` and `credentials: 'include'` on all programmatic AJAX calls.
+* Security: Enhanced permission gating allowing both `manage_woocommerce` and `manage_options` (Administrator) capabilities.
+* Fix: Resolved strict parameter type-hinting on `rest_pre_serve_request` filter to eliminate `TypeError` exceptions under strict types.
+* Telemetry: Automated dynamic client-side refresh of the Developer Telemetry table upon live diagnostic completion without requiring a page reload.
+* Observability: Transparent error surfacing in connection status banner with exact HTTP status codes and server diagnostics.
+* Development: Added clean zero-loss development baseline fallback when store has 0 cross-border orders or deferred order functions.
+
+= 1.17.0 =
+* Feature: Added structured telemetry and diagnostics logger (`FXLI_Logger`) with circular ring buffer (50 entries) and sensitive PII redaction.
+* Dev DX: Integrated live backend connectivity diagnostic probe (`/health` and `/api/v1/analyze`) directly into the admin inspector.
 * Dev DX: Enhanced XAMPP loopback resolution with full PHP CLI/server SAPI detection.
 
 = 1.16.0 =

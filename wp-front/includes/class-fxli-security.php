@@ -13,12 +13,18 @@ if (!defined('ABSPATH')) {
 final class FXLI_Security {
 
 	public const CAPABILITY = 'manage_woocommerce';
+	public const ADMIN_CAPABILITY = 'manage_options';
 	public const NONCE_ACTION = 'wp_rest';
 
-	// verify user has required shop management privileges
+	// verify user has required shop management privileges or site administrator access
 	public static function current_user_can_manage(): bool {
-		// must be logged in and possess shop manager or admin capabilities
-		return is_user_logged_in() && current_user_can(self::CAPABILITY);
+		// assert user session is active
+		if (!is_user_logged_in()) {
+			return false;
+		}
+
+		// grant access to shop managers (WooCommerce) or site administrators (WordPress Core)
+		return current_user_can(self::CAPABILITY) || current_user_can(self::ADMIN_CAPABILITY);
 	}
 
 	// strictly verify the X-WP-Nonce header on REST requests

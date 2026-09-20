@@ -89,24 +89,43 @@ final class FXLI_REST_API {
 
 	// gate all endpoints with capability and nonce verification
 	public function permission_check(WP_REST_Request $request): bool {
-		// check logged in + manage_woocommerce capability
+		// assert user has manage permissions
 		if (!FXLI_Security::current_user_can_manage()) {
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log('warn', 'AUTH', 'REST API request rejected: insufficient user permissions', [
+					'endpoint' => $request->get_route(),
+					'user_id'  => function_exists('get_current_user_id') ? get_current_user_id() : 0,
+				]);
+			}
 			return false;
 		}
 
-		// check explicit REST nonce header
-		return FXLI_Security::verify_rest_nonce($request);
+		// strictly verify explicit REST nonce header
+		$valid_nonce = FXLI_Security::verify_rest_nonce($request);
+		if (!$valid_nonce && class_exists('FXLI_Logger')) {
+			FXLI_Logger::log('warn', 'AUTH', 'REST API request rejected: invalid or missing X-WP-Nonce', [
+				'endpoint' => $request->get_route(),
+			]);
+		}
+
+		return $valid_nonce;
 	}
 
 	// serve clean HTML fragment directly to htmx, bypassing WordPress JSON serialization
 	private function serve_html(string $html, int $status = 200): WP_REST_Response {
 		add_filter(
 			'rest_pre_serve_request',
-			static function (bool $served, WP_REST_Response $result, WP_REST_Request $request, WP_REST_Server $server) use ($html, $status): bool {
+			static function (bool $served, mixed $result, mixed $request, mixed $server) use ($html, $status): bool {
 				// send text/html headers explicitly through WordPress server
-				$server->set_status($status);
-				$server->send_header('Content-Type', 'text/html; charset=utf-8');
-				$server->send_header('Cache-Control', 'no-cache, private');
+				if ($server instanceof WP_REST_Server) {
+					$server->set_status($status);
+					$server->send_header('Content-Type', 'text/html; charset=utf-8');
+					$server->send_header('Cache-Control', 'no-cache, private');
+				} else {
+					header('Content-Type: text/html; charset=utf-8');
+					header('Cache-Control: no-cache, private');
+					http_response_code($status);
+				}
 
 				// echo raw un-encoded HTML directly to output stream
 				echo $html;
@@ -131,6 +150,13 @@ final class FXLI_REST_API {
 
 		// return 503 Service Unavailable if backend calculation API is unreachable
 		if (is_wp_error($summary)) {
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log('error', 'REST_API', sprintf('Summary analysis failed: %s (%s)', $summary->get_error_message(), $summary->get_error_code()), [
+					'endpoint' => $request->get_route(),
+					'code'     => $summary->get_error_code(),
+				]);
+			}
+
 			return new WP_REST_Response([
 				'code'    => $summary->get_error_code(),
 				'message' => $summary->get_error_message(),
@@ -152,6 +178,13 @@ final class FXLI_REST_API {
 
 		// return 503 Service Unavailable if backend calculation API is unreachable
 		if (is_wp_error($summary)) {
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log('error', 'REST_API', sprintf('Insight order scan failed: %s (%s)', $summary->get_error_message(), $summary->get_error_code()), [
+					'endpoint' => $request->get_route(),
+					'code'     => $summary->get_error_code(),
+				]);
+			}
+
 			return new WP_REST_Response([
 				'code'    => $summary->get_error_code(),
 				'message' => $summary->get_error_message(),

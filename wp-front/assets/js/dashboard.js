@@ -110,8 +110,8 @@
 		}, 300);
 	}
 
-	// display human-friendly connection lost banner with manual retry action
-	function setConnectionLostState() {
+	// display human-friendly connection lost banner with manual retry action and transparent error diagnostics
+	function setConnectionLostState(errDetail) {
 		var connStatus = document.getElementById('finlyzer-connection-status');
 		if (!connStatus) return;
 
@@ -137,12 +137,17 @@
 		if (retryBtn) retryBtn.style.display = 'inline-flex';
 
 		if (connText) {
-			connText.textContent = 'Connection to the Finlyzer calculation API was lost. We attempted to reconnect ' + MAX_ATTEMPTS + ' times without success.';
+			var baseMsg = 'Connection to the Finlyzer calculation API was lost';
+			if (errDetail && typeof errDetail === 'string' && errDetail.trim() !== '') {
+				connText.textContent = baseMsg + ' (' + errDetail.trim() + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+			} else {
+				connText.textContent = baseMsg + '. We attempted to reconnect ' + MAX_ATTEMPTS + ' times without success.';
+			}
 		}
 	}
 
 	// handle request failure and coordinate automatic retry with exponential backoff
-	function handleConnectionError() {
+	function handleConnectionError(errDetail) {
 		if (currentAttempt < MAX_ATTEMPTS) {
 			currentAttempt++;
 			setConnectingState(currentAttempt);
@@ -150,15 +155,16 @@
 			// exponential backoff delay: 1.5s, 3.0s, 4.5s
 			var delayMs = currentAttempt * 1500;
 			retryTimer = setTimeout(function () {
-				fetchData(currentDays);
+				// on subsequent attempts, prioritize native fetch engine to bypass any HTMX state issues
+				fetchData(currentDays, currentAttempt >= 2);
 			}, delayMs);
 		} else {
-			setConnectionLostState();
+			setConnectionLostState(errDetail);
 		}
 	}
 
-	// execute API fetch for summary and insight fragments
-	function fetchData(days) {
+	// execute API fetch for summary and insight fragments using dual-engine architecture (HTMX + Native Fetch)
+	function fetchData(days, forceNativeFetch) {
 		currentDays = days;
 		summaryLoaded = false;
 		insightLoaded = false;
@@ -177,36 +183,72 @@
 		if (summary) summary.setAttribute('hx-get', summaryUrl);
 		if (insight) insight.setAttribute('hx-get', insightUrl);
 
-		if (window.htmx && typeof window.htmx.ajax === 'function' && summary && insight) {
-			// dispatch via htmx ajax with credentials: true for reliable dom swap and lifecycle events
-			window.htmx.ajax('GET', summaryUrl, { target: summary, swap: 'innerHTML', credentials: true });
-			window.htmx.ajax('GET', insightUrl, { target: insight, swap: 'innerHTML', credentials: true });
-		} else if (summary && insight) {
-			// native fetch fallback when htmx is not present
-			var headers = {};
-			if (config && config.nonce) {
-				headers['X-WP-Nonce'] = config.nonce;
-			}
+		var headers = {
+			'Accept': 'text/html'
+		};
+		if (config && config.nonce) {
+			headers['X-WP-Nonce'] = config.nonce;
+		}
+
+		// native fetch fallback with credentials: 'include'
+		function executeNativeFetchFallback() {
+			if (!summary || !insight) return;
+
 			Promise.all([
 				fetch(summaryUrl, { headers: headers, credentials: 'include' }).then(function (r) {
-					if (!r.ok) throw new Error('HTTP ' + r.status);
+					if (!r.ok) {
+						return r.text().then(function (t) {
+							throw new Error('HTTP ' + r.status + (t ? ': ' + t.slice(0, 100) : ''));
+						});
+					}
 					return r.text();
 				}),
 				fetch(insightUrl, { headers: headers, credentials: 'include' }).then(function (r) {
-					if (!r.ok) throw new Error('HTTP ' + r.status);
+					if (!r.ok) {
+						return r.text().then(function (t) {
+							throw new Error('HTTP ' + r.status + (t ? ': ' + t.slice(0, 100) : ''));
+						});
+					}
 					return r.text();
 				}),
 			])
 				.then(function (results) {
+					// swap fragments safely
 					summary.innerHTML = results[0];
 					insight.innerHTML = results[1];
 					summaryLoaded = true;
 					insightLoaded = true;
 					setConnectedState();
 				})
-				.catch(function () {
-					handleConnectionError();
+				.catch(function (err) {
+					console.error('[Finlyzer Native Fetch Error]', err);
+					handleConnectionError(err.message || 'Fetch failed');
 				});
+		}
+
+		if (!forceNativeFetch && window.htmx && typeof window.htmx.ajax === 'function' && summary && insight) {
+			// dispatch via htmx ajax with explicit headers and credentials
+			try {
+				window.htmx.ajax('GET', summaryUrl, {
+					target: summary,
+					swap: 'innerHTML',
+					headers: headers,
+					credentials: 'include',
+					withCredentials: true
+				});
+				window.htmx.ajax('GET', insightUrl, {
+					target: insight,
+					swap: 'innerHTML',
+					headers: headers,
+					credentials: 'include',
+					withCredentials: true
+				});
+			} catch (err) {
+				console.warn('[Finlyzer HTMX Error] Failed to dispatch via htmx.ajax, falling back to native fetch', err);
+				executeNativeFetchFallback();
+			}
+		} else {
+			executeNativeFetchFallback();
 		}
 	}
 
@@ -248,8 +290,11 @@
 			if (!xhr || xhr.status === 0 || xhr.readyState === 0) {
 				return;
 			}
-			console.warn('[Finlyzer API Error] HTTP status ' + xhr.status + ' received for dashboard fragment.');
-			handleConnectionError();
+			var statusText = xhr.status ? 'HTTP ' + xhr.status : 'API error';
+			var respText = xhr.responseText ? xhr.responseText.slice(0, 100) : '';
+			var errDetail = statusText + (respText ? ' - ' + respText : '');
+			console.warn('[Finlyzer API Error] ' + errDetail + ' received for dashboard fragment.');
+			handleConnectionError(errDetail);
 		}
 	});
 
@@ -265,7 +310,7 @@
 				return;
 			}
 			console.warn('[Finlyzer Network Error] Failed to transmit request to calculation API.');
-			handleConnectionError();
+			handleConnectionError('Network transport error');
 		}
 	});
 

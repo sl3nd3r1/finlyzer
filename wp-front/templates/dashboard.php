@@ -10,7 +10,15 @@ $default_days = 30;
 $rest_summary_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/summary'));
 $rest_insight_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/insight'));
 $rest_nonce = wp_create_nonce('wp_rest');
+$rest_base_url = rest_url('finlyzer/v1');
 ?>
+<script>
+window.Finlyzer = window.Finlyzer || {
+	restUrl: '<?php echo esc_url_raw($rest_base_url); ?>',
+	nonce: '<?php echo esc_js($rest_nonce); ?>'
+};
+window.FXLI = window.Finlyzer;
+</script>
 <div class="finlyzer-app" id="finlyzer-app">
 
 	<!-- Top Navigation and Header -->
