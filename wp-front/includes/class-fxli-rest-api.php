@@ -206,7 +206,8 @@ final class FXLI_REST_API {
 			], 503);
 		}
 
-		$insight = FXLI_Gemini_Client::instance()->summarize($summary);
+		$force_refresh = (bool) $request->get_param('refresh') || (bool) $request->get_param('force');
+		$insight = FXLI_Gemini_Client::instance()->summarize($summary, $force_refresh);
 		$error = is_wp_error($insight) ? $insight->get_error_message() : null;
 
 		// capture template output buffer

@@ -52,12 +52,25 @@ final class FXLI_Gemini_Client {
 	}
 
 	// request or generate an AI risk warning insight based on order aggregates
-	public function summarize(array $summary): string|WP_Error {
+	public function summarize(array $summary, bool $force_refresh = false): string|WP_Error {
 		// generate deterministic cache key based on aggregated summary values
 		$cache_key = 'finlyzer_insight_' . md5(wp_json_encode($summary));
-		$cached = get_transient($cache_key);
-		if (is_string($cached) && $cached !== '') {
-			return $cached;
+
+		// inspect query parameters for administrative refresh trigger
+		if (!$force_refresh && !empty($_GET['refresh'])) {
+			$force_refresh = true;
+		}
+
+		if (!$force_refresh) {
+			$cached = get_transient($cache_key);
+			if (is_string($cached) && $cached !== '') {
+				// in development mode, check if cached text is heuristic fallback; if so, attempt live re-fetch
+				$is_fallback = str_contains($cached, 'in processor conversion fees') || str_contains($cached, 'All transactions in the last');
+				$is_dev = class_exists('FXLI_Env') && FXLI_Env::is_development();
+				if (!$is_dev || !$is_fallback) {
+					return $cached;
+				}
+			}
 		}
 
 		$endpoint = $this->worker_endpoint();
@@ -69,7 +82,8 @@ final class FXLI_Gemini_Client {
 				return new WP_Error('worker_unconfigured', __('Finlyzer AI Risk Sentinel API endpoint is not configured.', 'finlyzer'));
 			}
 			$fallback = $this->generate_heuristic_warning($summary);
-			set_transient($cache_key, $fallback, 6 * HOUR_IN_SECONDS);
+			$ttl = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? 10 : 6 * HOUR_IN_SECONDS;
+			set_transient($cache_key, $fallback, $ttl);
 			return $fallback;
 		}
 
@@ -86,7 +100,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.21.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.22.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -142,7 +156,8 @@ final class FXLI_Gemini_Client {
 				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable: %s', 'finlyzer'), $response->get_error_message()));
 			}
 			$fallback = $this->generate_heuristic_warning($summary);
-			set_transient($cache_key, $fallback, HOUR_IN_SECONDS);
+			$ttl = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? 10 : HOUR_IN_SECONDS;
+			set_transient($cache_key, $fallback, $ttl);
 			return $fallback;
 		}
 
@@ -156,7 +171,8 @@ final class FXLI_Gemini_Client {
 				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable (HTTP %d).', 'finlyzer'), $code));
 			}
 			$fallback = $this->generate_heuristic_warning($summary);
-			set_transient($cache_key, $fallback, HOUR_IN_SECONDS);
+			$ttl = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? 10 : HOUR_IN_SECONDS;
+			set_transient($cache_key, $fallback, $ttl);
 			return $fallback;
 		}
 
@@ -265,7 +281,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.21.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.22.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -283,17 +299,17 @@ final class FXLI_Gemini_Client {
 		$strict_ssl = class_exists('FXLI_Env') ? FXLI_Env::strict_ssl() : true;
 
 		$t0 = microtime(true);
-		// dispatch server-to-server POST request to the Cloudflare Worker isolate
+		// dispatch server-to-server POST request to the Cloudflare Worker analysis engine
 		$response = wp_remote_post($endpoint, [
 			'timeout'   => $timeout,
 			'sslverify' => $strict_ssl,
 			'headers'   => [
-				'Content-Type'    => 'application/json',
-				'X-FXLI-Site'     => self::site_id(),
-				'X-FXLI-Site-Url' => $payload['site_url'],
-				'X-FXLI-Version'  => $payload['plugin_version'],
-				'X-FXLI-Time'     => (string) $timestamp,
-				'X-FXLI-Sig'      => $signature,
+				'Content-Type'      => 'application/json',
+				'X-FXLI-Site'       => self::site_id(),
+				'X-FXLI-Site-Url'   => $payload['site_url'],
+				'X-FXLI-Version'    => $payload['plugin_version'],
+				'X-FXLI-Time'       => (string) $timestamp,
+				'X-FXLI-Sig'        => $signature,
 			],
 			'body'      => $body,
 		]);
@@ -307,7 +323,7 @@ final class FXLI_Gemini_Client {
 					'currency'    => $payload['store_currency'] ?? 'USD',
 				]);
 			}
-			return $response;
+			return new WP_Error('worker_http_error', sprintf(__('Worker network error: %s', 'finlyzer'), $response->get_error_message()));
 		}
 
 		$code = (int) wp_remote_retrieve_response_code($response);
@@ -331,6 +347,15 @@ final class FXLI_Gemini_Client {
 		}
 
 		return $data;
+	}
+
+	// purge all cached insights to ensure real-time synchronization
+	public static function flush_cache(): void {
+		// delete any transient starting with finlyzer_insight_
+		global $wpdb;
+		if (isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'query') && isset($wpdb->options)) {
+			$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_finlyzer_insight_%' OR option_name LIKE '_transient_timeout_finlyzer_insight_%'");
+		}
 	}
 
 	// generate a stable, non-PII site hash identifier

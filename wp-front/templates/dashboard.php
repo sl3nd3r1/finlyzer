@@ -119,12 +119,12 @@ window.FXLI = window.Finlyzer;
 						<span class="finlyzer-about-dot"></span>
 						<span><?php esc_html_e('Financial Systems Architecture', 'finlyzer'); ?></span>
 					</div>
-					<h3 class="finlyzer-about-title"><?php esc_html_e('Financial Risk Infrastructure', 'finlyzer'); ?></h3>
+					<h3 class="finlyzer-about-title"><?php esc_html_e('AI Powered Cross-Border Loss Visibility For WooCommerce', 'finlyzer'); ?></h3>
 					<p class="finlyzer-about-lead">
-						<?php esc_html_e('Automated forensic analytics reconciling multi-currency payment volume against European Central Bank interbank exchange rates to reveal hidden gateway spreads and settlement loss.', 'finlyzer'); ?>
+						<?php esc_html_e('AI Powered Cross-Border Loss Visibility For WooCommerce', 'finlyzer'); ?>
 					</p>
 					<p class="finlyzer-about-body">
-						<?php esc_html_e('Built for enterprise transaction volumes with WooCommerce High-Performance Order Storage (HPOS) compatibility, zero customer PII transmission, and real-time AI margin intelligence.', 'finlyzer'); ?>
+						<?php esc_html_e('Fast AI-driven analytics for WooCommerce foreign exchange loss.', 'finlyzer'); ?>
 					</p>
 					<div class="finlyzer-about-badges">
 						<span class="finlyzer-spec-chip">HPOS Architecture</span>
@@ -142,11 +142,11 @@ window.FXLI = window.Finlyzer;
 							</div>
 							<div class="finlyzer-author-meta">
 								<h4 class="finlyzer-author-name">Ebrahim Razmahang</h4>
-								<span class="finlyzer-author-role"><?php esc_html_e('Software Engineer & Backend Architect', 'finlyzer'); ?></span>
+								<span class="finlyzer-author-role"><?php esc_html_e('Software Engineer & Backend Developer', 'finlyzer'); ?></span>
 							</div>
 						</div>
 						<p class="finlyzer-author-tagline">
-							<?php esc_html_e('Senior Backend Developer and Software Engineer specializing in distributed financial systems, high-concurrency microservices, and payment settlement infrastructure.', 'finlyzer'); ?>
+							<?php esc_html_e('Founder of Finlyzer and Developer', 'finlyzer'); ?>
 						</p>
 						<div class="finlyzer-author-links">
 							<a

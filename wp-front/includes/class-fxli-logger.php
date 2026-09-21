@@ -229,6 +229,11 @@ final class FXLI_Logger {
 		$is_analyze_ok = isset($results['analyze_handshake']['status']) && (int) $results['analyze_handshake']['status'] === 200;
 		$results['success'] = $is_health_ok && $is_analyze_ok;
 
+		// upon successful connectivity verification, flush old insight transients so fresh AI runs immediately
+		if ($results['success'] && class_exists('FXLI_Gemini_Client')) {
+			FXLI_Gemini_Client::flush_cache();
+		}
+
 		return $results;
 	}
 

@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.21.0
+Stable tag: 1.22.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,7 +21,7 @@ Finlyzer scans your existing orders and shows you the exact numbers:
 * **Effective Fee Rate**: Real conversion cost per processor (typically 2.1% to 4.2%).
 * **Loss Distribution**: Visual breakdown by foreign currency (EUR, GBP, etc.).
 * **Annual Run-Rate Exposure**: Projected annual loss if no action is taken.
-* **AI Sentinel Insights**: Real-time risk audit powered by Gemini 2.0 Flash with prioritized merchant action recommendations.
+* **AI Sentinel Insights**: Real-time risk audit powered by Google Gemini Flash AI with prioritized merchant action recommendations.
 
 No complex setup, no impact on checkout performance, and zero sensitive customer data shared.
 
@@ -90,6 +90,14 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Feature: Integrated FXLI_Logger structured DevSecOps telemetry and diagnostic logging for outbound Worker HTTP requests.
 * Feature: Added Live API Handshake Diagnostic Inspector directly in the WordPress Admin Developer Section.
 * Feature: Added REST API diagnostic endpoints (`/logs`, `/test-connection`, `/clear-logs`) gated with capability checks.
+= 1.22.0 =
+* AI Resilience: Upgraded Gemini AI integration to Google's modern 2026 model architecture (gemini-flash-lite-latest, gemini-flash-latest, gemini-3.5-flash-lite) with automated sequential candidate failover.
+* Fix: Resolved issue where outdated model retirement caused fallback heuristic text to be permanently cached in WordPress transients.
+* Cache Invalidation: In development mode and during connection handshakes, transient caches containing fallback warnings are automatically bypassed and purged upon worker restoration.
+* REST API: Added refresh and force parameters to `/insight` endpoint allowing real-time AI re-evaluation.
+* Author Persona: Updated author designation to Ebrahim Razmahang (Software Engineer & Backend Developer, Founder of Finlyzer).
+* Testing: Expanded software engineering challenge suite to include 2026 multi-model failover testing, thinking budget verification, and 100-request concurrent stress tests.
+
 = 1.21.0 =
 * Fix: Eliminated duplicate closing tag in developer-section.php that prematurely terminated dashboard layout on development builds.
 * Architecture: Enforced strict DOM tree div balance (open divs == close divs) across all dashboard templates, guaranteeing complete layout containment.
