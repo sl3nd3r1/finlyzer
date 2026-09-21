@@ -15,18 +15,24 @@ $products_table = $wpdb->prefix . 'fxli_product_gateway_events';
 $wpdb->query("DROP TABLE IF EXISTS {$events_table}");
 $wpdb->query("DROP TABLE IF EXISTS {$products_table}");
 
-// delete version options
+// delete all Finlyzer and FXLI options and state settings
 delete_option('finlyzer_db_version');
 delete_option('fxli_db_version');
+delete_option('finlyzer_order_state_version');
+delete_option('finlyzer_telemetry_logs');
 
 // unschedule daily scanner cron
 wp_clear_scheduled_hook('fxli_daily_scan');
 
-// purge all Finlyzer cached transients
+// purge all Finlyzer database options and cached transients
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $wpdb->query(
 	"DELETE FROM {$wpdb->options}
-	 WHERE option_name LIKE '\\_transient\\_finlyzer\\_%'
+	 WHERE option_name LIKE 'finlyzer\\_%'
+	    OR option_name LIKE 'fxli\\_%'
+	    OR option_name LIKE '\\_transient\\_finlyzer\\_%'
 	    OR option_name LIKE '\\_transient\\_timeout\\_finlyzer\\_%'
 	    OR option_name LIKE '\\_transient\\_fxli\\_%'
 	    OR option_name LIKE '\\_transient\\_timeout\\_fxli\\_%'"
 );
+

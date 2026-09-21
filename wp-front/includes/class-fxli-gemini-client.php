@@ -51,27 +51,39 @@ final class FXLI_Gemini_Client {
 		return apply_filters('finlyzer_worker_endpoint', apply_filters('fxli_worker_endpoint', $endpoint));
 	}
 
-	// request or generate an AI risk warning insight based on order aggregates
+	// request or generate an AI risk warning insight based on order aggregates and order mutation state
 	public function summarize(array $summary, bool $force_refresh = false): string|WP_Error {
-		// generate deterministic cache key based on aggregated summary values
-		$cache_key = 'finlyzer_insight_' . md5(wp_json_encode($summary));
+		$days = max(7, min(90, (int) ($summary['period_days'] ?? 30)));
+		$option_key = "finlyzer_ai_insight_{$days}";
 
 		// inspect query parameters for administrative refresh trigger
-		if (!$force_refresh && !empty($_GET['refresh'])) {
+		if (!$force_refresh && (!empty($_GET['refresh']) || !empty($_GET['force']))) {
 			$force_refresh = true;
 		}
 
+		// calculate current order state fingerprint to detect newly arrived or modified orders
+		$current_fingerprint = class_exists('FXLI_Order_Analyzer')
+			? FXLI_Order_Analyzer::instance()->get_order_state_fingerprint($days)
+			: hash('sha256', (string) ($summary['order_count'] ?? 0) . ':' . (string) ($summary['total_loss'] ?? 0));
+
+		// if refresh is not forced, evaluate persisted analysis for unchanged order state
 		if (!$force_refresh) {
-			$cached = get_transient($cache_key);
-			if (is_string($cached) && $cached !== '') {
-				// in development mode, check if cached text is heuristic fallback; if so, attempt live re-fetch
-				$is_fallback = str_contains($cached, 'in processor conversion fees') || str_contains($cached, 'All transactions in the last');
-				$is_dev = class_exists('FXLI_Env') && FXLI_Env::is_development();
-				if (!$is_dev || !$is_fallback) {
-					return $cached;
+			$persisted = get_option($option_key);
+			if (is_array($persisted) && !empty($persisted['insight']) && isset($persisted['order_fingerprint'])) {
+				// if store orders have NOT changed since last analysis, return persisted insight (0 API calls, 0 tokens)
+				if ($persisted['order_fingerprint'] === $current_fingerprint) {
+					$cached_text = (string) $persisted['insight'];
+					$is_fallback = str_contains($cached_text, 'in processor conversion fees') || str_contains($cached_text, 'All transactions in the last');
+					$is_dev = class_exists('FXLI_Env') && FXLI_Env::is_development();
+					if (!$is_dev || !$is_fallback) {
+						return $cached_text;
+					}
 				}
 			}
 		}
+
+		// generate deterministic transient key based on aggregated summary values
+		$cache_key = 'finlyzer_insight_' . md5(wp_json_encode($summary));
 
 		$endpoint = $this->worker_endpoint();
 
@@ -84,6 +96,16 @@ final class FXLI_Gemini_Client {
 			$fallback = $this->generate_heuristic_warning($summary);
 			$ttl = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? 10 : 6 * HOUR_IN_SECONDS;
 			set_transient($cache_key, $fallback, $ttl);
+
+			// persist fallback with fingerprint
+			update_option($option_key, [
+				'insight'           => $fallback,
+				'order_fingerprint' => $current_fingerprint,
+				'order_count'       => (int) ($summary['order_count'] ?? 0),
+				'total_loss'        => (float) ($summary['total_loss'] ?? 0.0),
+				'generated_at'      => time(),
+			], false);
+
 			return $fallback;
 		}
 
@@ -100,7 +122,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.22.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.23.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -189,10 +211,41 @@ final class FXLI_Gemini_Client {
 			$insight = $this->generate_heuristic_warning($summary);
 		}
 
-		// cache successful insight for 12 hours
+		// cache successful insight in transients
 		set_transient($cache_key, $insight, 12 * HOUR_IN_SECONDS);
 
+		// persist newly generated AI insight with current order state fingerprint
+		update_option($option_key, [
+			'insight'           => $insight,
+			'order_fingerprint' => $current_fingerprint,
+			'order_count'       => (int) ($summary['order_count'] ?? 0),
+			'total_loss'        => (float) ($summary['total_loss'] ?? 0.0),
+			'generated_at'      => time(),
+		], false);
+
 		return $insight;
+	}
+
+	// retrieve metadata for the last persisted AI analysis of the given timeframe
+	public function get_last_analysis_meta(int $days = 30): ?array {
+		$days = max(7, min(90, $days));
+		$persisted = get_option("finlyzer_ai_insight_{$days}");
+		if (!is_array($persisted) || empty($persisted['insight'])) {
+			return null;
+		}
+
+		$current_fingerprint = class_exists('FXLI_Order_Analyzer')
+			? FXLI_Order_Analyzer::instance()->get_order_state_fingerprint($days)
+			: '';
+
+		return [
+			'insight'           => (string) $persisted['insight'],
+			'order_fingerprint' => (string) ($persisted['order_fingerprint'] ?? ''),
+			'order_count'       => (int) ($persisted['order_count'] ?? 0),
+			'total_loss'        => (float) ($persisted['total_loss'] ?? 0.0),
+			'generated_at'      => (int) ($persisted['generated_at'] ?? 0),
+			'is_up_to_date'     => ($current_fingerprint !== '' && ($persisted['order_fingerprint'] ?? '') === $current_fingerprint),
+		];
 	}
 
 	// generate an immediate, data-backed financial risk warning when AI Worker is offline/unconfigured
@@ -281,7 +334,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.22.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.23.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {

@@ -1,5 +1,5 @@
 /**
- * Finlyzer — Dashboard Client Controller (v1.22.0)
+ * Finlyzer — Dashboard Client Controller (v1.23.0)
  *
  * Implements strict Content-Security-Policy and modern web security standards:
  *  - Idempotent DOM readiness lifecycle (handles 'loading', 'interactive', and 'complete' states)

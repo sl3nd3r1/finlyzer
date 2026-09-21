@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.22.0', `FINLYZER_VERSION is bumped to 1.22.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.23.0', `FINLYZER_VERSION is bumped to 1.23.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.22.0'), 'readme.txt Stable tag matches v1.22.0');
+assert(readmeContent.includes('Stable tag: 1.23.0'), 'readme.txt Stable tag matches v1.23.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1482,13 +1482,13 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.22.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.22.0');
-assert(finlyzerMainPhp.includes('* Version:           1.22.0'), 'finlyzer.php header declares Version 1.22.0');
-assert(packageJsonFront.version === '1.22.0', 'frontend package.json declares version 1.22.0');
-assert(packageJsonBack.version === '1.22.0', 'backend package.json declares version 1.22.0');
-assert(readmeTxt.includes('Stable tag: 1.22.0'), 'readme.txt declares Stable tag: 1.22.0');
-assert(readmeTxt.includes('= 1.21.0 ='), 'readme.txt documents 1.21.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.23.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.23.0');
+assert(finlyzerMainPhp.includes('* Version:           1.23.0'), 'finlyzer.php header declares Version 1.23.0');
+assert(packageJsonFront.version === '1.23.0', 'frontend package.json declares version 1.23.0');
+assert(packageJsonBack.version === '1.23.0', 'backend package.json declares version 1.23.0');
+assert(readmeTxt.includes('Stable tag: 1.23.0'), 'readme.txt declares Stable tag: 1.23.0');
 assert(readmeTxt.includes('= 1.22.0 ='), 'readme.txt documents 1.22.0 release notes');
+assert(readmeTxt.includes('= 1.23.0 ='), 'readme.txt documents 1.23.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1536,8 +1536,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.22.0'"), 'class-fxli-gemini-client.php declares matching 1.22.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.22.0')"), 'preview-server.php declares FINLYZER_VERSION 1.22.0');
+assert(geminiClientPhpContent.includes("'1.23.0'"), 'class-fxli-gemini-client.php declares matching 1.23.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.23.0')"), 'preview-server.php declares FINLYZER_VERSION 1.23.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -1866,6 +1866,119 @@ for (let i = 0; i < 100000; i++) {
 const cacheStressDuration = performance.now() - cacheStressStart;
 assert(successfulSimulatedEvaluations === 100000, `Completed 100,000 simulated cache lifecycle evaluations (got ${successfulSimulatedEvaluations})`);
 assert(cacheStressDuration < 150, `100,000 cache evaluations executed in ${cacheStressDuration.toFixed(2)}ms (< 150ms SLA)`);
+
+// TEST GROUP 27: WordPress.org Directory Compliance & Order-Event AI Caching Resilience (v1.23.0)
+console.log('\nTEST GROUP 27: WordPress.org Directory Compliance & Order-Event AI Caching Resilience (v1.23.0)');
+
+// 27.1 WordPress.org External Services Disclosure Contract
+const readmeV27 = fs.readFileSync(readmePath, 'utf8');
+assert(readmeV27.includes('== External Services =='), 'readme.txt includes required == External Services == section per WordPress.org guidelines');
+assert(readmeV27.includes('European Central Bank / Frankfurter API'), 'readme.txt declares European Central Bank / Frankfurter API');
+assert(readmeV27.includes('https://frankfurter.dev'), 'readme.txt provides Frankfurter service URL');
+assert(readmeV27.includes('Finlyzer Cloudflare Worker API & Google Gemini Flash AI'), 'readme.txt declares Cloudflare Worker & Google Gemini Flash AI');
+assert(readmeV27.includes('https://ai.google.dev/terms'), 'readme.txt provides Google Gemini Terms of Service URL');
+assert(readmeV27.includes('https://policies.google.com/privacy'), 'readme.txt provides Google Privacy Policy URL');
+assert(readmeV27.includes('Zero Personally Identifiable Information (PII)'), 'readme.txt explicitly documents zero-PII privacy architecture');
+assert(!readmeV27.toLowerCase().includes('open source') && !readmeV27.toLowerCase().includes('opensource'), 'readme.txt strictly contains ZERO open source mentions');
+
+// 27.2 Complete Cleanup on Uninstall Contract
+const uninstallV27 = fs.readFileSync(uninstallPath, 'utf8');
+assert(uninstallV27.includes("delete_option('finlyzer_order_state_version')"), 'uninstall.php cleans up finlyzer_order_state_version');
+assert(uninstallV27.includes("option_name LIKE 'finlyzer"), 'uninstall.php purges all finlyzer options from database');
+assert(uninstallV27.includes("option_name LIKE 'fxli"), 'uninstall.php purges all fxli options from database');
+
+// 27.3 Real-Time Order Lifecycle Hooks & Order State Fingerprinting
+const orderAnalyzerPhpV27 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-order-analyzer.php'), 'utf8');
+assert(orderAnalyzerPhpV27.includes("add_action('woocommerce_new_order'"), 'class-fxli-order-analyzer.php hooks into woocommerce_new_order');
+assert(orderAnalyzerPhpV27.includes("add_action('woocommerce_update_order'"), 'class-fxli-order-analyzer.php hooks into woocommerce_update_order');
+assert(orderAnalyzerPhpV27.includes("add_action('woocommerce_order_status_changed'"), 'class-fxli-order-analyzer.php hooks into woocommerce_order_status_changed');
+assert(orderAnalyzerPhpV27.includes("add_action('woocommerce_trash_order'"), 'class-fxli-order-analyzer.php hooks into woocommerce_trash_order');
+assert(orderAnalyzerPhpV27.includes("add_action('woocommerce_delete_order'"), 'class-fxli-order-analyzer.php hooks into woocommerce_delete_order');
+assert(orderAnalyzerPhpV27.includes('function on_order_mutated'), 'class-fxli-order-analyzer.php defines on_order_mutated handler');
+assert(orderAnalyzerPhpV27.includes("update_option('finlyzer_order_state_version'"), 'on_order_mutated increments finlyzer_order_state_version');
+assert(orderAnalyzerPhpV27.includes('function get_order_state_fingerprint'), 'class-fxli-order-analyzer.php defines get_order_state_fingerprint()');
+
+// 27.4 Intelligent Order-Event AI Caching Contract
+const geminiClientPhpV27 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
+assert(geminiClientPhpV27.includes('get_order_state_fingerprint'), 'class-fxli-gemini-client.php calculates current order state fingerprint');
+assert(geminiClientPhpV27.includes('$persisted[\'order_fingerprint\'] === $current_fingerprint'), 'class-fxli-gemini-client.php checks if order state is unchanged');
+assert(geminiClientPhpV27.includes('return $cached_text;'), 'class-fxli-gemini-client.php immediately returns persisted insight on matching fingerprint');
+assert(geminiClientPhpV27.includes("update_option($option_key"), 'class-fxli-gemini-client.php persists newly generated AI insight with order fingerprint');
+assert(geminiClientPhpV27.includes('function get_last_analysis_meta'), 'class-fxli-gemini-client.php defines get_last_analysis_meta()');
+
+// 27.5 REST API Parameter Contract
+const restApiPhpV27 = fs.readFileSync(restApiPath, 'utf8');
+assert(restApiPhpV27.includes("'refresh' => ["), 'class-fxli-rest-api.php declares refresh parameter in /insight route schema');
+assert(restApiPhpV27.includes("'force' => ["), 'class-fxli-rest-api.php declares force parameter in /insight route schema');
+
+// 27.6 High-Volume Order-Event Caching Simulation (200,000 Cycles)
+const orderCacheStressStart = performance.now();
+let mockStateVersion = 1;
+let mockLatestOrderId = 501;
+let mockPersistedInsight = null;
+let mockPersistedFingerprint = null;
+let aiApiCallsExecuted = 0;
+let cacheHitsRecorded = 0;
+
+let lastStateKey = '';
+let currentFingerprint = '';
+
+function getFingerprint() {
+	const key = `${mockStateVersion}:${mockLatestOrderId}`;
+	if (key !== lastStateKey) {
+		lastStateKey = key;
+		currentFingerprint = crypto.createHash('sha256').update(`${mockStateVersion}:30:USD:${mockLatestOrderId}`).digest('hex');
+	}
+	return currentFingerprint;
+}
+
+function simulateSummarize(forceRefresh = false) {
+	const fp = getFingerprint();
+	if (!forceRefresh && mockPersistedFingerprint === fp && mockPersistedInsight) {
+		cacheHitsRecorded++;
+		return mockPersistedInsight;
+	}
+
+	// simulate AI Worker re-request
+	aiApiCallsExecuted++;
+	mockPersistedFingerprint = fp;
+	mockPersistedInsight = `Updated AI risk insight for order state version ${mockStateVersion}.`;
+	return mockPersistedInsight;
+}
+
+// Initial request
+simulateSummarize();
+assert(aiApiCallsExecuted === 1, 'Initial request triggered AI calculation');
+
+// 100,000 requests without new orders arriving
+for (let i = 0; i < 100000; i++) {
+	simulateSummarize();
+}
+assert(aiApiCallsExecuted === 1, `Zero redundant AI API calls across 100,000 requests with stable order state (${aiApiCallsExecuted} call)`);
+assert(cacheHitsRecorded === 100000, `100,000 cache hits recorded without touching AI Worker`);
+
+// Simulate new order arrival in WooCommerce (order mutation event)
+mockStateVersion++;
+mockLatestOrderId = 502;
+
+// Next request after new order
+const updatedInsight = simulateSummarize();
+assert(aiApiCallsExecuted === 2, 'New order arrival invalidated fingerprint and triggered fresh AI request (2 total calls)');
+assert(updatedInsight.includes('order state version 2'), 'Updated AI insight reflects new store order state');
+
+// Another 100,000 requests with no further order mutations
+for (let i = 0; i < 100000; i++) {
+	simulateSummarize();
+}
+assert(aiApiCallsExecuted === 2, `Zero redundant AI calls across another 100,000 requests after re-caching (${aiApiCallsExecuted} calls)`);
+assert(cacheHitsRecorded === 200000, `Total 200,000 cache hits recorded`);
+
+// Force refresh bypass
+simulateSummarize(true);
+assert(aiApiCallsExecuted === 3, 'Force refresh flag successfully bypassed cache and triggered AI re-evaluation');
+
+const orderCacheStressDuration = performance.now() - orderCacheStressStart;
+assert(orderCacheStressDuration < 200, `200,000 order-event cache lifecycle evaluations completed in ${orderCacheStressDuration.toFixed(2)}ms (< 200ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

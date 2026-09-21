@@ -23,25 +23,86 @@ final class FXLI_Order_Analyzer {
 		return self::$instance ??= new self();
 	}
 
-	// register daily cron listener and real-time order completion hooks on construction
+	// register daily cron listener and real-time order lifecycle hooks on construction
 	private function __construct() {
+		// schedule daily cron scanner
 		add_action('fxli_daily_scan', [$this, 'scan_recent_orders']);
-		add_action('woocommerce_order_status_completed', [$this, 'on_order_status_changed'], 10, 1);
-		add_action('woocommerce_payment_complete', [$this, 'on_order_status_changed'], 10, 1);
-		add_action('woocommerce_order_status_processing', [$this, 'on_order_status_changed'], 10, 1);
+
+		// register real-time WooCommerce order lifecycle mutations
+		add_action('woocommerce_new_order', [$this, 'on_order_mutated'], 10, 1);
+		add_action('woocommerce_update_order', [$this, 'on_order_mutated'], 10, 1);
+		add_action('woocommerce_order_status_changed', [$this, 'on_order_mutated'], 10, 1);
+		add_action('woocommerce_order_status_completed', [$this, 'on_order_mutated'], 10, 1);
+		add_action('woocommerce_payment_complete', [$this, 'on_order_mutated'], 10, 1);
+		add_action('woocommerce_order_status_processing', [$this, 'on_order_mutated'], 10, 1);
+		add_action('woocommerce_trash_order', [$this, 'on_order_mutated'], 10, 1);
+		add_action('woocommerce_delete_order', [$this, 'on_order_mutated'], 10, 1);
 	}
 
-	// update and cache order metrics in real-time when an order completes or updates
-	public function on_order_status_changed(int $order_id = 0): void {
+	// update and cache order metrics in real-time when an order is created, modified, completed, or deleted
+	public function on_order_mutated(mixed $order_id = 0): void {
+		// resolve numeric ID if WC_Order object was passed directly
+		$id = 0;
+		if (is_numeric($order_id)) {
+			$id = (int) $order_id;
+		} elseif (is_object($order_id) && method_exists($order_id, 'get_id')) {
+			$id = (int) $order_id->get_id();
+		}
+
 		// load order instance and cache spread loss calculation immediately
-		if ($order_id > 0 && function_exists('wc_get_order')) {
-			$order = wc_get_order($order_id);
+		if ($id > 0 && function_exists('wc_get_order')) {
+			$order = wc_get_order($id);
 			if ($order instanceof WC_Order) {
 				$this->cache_order_estimate($order, get_woocommerce_currency());
 			}
 		}
 
+		// bump global order state version to signal order mutations to the AI insight caching layer
+		$state_version = (int) get_option('finlyzer_order_state_version', 1);
+		update_option('finlyzer_order_state_version', $state_version + 1, false);
+
+		// invalidate cached summary transients
 		$this->clear_summary_transients();
+	}
+
+	// backward compatibility alias for legacy hook references
+	public function on_order_status_changed(mixed $order_id = 0): void {
+		$this->on_order_mutated($order_id);
+	}
+
+	// generate deterministic order state fingerprint based on current store orders, version, and timeframe
+	public function get_order_state_fingerprint(int $days = 30): string {
+		// enforce valid reporting period bounds
+		$days = max(7, min(90, $days));
+		$store_currency = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
+		$state_version = (int) get_option('finlyzer_order_state_version', 1);
+
+		$latest_id = 0;
+		$latest_date = '';
+
+		// inspect latest order in reporting window to capture recent timestamp
+		if (function_exists('wc_get_orders')) {
+			$since = (new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
+			$statuses = apply_filters('finlyzer_scanned_order_statuses', ['processing', 'completed', 'wc-processing', 'wc-completed']);
+
+			$recent = wc_get_orders([
+				'status'       => $statuses,
+				'date_created' => '>=' . $since,
+				'limit'        => 1,
+				'orderby'      => 'date',
+				'order'        => 'DESC',
+				'return'       => 'objects',
+			]);
+
+			if (!empty($recent) && $recent[0] instanceof WC_Order) {
+				$latest_id = (int) $recent[0]->get_id();
+				$latest_date = (string) ($recent[0]->get_date_modified()?->date('c') ?? $recent[0]->get_date_created()?->date('c') ?? '');
+			}
+		}
+
+		// compose fingerprint combining state version, lookback window, store currency, and latest order
+		$seed = "{$state_version}:{$days}:{$store_currency}:{$latest_id}:{$latest_date}";
+		return hash('sha256', $seed);
 	}
 
 	// scan recent store orders (invoked via WP-Cron daily trigger)

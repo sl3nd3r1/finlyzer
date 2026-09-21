@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.22.0');
+	define('FINLYZER_VERSION', '1.23.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
@@ -267,6 +267,20 @@ if (!function_exists('update_option')) {
 		$data[$option] = $value;
 		file_put_contents($file, (string) json_encode($data, JSON_PRETTY_PRINT));
 		return true;
+	}
+}
+if (!function_exists('delete_option')) {
+	function delete_option(string $option): bool {
+		$file = sys_get_temp_dir() . '/finlyzer_preview_options.json';
+		if (file_exists($file)) {
+			$data = json_decode((string) file_get_contents($file), true);
+			if (is_array($data) && array_key_exists($option, $data)) {
+				unset($data[$option]);
+				file_put_contents($file, (string) json_encode($data, JSON_PRETTY_PRINT));
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

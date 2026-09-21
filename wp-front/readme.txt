@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.22.0
+Stable tag: 1.23.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,6 +36,23 @@ No complex setup, no impact on checkout performance, and zero sensitive customer
 * **Resilient Connection Lifecycle**: Automated API health detection with exponential backoff retry and clear human-friendly status reporting.
 * **Privacy by Design**: Runs directly on your store database; customer names, emails, and payment details are never collected or transmitted.
 
+== External Services ==
+
+Finlyzer connects to the following external third-party services to deliver accurate exchange rates and automated AI risk analysis:
+
+* **European Central Bank / Frankfurter API**: Used to retrieve real-time and historical currency exchange reference rates to evaluate payment processor conversion fee markups and market timing rate shifts.
+  - Service: https://frankfurter.dev / https://www.ecb.europa.eu
+  - Terms of Service: https://frankfurter.dev
+  - Privacy Policy: https://frankfurter.dev
+  - Data Sent: Target and store currency ISO codes (e.g., "EUR", "USD") and order dates. No store details, customer records, or financial transaction identifiers are ever sent.
+
+* **Finlyzer Cloudflare Worker API & Google Gemini Flash AI**: Used to calculate cross-border payment gateway fee spreads, run multi-processor loss attribution, and generate executive AI financial risk assessments.
+  - Service: https://finlyzer.com & https://ai.google.dev
+  - Google Gemini Terms of Service: https://ai.google.dev/terms
+  - Google Privacy Policy: https://policies.google.com/privacy
+  - Data Sent: Anonymized, store-level aggregate order metrics (total foreign currency transaction volume, aggregate conversion fee estimates, currency breakdown, and order counts).
+  - **Zero Personally Identifiable Information (PII)**: Customer names, email addresses, phone numbers, billing/shipping physical addresses, IP addresses, payment card credentials, and individual order IDs are never collected, logged, or transmitted.
+
 == Installation ==
 
 ### WordPress Admin Upload (Recommended)
@@ -63,6 +80,14 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.23.0 =
+* Compliance: Added dedicated External Services disclosure section in readme.txt compliant with WordPress.org Plugin Directory guidelines (European Central Bank / Frankfurter API and Finlyzer Cloudflare Worker / Google Gemini Flash AI).
+* Privacy & Security: Formally documented zero-PII data handling architecture; customer names, emails, addresses, and order numbers are never collected or sent.
+* Optimization: Implemented intelligent order-event-driven AI caching mechanism. Gemini AI risk audits are cached permanently and only re-requested when new WooCommerce orders arrive or order status mutates, drastically reducing API requests and token overhead.
+* Lifecycle: Registered real-time order lifecycle hooks (woocommerce_new_order, woocommerce_update_order, woocommerce_order_status_changed, woocommerce_trash_order) to invalidate caches and trigger state fingerprint updates.
+* Uninstallation: Hardened uninstall.php to cleanly purge all order state options, AI insight caches, telemetry logs, and transients upon plugin deletion.
+* Tests: Added Software Engineering challenge suite Test Group 27 verifying WordPress.org guideline compliance, External Services disclosure, order fingerprinting, and 100,000-request AI cache efficiency.
 
 = 1.15.0 =
 * Fix: Resolved client controller DOMContentLoaded race condition in footer scripts by implementing an idempotent DOM readiness dispatcher.

@@ -60,6 +60,18 @@ final class FXLI_REST_API {
 							'validate_callback' => static fn($v): bool => is_numeric($v) && (int) $v >= 7 && (int) $v <= 90,
 							'sanitize_callback' => static fn($v): int => max(7, min(90, (int) $v)),
 						],
+						'refresh' => [
+							'required'          => false,
+							'default'           => false,
+							'type'              => 'boolean',
+							'sanitize_callback' => static fn($v): bool => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+						],
+						'force' => [
+							'required'          => false,
+							'default'           => false,
+							'type'              => 'boolean',
+							'sanitize_callback' => static fn($v): bool => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+						],
 					],
 				]);
 
