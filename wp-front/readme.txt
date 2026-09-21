@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.19.0
+Stable tag: 1.20.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -90,7 +90,15 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Feature: Integrated FXLI_Logger structured DevSecOps telemetry and diagnostic logging for outbound Worker HTTP requests.
 * Feature: Added Live API Handshake Diagnostic Inspector directly in the WordPress Admin Developer Section.
 * Feature: Added REST API diagnostic endpoints (`/logs`, `/test-connection`, `/clear-logs`) gated with capability checks.
-* Security: Implemented automatic sensitive credential redaction (secrets, signatures, tokens) in telemetry records.
+= 1.20.0 =
+* UX: Implemented Progressive Disclosure for dashboard metrics. Detailed breakdown tables (Currency Analysis, ECB Market Timing, Payment Gateways, and Top Products) are now collapsed by default into an accessible, interactive drawer with subtab filtering.
+* UX: End-users immediately see only essential executive figures (Total Currency Loss, Effective Fee Rate, Annual Run-Rate, AI Sentinel Insights) without information overload.
+* Feature: Added dedicated "About Finlyzer" section honoring author Ebrahim Razmahang with direct GitHub (https://github.com/sl3nd3r1) and LinkedIn (https://www.linkedin.com/in/ebrahimrazmahang) links.
+* Navigation: Added one-click "About" navigation in header toolbar with smooth scrolling to author attribution.
+* Security: Strictly enforced target="_blank" rel="noopener noreferrer" on all external profile links per mandatory-secure-web-skills (reverse tab-nabbing immunity).
+* Accessibility: Enhanced ARIA attributes (role="tablist", aria-selected, aria-expanded, aria-controls) across progressive disclosure drawer and subtabs.
+* Testing: Added Test Group 24 with 100,000 rapid toggle cycles, subtab isolation tests, and full multi-component version parity validation.
+
 = 1.19.0 =
 * Fix: Resolved fatal error `Call to protected method WP_REST_Server::set_status()` on WordPress REST API fragment delivery by utilizing canonical `status_header($status)` with fallback to `http_response_code($status)`.
 * Security: Hardened REST API response headers per mandatory-secure-web-skills with `X-Content-Type-Options: nosniff` and `Cache-Control: no-cache, no-store, must-revalidate, private`.

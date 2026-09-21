@@ -160,10 +160,71 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 	</div>
 <?php endif; ?>
 
-<!-- Detailed Currency Statement Ledger -->
-<div class="finlyzer-ledger-card">
-	<div class="finlyzer-ledger-header">
-		<h3 class="finlyzer-ledger-title"><?php esc_html_e('Loss by Currency', 'finlyzer'); ?></h3>
+<!-- Progressive Disclosure Controller: Deep Financial Breakdown (Optional Detail) -->
+<div class="finlyzer-deep-breakdown-wrapper" id="finlyzerDeepBreakdownWrapper">
+	<div class="finlyzer-breakdown-toggle-bar">
+		<div class="finlyzer-breakdown-toggle-info">
+			<div class="finlyzer-breakdown-badge">
+				<span class="finlyzer-breakdown-dot"></span>
+				<span><?php esc_html_e('Granular Audit Ledgers', 'finlyzer'); ?></span>
+			</div>
+			<h3 class="finlyzer-breakdown-toggle-title">
+				<?php esc_html_e('Deep Financial Breakdown & Audit Statements', 'finlyzer'); ?>
+			</h3>
+			<p class="finlyzer-breakdown-toggle-desc">
+				<?php esc_html_e('Explore optional forensic tables: per-currency loss, live European Central Bank rate shifts, gateway fee spreads, and product-level fee attribution.', 'finlyzer'); ?>
+			</p>
+		</div>
+		<div class="finlyzer-breakdown-toggle-actions">
+			<button
+				type="button"
+				id="finlyzerBreakdownToggleBtn"
+				class="finlyzer-breakdown-toggle-btn"
+				aria-expanded="false"
+				aria-controls="finlyzerBreakdownDrawer"
+			>
+				<span class="finlyzer-toggle-text-collapsed">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<polyline points="6 9 12 15 18 9"></polyline>
+					</svg>
+					<span><?php esc_html_e('View Detailed Breakdown', 'finlyzer'); ?></span>
+				</span>
+				<span class="finlyzer-toggle-text-expanded" style="display:none;">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<polyline points="18 15 12 9 6 15"></polyline>
+					</svg>
+					<span><?php esc_html_e('Hide Detailed Breakdown', 'finlyzer'); ?></span>
+				</span>
+			</button>
+		</div>
+	</div>
+
+	<!-- Collapsible Content Drawer (Hidden by default for simplicity & performance) -->
+	<div id="finlyzerBreakdownDrawer" class="finlyzer-breakdown-drawer" style="display: none;" aria-hidden="true">
+		<!-- Subtab Navigation Switcher: Filter between all 4 ledgers or inspect individually -->
+		<div class="finlyzer-breakdown-tabs" role="tablist" aria-label="<?php esc_attr_e('Financial audit categories', 'finlyzer'); ?>">
+			<button type="button" class="finlyzer-subtab is-active" data-panel="all" data-panel-target="all" role="tab" aria-selected="true">
+				<?php esc_html_e('All Modules', 'finlyzer'); ?>
+			</button>
+			<button type="button" class="finlyzer-subtab" data-panel="currency" data-panel-target="currency" role="tab" aria-selected="false">
+				💱 <?php esc_html_e('Currencies', 'finlyzer'); ?> (<?php echo esc_html(count($by_currency)); ?>)
+			</button>
+			<button type="button" class="finlyzer-subtab" data-panel="timing" data-panel-target="timing" role="tab" aria-selected="false">
+				🌐 <?php esc_html_e('ECB Market Shifts', 'finlyzer'); ?> (<?php echo esc_html(count($active_markets)); ?>)
+			</button>
+			<button type="button" class="finlyzer-subtab" data-panel="processors" data-panel-target="processors" role="tab" aria-selected="false">
+				💳 <?php esc_html_e('Payment Processors', 'finlyzer'); ?> (<?php echo esc_html(count($gateways)); ?>)
+			</button>
+			<button type="button" class="finlyzer-subtab" data-panel="products" data-panel-target="products" role="tab" aria-selected="false">
+				📦 <?php esc_html_e('Top Products', 'finlyzer'); ?> (<?php echo esc_html(count($products_by_gateway)); ?>)
+			</button>
+		</div>
+
+		<!-- Panel 1: Currency Statement Ledger -->
+		<div class="finlyzer-breakdown-panel" data-panel="currency">
+			<div class="finlyzer-ledger-card">
+				<div class="finlyzer-ledger-header">
+					<h3 class="finlyzer-ledger-title"><?php esc_html_e('Loss by Currency', 'finlyzer'); ?></h3>
 		<span class="finlyzer-ledger-caption">
 			<?php echo esc_html(sprintf(
 				/* translators: %d: currency count */
@@ -211,9 +272,12 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 		<?php endif; ?>
 	</div>
 </div>
+		</div> <!-- end panel currency -->
 
-<!-- Active Currency Markets & Market Timing Volatility Impact (Frankfurter ECB Integration) -->
-<div class="finlyzer-ledger-card finlyzer-timing-card">
+		<!-- Panel 2: Market Timing Volatility Impact (Frankfurter ECB Integration) -->
+		<div class="finlyzer-breakdown-panel" data-panel="timing">
+			<!-- Active Currency Markets & Market Timing Volatility Impact (Frankfurter ECB Integration) -->
+			<div class="finlyzer-ledger-card finlyzer-timing-card">
 	<div class="finlyzer-ledger-header">
 		<div>
 			<h3 class="finlyzer-ledger-title">
@@ -323,9 +387,12 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 		<?php endif; ?>
 	</div>
 </div>
+		</div> <!-- end panel timing -->
 
-<!-- Payment Gateway FX Recognition Matrix -->
-<div class="finlyzer-ledger-card finlyzer-gateway-section">
+		<!-- Panel 3: Payment Gateway FX Recognition Matrix -->
+		<div class="finlyzer-breakdown-panel" data-panel="processors">
+			<!-- Payment Gateway FX Recognition Matrix -->
+			<div class="finlyzer-ledger-card finlyzer-gateway-section">
 	<div class="finlyzer-ledger-header">
 		<div>
 			<h3 class="finlyzer-ledger-title">
@@ -432,9 +499,12 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 		</div>
 	<?php endif; ?>
 </div>
+		</div> <!-- end panel processors -->
 
-<!-- Purchased Products by Gateway Ledger -->
-<div class="finlyzer-ledger-card finlyzer-products-section">
+		<!-- Panel 4: Purchased Products by Gateway Ledger -->
+		<div class="finlyzer-breakdown-panel" data-panel="products">
+			<!-- Purchased Products by Gateway Ledger -->
+			<div class="finlyzer-ledger-card finlyzer-products-section">
 	<div class="finlyzer-ledger-header">
 		<div>
 			<h3 class="finlyzer-ledger-title">
@@ -539,4 +609,9 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 		<?php endif; ?>
 	</div>
 </div>
+		</div> <!-- end panel products -->
+
+	</div> <!-- end #finlyzerBreakdownDrawer -->
+</div> <!-- end #finlyzerDeepBreakdownWrapper -->
+
 

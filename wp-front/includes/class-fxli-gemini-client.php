@@ -86,7 +86,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.19.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.20.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -265,7 +265,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.19.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.20.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {

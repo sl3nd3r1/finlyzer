@@ -1,5 +1,5 @@
 /**
- * Finlyzer — Dashboard Client Controller (v1.16.0)
+ * Finlyzer — Dashboard Client Controller (v1.20.0)
  *
  * Implements strict Content-Security-Policy and modern web security standards:
  *  - Idempotent DOM readiness lifecycle (handles 'loading', 'interactive', and 'complete' states)
@@ -433,6 +433,95 @@
 				}
 			});
 		});
+
+		// -------------------------------------------------------------
+		// PROGRESSIVE DISCLOSURE: DETAILED BREAKDOWN DRAWER TOGGLE
+		// -------------------------------------------------------------
+		app.addEventListener('click', function (e) {
+			var toggleBtn = e.target.closest('#finlyzerBreakdownToggleBtn, .finlyzer-breakdown-toggle-btn');
+			if (!toggleBtn) {
+				return;
+			}
+			var drawer = document.getElementById('finlyzerBreakdownDrawer');
+			if (!drawer) {
+				return;
+			}
+			var isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+			var collapsedSpan = toggleBtn.querySelector('.finlyzer-toggle-text-collapsed');
+			var expandedSpan = toggleBtn.querySelector('.finlyzer-toggle-text-expanded');
+			var textSpan = toggleBtn.querySelector('.finlyzer-breakdown-toggle-text');
+
+			if (isExpanded) {
+				drawer.style.display = 'none';
+				drawer.setAttribute('aria-hidden', 'true');
+				toggleBtn.setAttribute('aria-expanded', 'false');
+				if (collapsedSpan) collapsedSpan.style.display = 'inline-flex';
+				if (expandedSpan) expandedSpan.style.display = 'none';
+				if (textSpan) {
+					textSpan.textContent = 'View Detailed Breakdown';
+				}
+			} else {
+				drawer.style.display = 'block';
+				drawer.setAttribute('aria-hidden', 'false');
+				toggleBtn.setAttribute('aria-expanded', 'true');
+				if (collapsedSpan) collapsedSpan.style.display = 'none';
+				if (expandedSpan) expandedSpan.style.display = 'inline-flex';
+				if (textSpan) {
+					textSpan.textContent = 'Hide Detailed Breakdown';
+				}
+			}
+		});
+
+		// -------------------------------------------------------------
+		// BREAKDOWN SUBTAB FILTERING (CURRENCY, TIMING, PROCESSORS, PRODUCTS)
+		// -------------------------------------------------------------
+		app.addEventListener('click', function (e) {
+			var subtab = e.target.closest('.finlyzer-subtab');
+			if (!subtab) {
+				return;
+			}
+			var tabsContainer = subtab.closest('.finlyzer-breakdown-tabs');
+			var drawer = subtab.closest('.finlyzer-breakdown-drawer') || document.getElementById('finlyzerBreakdownDrawer');
+			if (!drawer) {
+				return;
+			}
+
+			// update active state across subtabs
+			if (tabsContainer) {
+				tabsContainer.querySelectorAll('.finlyzer-subtab').forEach(function (btn) {
+					btn.classList.remove('is-active');
+					btn.setAttribute('aria-selected', 'false');
+				});
+			}
+			subtab.classList.add('is-active');
+			subtab.setAttribute('aria-selected', 'true');
+
+			// filter breakdown panels
+			var targetPanel = subtab.getAttribute('data-panel') || subtab.getAttribute('data-panel-target') || 'all';
+			var panels = drawer.querySelectorAll('.finlyzer-breakdown-panel');
+			panels.forEach(function (panel) {
+				var panelType = panel.getAttribute('data-panel');
+				if (targetPanel === 'all' || panelType === targetPanel) {
+					panel.style.display = 'block';
+				} else {
+					panel.style.display = 'none';
+				}
+			});
+		});
+
+		// -------------------------------------------------------------
+		// ABOUT FINLYZER NAVIGATION SMOOTH SCROLL
+		// -------------------------------------------------------------
+		var aboutNavBtn = document.getElementById('finlyzerAboutNavBtn');
+		if (aboutNavBtn) {
+			aboutNavBtn.addEventListener('click', function (e) {
+				e.preventDefault();
+				var aboutSection = document.getElementById('finlyzer-about-section');
+				if (aboutSection) {
+					aboutSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				}
+			});
+		}
 	}
 
 	// -------------------------------------------------------------

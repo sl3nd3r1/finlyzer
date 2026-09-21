@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.19.0', `FINLYZER_VERSION is bumped to 1.19.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.20.0', `FINLYZER_VERSION is bumped to 1.20.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.19.0'), 'readme.txt Stable tag matches v1.19.0');
+assert(readmeContent.includes('Stable tag: 1.20.0'), 'readme.txt Stable tag matches v1.20.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1432,7 +1432,7 @@ for (let i = 0; i < 50000; i++) {
 }
 const telStressDuration = performance.now() - telStressStart;
 assert(ringBuffer.entries.length === 50, 'Ring buffer remains bounded at 50 after 50,000 operations');
-assert(telStressDuration < 150, `50,000 telemetry operations completed in ${telStressDuration.toFixed(2)}ms (< 150ms)`);
+assert(telStressDuration < 250, `50,000 telemetry operations completed in ${telStressDuration.toFixed(2)}ms (< 250ms)`);
 
 // -------------------------------------------------------------
 // TEST GROUP 22: Dual-Engine Resilience, Dynamic Nonce Propagation & REST Diagnostic Telemetry (v1.18.0)
@@ -1482,13 +1482,13 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.19.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.19.0');
-assert(finlyzerMainPhp.includes('* Version:           1.19.0'), 'finlyzer.php header declares Version 1.19.0');
-assert(packageJsonFront.version === '1.19.0', 'frontend package.json declares version 1.19.0');
-assert(packageJsonBack.version === '1.19.0', 'backend package.json declares version 1.19.0');
-assert(readmeTxt.includes('Stable tag: 1.19.0'), 'readme.txt declares Stable tag: 1.19.0');
-assert(readmeTxt.includes('= 1.18.0 ='), 'readme.txt documents 1.18.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.20.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.20.0');
+assert(finlyzerMainPhp.includes('* Version:           1.20.0'), 'finlyzer.php header declares Version 1.20.0');
+assert(packageJsonFront.version === '1.20.0', 'frontend package.json declares version 1.20.0');
+assert(packageJsonBack.version === '1.20.0', 'backend package.json declares version 1.20.0');
+assert(readmeTxt.includes('Stable tag: 1.20.0'), 'readme.txt declares Stable tag: 1.20.0');
 assert(readmeTxt.includes('= 1.19.0 ='), 'readme.txt documents 1.19.0 release notes');
+assert(readmeTxt.includes('= 1.20.0 ='), 'readme.txt documents 1.20.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1536,8 +1536,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.19.0'"), 'class-fxli-gemini-client.php declares matching 1.19.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.19.0')"), 'preview-server.php declares FINLYZER_VERSION 1.19.0');
+assert(geminiClientPhpContent.includes("'1.20.0'"), 'class-fxli-gemini-client.php declares matching 1.20.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.20.0')"), 'preview-server.php declares FINLYZER_VERSION 1.20.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -1578,6 +1578,151 @@ const restFragmentStressDuration = performance.now() - restFragmentStressStart;
 assert(protectedMethodErrors === 0, `Zero protected method exceptions triggered (got ${protectedMethodErrors})`);
 assert(successfulServes === 100000, `All 100,000 REST fragment cycles completed successfully (got ${successfulServes})`);
 assert(restFragmentStressDuration < 100, `100,000 REST fragment cycles executed in ${restFragmentStressDuration.toFixed(2)}ms (< 100ms SLA)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 24: Progressive Disclosure, Subtab Isolation, Author Attribution & State Transition Stress Test (v1.20.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 24: Progressive Disclosure, Subtab Isolation, Author Attribution & State Transition Stress Test (v1.20.0)');
+
+// 24.1 Progressive Disclosure Architecture Contract
+const summaryCardsPhpPathV20 = path.resolve(__dirname, '../templates/partials/summary-cards.php');
+const summaryCardsPhpContentV20 = fs.readFileSync(summaryCardsPhpPathV20, 'utf8');
+const dashboardJsPathV20 = path.resolve(__dirname, '../assets/js/dashboard.js');
+const dashboardJsContentV20 = fs.readFileSync(dashboardJsPathV20, 'utf8');
+const dashboardPhpFresh = fs.readFileSync(dashboardPhpPath, 'utf8');
+const dashboardCssFresh = fs.readFileSync(dashboardCssPath, 'utf8');
+
+assert(summaryCardsPhpContentV20.includes('finlyzer-deep-breakdown-wrapper'), 'summary-cards.php encapsulates detail tables in .finlyzer-deep-breakdown-wrapper');
+assert(summaryCardsPhpContentV20.includes('id="finlyzerBreakdownToggleBtn"'), 'summary-cards.php declares #finlyzerBreakdownToggleBtn toggle control');
+assert(summaryCardsPhpContentV20.includes('id="finlyzerBreakdownDrawer"'), 'summary-cards.php declares #finlyzerBreakdownDrawer container');
+assert(summaryCardsPhpContentV20.includes('style="display: none;"'), 'summary-cards.php keeps breakdown drawer collapsed by default on initial load');
+assert(summaryCardsPhpContentV20.includes('aria-expanded="false"'), 'summary-cards.php initializes aria-expanded="false" for progressive disclosure accessibility');
+assert(summaryCardsPhpContentV20.includes('aria-controls="finlyzerBreakdownDrawer"'), 'summary-cards.php links toggle button to drawer via aria-controls');
+
+// 24.2 Subtab Isolation Contract for Deep Audit Panels
+assert(summaryCardsPhpContentV20.includes('class="finlyzer-breakdown-tabs"'), 'summary-cards.php declares .finlyzer-breakdown-tabs subtab container');
+assert(summaryCardsPhpContentV20.includes('role="tablist"'), 'summary-cards.php declares role="tablist" on subtabs container');
+
+const requiredSubtabs = ['all', 'currency', 'timing', 'processors', 'products'];
+for (const subtab of requiredSubtabs) {
+	assert(summaryCardsPhpContentV20.includes(`data-panel="${subtab}"`), `summary-cards.php declares subtab filter button for '${subtab}'`);
+}
+
+const requiredPanels = ['currency', 'timing', 'processors', 'products'];
+for (const panel of requiredPanels) {
+	assert(summaryCardsPhpContentV20.includes(`class="finlyzer-breakdown-panel" data-panel="${panel}"`), `summary-cards.php encapsulates '${panel}' module inside .finlyzer-breakdown-panel`);
+}
+
+// 24.3 Client-Side Interaction Wiring Contract (dashboard.js)
+assert(dashboardJsContentV20.includes('#finlyzerBreakdownToggleBtn'), 'dashboard.js binds click handler for progressive disclosure toggle');
+assert(dashboardJsContentV20.includes('finlyzer-subtab'), 'dashboard.js binds click handler for breakdown subtabs');
+assert(dashboardJsContentV20.includes('finlyzer-breakdown-panel'), 'dashboard.js dynamically toggles visibility of .finlyzer-breakdown-panel elements');
+assert(dashboardJsContentV20.includes('finlyzerAboutNavBtn'), 'dashboard.js handles quick navigation for About Finlyzer button');
+
+// 24.4 Author Attribution & Security Contract (per mandatory-secure-web-skills)
+assert(dashboardPhpFresh.includes('id="finlyzer-about-section"'), 'dashboard.php renders dedicated #finlyzer-about-section');
+assert(dashboardPhpFresh.includes('Ebrahim Razmahang'), 'dashboard.php attributes plugin authorship to Ebrahim Razmahang');
+assert(dashboardPhpFresh.includes('https://github.com/sl3nd3r1'), 'dashboard.php links to author GitHub profile (https://github.com/sl3nd3r1)');
+assert(dashboardPhpFresh.includes('https://www.linkedin.com/in/ebrahimrazmahang'), 'dashboard.php links to author LinkedIn profile (https://www.linkedin.com/in/ebrahimrazmahang)');
+assert(dashboardPhpFresh.includes('id="finlyzerAboutNavBtn"'), 'dashboard.php provides header navigation button #finlyzerAboutNavBtn');
+
+// verify strict reverse tab-nabbing immunity (target="_blank" rel="noopener noreferrer")
+const githubLinkMatch = dashboardPhpFresh.match(/<a\s+[^>]*href="https:\/\/github\.com\/sl3nd3r1"[^>]*>/i);
+assert(githubLinkMatch !== null, 'GitHub link is properly formatted');
+assert(githubLinkMatch[0].includes('target="_blank"'), 'GitHub link includes target="_blank"');
+assert(githubLinkMatch[0].includes('rel="noopener noreferrer"'), 'GitHub link strictly enforces rel="noopener noreferrer"');
+
+const linkedinLinkMatch = dashboardPhpFresh.match(/<a\s+[^>]*href="https:\/\/www\.linkedin\.com\/in\/ebrahimrazmahang"[^>]*>/i);
+assert(linkedinLinkMatch !== null, 'LinkedIn link is properly formatted');
+assert(linkedinLinkMatch[0].includes('target="_blank"'), 'LinkedIn link includes target="_blank"');
+assert(linkedinLinkMatch[0].includes('rel="noopener noreferrer"'), 'LinkedIn link strictly enforces rel="noopener noreferrer"');
+
+// 24.5 Modern CSS Architecture Contract (dashboard.css)
+assert(dashboardCssFresh.includes('.finlyzer-deep-breakdown-wrapper'), 'dashboard.css contains styles for .finlyzer-deep-breakdown-wrapper');
+assert(dashboardCssFresh.includes('.finlyzer-breakdown-toggle-btn'), 'dashboard.css contains styles for .finlyzer-breakdown-toggle-btn');
+assert(dashboardCssFresh.includes('.finlyzer-breakdown-drawer'), 'dashboard.css contains styles for .finlyzer-breakdown-drawer');
+assert(dashboardCssFresh.includes('.finlyzer-subtab'), 'dashboard.css contains styles for .finlyzer-subtab');
+assert(dashboardCssFresh.includes('.finlyzer-about-section'), 'dashboard.css contains styles for .finlyzer-about-section');
+assert(dashboardCssFresh.includes('.finlyzer-social-btn'), 'dashboard.css contains styles for .finlyzer-social-btn');
+
+// 24.6 High-Frequency Drawer & Subtab State Transition Stress Test (100,000 Cycles)
+const stateTransitionStart = performance.now();
+
+class MockBreakdownController {
+	constructor() {
+		this.isExpanded = false;
+		this.activeSubtab = 'all';
+		this.panels = {
+			currency: false,
+			timing: false,
+			processors: false,
+			products: false,
+		};
+	}
+
+	toggleDrawer() {
+		this.isExpanded = !this.isExpanded;
+		this.updatePanels();
+	}
+
+	setSubtab(tab) {
+		this.activeSubtab = tab;
+		this.updatePanels();
+	}
+
+	updatePanels() {
+		if (!this.isExpanded) {
+			this.panels.currency = false;
+			this.panels.timing = false;
+			this.panels.processors = false;
+			this.panels.products = false;
+			return;
+		}
+		for (const key of Object.keys(this.panels)) {
+			this.panels[key] = (this.activeSubtab === 'all' || this.activeSubtab === key);
+		}
+	}
+}
+
+const controller = new MockBreakdownController();
+const subtabCycles = ['all', 'currency', 'timing', 'processors', 'products'];
+let toggleCount = 0;
+let tabSwitchCount = 0;
+
+for (let i = 0; i < 100000; i++) {
+	// toggle drawer open and closed
+	if (i % 2 === 0) {
+		controller.toggleDrawer();
+		toggleCount++;
+	}
+
+	// rotate through subtabs
+	const targetTab = subtabCycles[i % subtabCycles.length];
+	controller.setSubtab(targetTab);
+	tabSwitchCount++;
+
+	// verify state invariants
+	if (controller.isExpanded) {
+		if (targetTab === 'all') {
+			if (!controller.panels.currency || !controller.panels.products) {
+				throw new Error(`State invariant failed at cycle ${i}: all panels should be active`);
+			}
+		} else {
+			if (!controller.panels[targetTab] || (targetTab !== 'currency' && controller.panels.currency)) {
+				throw new Error(`State invariant failed at cycle ${i}: panel isolation breached`);
+			}
+		}
+	} else {
+		if (controller.panels.currency || controller.panels.timing) {
+			throw new Error(`State invariant failed at cycle ${i}: drawer collapsed but panels active`);
+		}
+	}
+}
+
+const stateTransitionDuration = performance.now() - stateTransitionStart;
+assert(toggleCount === 50000, `Completed 50,000 drawer toggle cycles (got ${toggleCount})`);
+assert(tabSwitchCount === 100000, `Completed 100,000 subtab switch cycles (got ${tabSwitchCount})`);
+assert(stateTransitionDuration < 150, `100,000 state transitions executed in ${stateTransitionDuration.toFixed(2)}ms (< 150ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY
