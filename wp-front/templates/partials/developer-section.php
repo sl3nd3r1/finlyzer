@@ -149,8 +149,6 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 			</div>
 			<span style="font-size: 11px; color: #64748B;"><?php esc_html_e('Auto-captured on all outbound API calls', 'finlyzer'); ?></span>
 		</div>
-			<span style="font-size: 11px; color: #64748B;"><?php esc_html_e('Auto-captured on all outbound API calls', 'finlyzer'); ?></span>
-		</div>
 
 		<?php if (empty($recent_logs)) : ?>
 			<div style="text-align: center; padding: 18px; color: #64748B; font-size: 12px;">

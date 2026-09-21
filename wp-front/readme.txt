@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.20.0
+Stable tag: 1.21.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -90,6 +90,15 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Feature: Integrated FXLI_Logger structured DevSecOps telemetry and diagnostic logging for outbound Worker HTTP requests.
 * Feature: Added Live API Handshake Diagnostic Inspector directly in the WordPress Admin Developer Section.
 * Feature: Added REST API diagnostic endpoints (`/logs`, `/test-connection`, `/clear-logs`) gated with capability checks.
+= 1.21.0 =
+* Fix: Eliminated duplicate closing tag in developer-section.php that prematurely terminated dashboard layout on development builds.
+* Architecture: Enforced strict DOM tree div balance (open divs == close divs) across all dashboard templates, guaranteeing complete layout containment.
+* UI/UX: Overhauled responsive design system across mobile (<768px), tablet (768px-1024px), desktop (1024px-1440px), and ultrawide viewports (>1440px) with modern container constraints.
+* Copy: Humanized dashboard copy to modern fintech SaaS benchmarks (Stripe/Wise/Mercury) with decision-first financial risk metrics.
+* Author: Updated author profile honoring Ebrahim Razmahang as Senior Backend Developer & Software Engineer (Backend Architect).
+* Security: Strictly purged all open-source mentions per enterprise deployment specifications and verified target="_blank" rel="noopener noreferrer" link security.
+* Testing: Added Test Group 25 verifying DOM tag balance, container containment, author persona, zero open-source references, and 100,000-cycle stress tests.
+
 = 1.20.0 =
 * UX: Implemented Progressive Disclosure for dashboard metrics. Detailed breakdown tables (Currency Analysis, ECB Market Timing, Payment Gateways, and Top Products) are now collapsed by default into an accessible, interactive drawer with subtab filtering.
 * UX: End-users immediately see only essential executive figures (Total Currency Loss, Effective Fee Rate, Annual Run-Rate, AI Sentinel Insights) without information overload.

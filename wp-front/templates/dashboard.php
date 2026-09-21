@@ -117,19 +117,19 @@ window.FXLI = window.Finlyzer;
 				<div class="finlyzer-about-col finlyzer-about-col--info">
 					<div class="finlyzer-about-pill">
 						<span class="finlyzer-about-dot"></span>
-						<span><?php esc_html_e('Open Source Fintech Engineering', 'finlyzer'); ?></span>
+						<span><?php esc_html_e('Financial Systems Architecture', 'finlyzer'); ?></span>
 					</div>
-					<h3 class="finlyzer-about-title"><?php esc_html_e('About Finlyzer', 'finlyzer'); ?></h3>
+					<h3 class="finlyzer-about-title"><?php esc_html_e('Financial Risk Infrastructure', 'finlyzer'); ?></h3>
 					<p class="finlyzer-about-lead">
-						<?php esc_html_e('Engineered to expose hidden payment processor currency conversion fees and cross-border spread erosion across WooCommerce stores.', 'finlyzer'); ?>
+						<?php esc_html_e('Automated forensic analytics reconciling multi-currency payment volume against European Central Bank interbank exchange rates to reveal hidden gateway spreads and settlement loss.', 'finlyzer'); ?>
 					</p>
 					<p class="finlyzer-about-body">
-						<?php esc_html_e('Built with WooCommerce High-Performance Order Storage (HPOS) compatibility, serverless European Central Bank rate reconciliation, zero PII transmission, and Gemini AI risk sentinel intelligence.', 'finlyzer'); ?>
+						<?php esc_html_e('Built for enterprise transaction volumes with WooCommerce High-Performance Order Storage (HPOS) compatibility, zero customer PII transmission, and real-time AI margin intelligence.', 'finlyzer'); ?>
 					</p>
 					<div class="finlyzer-about-badges">
-						<span class="finlyzer-spec-chip">HPOS Verified</span>
-						<span class="finlyzer-spec-chip">Zero PII Transmission</span>
-						<span class="finlyzer-spec-chip">ECB Live Rates</span>
+						<span class="finlyzer-spec-chip">HPOS Architecture</span>
+						<span class="finlyzer-spec-chip">Zero PII Retention</span>
+						<span class="finlyzer-spec-chip">ECB Interbank Feeds</span>
 						<span class="finlyzer-spec-chip">v<?php echo esc_html(FINLYZER_VERSION); ?></span>
 					</div>
 				</div>
@@ -142,11 +142,11 @@ window.FXLI = window.Finlyzer;
 							</div>
 							<div class="finlyzer-author-meta">
 								<h4 class="finlyzer-author-name">Ebrahim Razmahang</h4>
-								<span class="finlyzer-author-role"><?php esc_html_e('Software Engineer & Project Creator', 'finlyzer'); ?></span>
+								<span class="finlyzer-author-role"><?php esc_html_e('Software Engineer & Backend Architect', 'finlyzer'); ?></span>
 							</div>
 						</div>
 						<p class="finlyzer-author-tagline">
-							<?php esc_html_e('Specialized in backend architectures, fintech settlement APIs, and enterprise-grade WordPress systems.', 'finlyzer'); ?>
+							<?php esc_html_e('Senior Backend Developer and Software Engineer specializing in distributed financial systems, high-concurrency microservices, and payment settlement infrastructure.', 'finlyzer'); ?>
 						</p>
 						<div class="finlyzer-author-links">
 							<a
