@@ -113,18 +113,36 @@ final class FXLI_REST_API {
 
 	// serve clean HTML fragment directly to htmx, bypassing WordPress JSON serialization
 	private function serve_html(string $html, int $status = 200): WP_REST_Response {
+		$response = new WP_REST_Response($html, $status, [
+			'Content-Type'           => 'text/html; charset=utf-8',
+			'Cache-Control'          => 'no-cache, no-store, must-revalidate, private',
+			'X-Content-Type-Options' => 'nosniff',
+		]);
+
 		add_filter(
 			'rest_pre_serve_request',
-			static function (bool $served, mixed $result, mixed $request, mixed $server) use ($html, $status): bool {
-				// send text/html headers explicitly through WordPress server
-				if ($server instanceof WP_REST_Server) {
-					$server->set_status($status);
-					$server->send_header('Content-Type', 'text/html; charset=utf-8');
-					$server->send_header('Cache-Control', 'no-cache, private');
-				} else {
-					header('Content-Type: text/html; charset=utf-8');
-					header('Cache-Control: no-cache, private');
+			static function (bool $served, mixed $result, mixed $request, mixed $server) use ($html, $status, $response): bool {
+				// skip execution if request already served or result does not match this specific response instance
+				if ($served || $result !== $response) {
+					return $served;
+				}
+
+				// send HTTP status header via canonical WordPress function; WP_REST_Server::set_status() is protected
+				if (function_exists('status_header')) {
+					status_header($status);
+				} elseif (!headers_sent()) {
 					http_response_code($status);
+				}
+
+				// send security and content headers safely through server or standard headers
+				if ($server instanceof WP_REST_Server) {
+					$server->send_header('Content-Type', 'text/html; charset=utf-8');
+					$server->send_header('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+					$server->send_header('X-Content-Type-Options', 'nosniff');
+				} elseif (!headers_sent()) {
+					header('Content-Type: text/html; charset=utf-8');
+					header('Cache-Control: no-cache, no-store, must-revalidate, private');
+					header('X-Content-Type-Options: nosniff');
 				}
 
 				// echo raw un-encoded HTML directly to output stream
@@ -137,10 +155,7 @@ final class FXLI_REST_API {
 			4
 		);
 
-		return new WP_REST_Response($html, $status, [
-			'Content-Type'  => 'text/html; charset=utf-8',
-			'Cache-Control' => 'no-cache, private',
-		]);
+		return $response;
 	}
 
 	// handle summary request and render escaped summary cards fragment

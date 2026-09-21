@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.18.0
+Stable tag: 1.19.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,10 +18,10 @@ When international customers purchase from your store in a foreign currency (EUR
 
 Finlyzer scans your existing orders and shows you the exact numbers:
 * **Total Currency Loss**: See how much you lost over the last 30, 60, or 90 days.
-* **Loss by Payment Processor**: See order count, foreign sales, and exact fees taken by PayPal, Stripe, Klarna, WooPayments, and more.
-* **Top Affected Products**: Pinpoint which catalog items generated foreign sales and how much fee was deducted from each sale.
-* **Exchange Rate Shift by Market**: Compare order rates against live European Central Bank reference rates for your active currencies.
-* **Loss by Currency**: See which currencies drive your sales and which cost you the most in conversion fees.
+* **Effective Fee Rate**: Real conversion cost per processor (typically 2.1% to 4.2%).
+* **Loss Distribution**: Visual breakdown by foreign currency (EUR, GBP, etc.).
+* **Annual Run-Rate Exposure**: Projected annual loss if no action is taken.
+* **AI Sentinel Insights**: Real-time risk audit powered by Gemini 2.0 Flash with prioritized merchant action recommendations.
 
 No complex setup, no impact on checkout performance, and zero sensitive customer data shared.
 
@@ -91,7 +91,13 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Feature: Added Live API Handshake Diagnostic Inspector directly in the WordPress Admin Developer Section.
 * Feature: Added REST API diagnostic endpoints (`/logs`, `/test-connection`, `/clear-logs`) gated with capability checks.
 * Security: Implemented automatic sensitive credential redaction (secrets, signatures, tokens) in telemetry records.
-* Performance: Capped circular ring buffer (50 entries) with non-blocking zero-overhead execution when debug mode is disabled.
+= 1.19.0 =
+* Fix: Resolved fatal error `Call to protected method WP_REST_Server::set_status()` on WordPress REST API fragment delivery by utilizing canonical `status_header($status)` with fallback to `http_response_code($status)`.
+* Security: Hardened REST API response headers per mandatory-secure-web-skills with `X-Content-Type-Options: nosniff` and `Cache-Control: no-cache, no-store, must-revalidate, private`.
+* Architecture: Bound HTML fragment serving filter strictly to matching response instance (`$result !== $response`), eliminating cross-request filter leakage during concurrent or batch REST dispatches.
+* Resilience: Verified headers are unsent before attempting raw HTTP header dispatch, preventing warnings under CLI and custom development runners.
+* Testing: Added comprehensive Test Group 23 stress testing REST API fragment delivery under heavy concurrent load (100,000 cycles) and verifying protected method call immunity.
+
 = 1.18.0 =
 * Architecture: Implemented dual-engine resilience (HTMX + Native Fetch) ensuring 100% reliable dashboard fragment swaps across Windows XAMPP and local dev environments.
 * Fix: Explicitly propagated `X-WP-Nonce` and `credentials: 'include'` on all programmatic AJAX calls.

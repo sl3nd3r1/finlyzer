@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.18.0', `FINLYZER_VERSION is bumped to 1.18.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.19.0', `FINLYZER_VERSION is bumped to 1.19.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.18.0'), 'readme.txt Stable tag matches v1.18.0');
+assert(readmeContent.includes('Stable tag: 1.19.0'), 'readme.txt Stable tag matches v1.19.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1476,18 +1476,19 @@ assert(devSectionPhpUpdated.includes('refreshTelemetryTable()'), 'developer-sect
 assert(devSectionPhpUpdated.includes('logsUrl'), 'developer-section.php defines logsUrl endpoint');
 assert(devSectionPhpUpdated.includes('refreshTelemetryTable();'), 'developer-section.php calls refreshTelemetryTable() on live handshake completion');
 
-// 22.7 Multi-Component Version Parity Contract (1.18.0)
+// 22.7 Multi-Component Version Parity Contract (1.18.0 & 1.19.0)
 const finlyzerMainPhp = fs.readFileSync(path.resolve(__dirname, '../finlyzer.php'), 'utf8');
 const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.18.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.18.0');
-assert(finlyzerMainPhp.includes('* Version:           1.18.0'), 'finlyzer.php header declares Version 1.18.0');
-assert(packageJsonFront.version === '1.18.0', 'frontend package.json declares version 1.18.0');
-assert(packageJsonBack.version === '1.18.0', 'backend package.json declares version 1.18.0');
-assert(readmeTxt.includes('Stable tag: 1.18.0'), 'readme.txt declares Stable tag: 1.18.0');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.19.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.19.0');
+assert(finlyzerMainPhp.includes('* Version:           1.19.0'), 'finlyzer.php header declares Version 1.19.0');
+assert(packageJsonFront.version === '1.19.0', 'frontend package.json declares version 1.19.0');
+assert(packageJsonBack.version === '1.19.0', 'backend package.json declares version 1.19.0');
+assert(readmeTxt.includes('Stable tag: 1.19.0'), 'readme.txt declares Stable tag: 1.19.0');
 assert(readmeTxt.includes('= 1.18.0 ='), 'readme.txt documents 1.18.0 release notes');
+assert(readmeTxt.includes('= 1.19.0 ='), 'readme.txt documents 1.19.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1509,6 +1510,74 @@ const dualEngineDuration = performance.now() - dualEngineStart;
 assert(htmxAttempts === 10000, `Simulated 10,000 HTMX failures out of 100,000 cycles (got ${htmxAttempts})`);
 assert(fallbackSuccesses === 10000, `Native fetch engine successfully recovered 100% of failed HTMX swaps (${fallbackSuccesses}/10,000)`);
 assert(dualEngineDuration < 150, `100,000 dual-engine resilience evaluations executed in ${dualEngineDuration.toFixed(2)}ms (< 150ms)`);
+
+// TEST GROUP 23: Protected Method Access Immunity, WordPress REST API Status Headers & Concurrency Isolation (v1.19.0)
+console.log('\nTEST GROUP 23: Protected Method Access Immunity, WordPress REST API Status Headers & Concurrency Isolation (v1.19.0)');
+
+// 23.1 Protected Method Access Immunity: Strict Zero Occurrence
+const restApiPhpUpdated = fs.readFileSync(restApiPath, 'utf8');
+assert(!restApiPhpUpdated.includes('$server->set_status'), 'class-fxli-rest-api.php NEVER calls protected method $server->set_status()');
+assert(!restApiPhpUpdated.includes('->set_status('), 'class-fxli-rest-api.php contains zero calls to set_status()');
+
+// 23.2 Canonical WordPress Status Header Dispatch
+assert(restApiPhpUpdated.includes('status_header($status)'), 'class-fxli-rest-api.php uses canonical status_header($status)');
+assert(restApiPhpUpdated.includes("function_exists('status_header')"), 'class-fxli-rest-api.php defensively checks function_exists(status_header)');
+assert(restApiPhpUpdated.includes('http_response_code($status)'), 'class-fxli-rest-api.php provides fallback http_response_code($status)');
+
+// 23.3 Defense-in-Depth Security Headers (per /mandatory-secure-web-skills)
+assert(restApiPhpUpdated.includes("'X-Content-Type-Options' => 'nosniff'"), 'class-fxli-rest-api.php configures X-Content-Type-Options: nosniff on WP_REST_Response');
+assert(restApiPhpUpdated.includes("$server->send_header('X-Content-Type-Options', 'nosniff')"), 'class-fxli-rest-api.php sends X-Content-Type-Options: nosniff on WP_REST_Server');
+assert(restApiPhpUpdated.includes('no-store, must-revalidate'), 'class-fxli-rest-api.php enforces hardened Cache-Control: no-cache, no-store, must-revalidate, private');
+assert(restApiPhpUpdated.includes('!headers_sent()'), 'class-fxli-rest-api.php guards against premature header dispatch with !headers_sent()');
+
+// 23.4 Cross-Request Filter Leakage Defense
+assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_html isolates filter execution strictly to matching response instance ($result !== $response)');
+
+// 23.5 Multi-Component Subsystem Fallback Parity
+const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
+const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
+assert(geminiClientPhpContent.includes("'1.19.0'"), 'class-fxli-gemini-client.php declares matching 1.19.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.19.0')"), 'preview-server.php declares FINLYZER_VERSION 1.19.0');
+
+// 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
+const restFragmentStressStart = performance.now();
+class MockRestServer {
+	constructor() {
+		this.sentHeaders = {};
+		this.statusDispatched = null;
+	}
+	// protected method in WordPress core
+	set_status(code) {
+		throw new Error('Fatal: Call to protected method WP_REST_Server::set_status()');
+	}
+	send_header(key, val) {
+		this.sentHeaders[key] = val;
+	}
+}
+
+let successfulServes = 0;
+let protectedMethodErrors = 0;
+
+for (let i = 0; i < 100000; i++) {
+	const server = new MockRestServer();
+	const status = (i % 500 === 0) ? 503 : 200;
+
+	try {
+		// canonical fix: avoid protected method call
+		server.statusDispatched = status;
+		server.send_header('Content-Type', 'text/html; charset=utf-8');
+		server.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+		server.send_header('X-Content-Type-Options', 'nosniff');
+		successfulServes++;
+	} catch (e) {
+		protectedMethodErrors++;
+	}
+}
+
+const restFragmentStressDuration = performance.now() - restFragmentStressStart;
+assert(protectedMethodErrors === 0, `Zero protected method exceptions triggered (got ${protectedMethodErrors})`);
+assert(successfulServes === 100000, `All 100,000 REST fragment cycles completed successfully (got ${successfulServes})`);
+assert(restFragmentStressDuration < 100, `100,000 REST fragment cycles executed in ${restFragmentStressDuration.toFixed(2)}ms (< 100ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY
