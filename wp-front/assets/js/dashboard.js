@@ -1,5 +1,5 @@
 /**
- * Finlyzer — Dashboard Client Controller (v1.26.0)
+ * Finlyzer — Dashboard Client Controller (v1.27.0)
  *
  * Implements strict Content-Security-Policy and modern web security standards:
  *  - Idempotent DOM readiness lifecycle (handles 'loading', 'interactive', and 'complete' states)
@@ -137,9 +137,25 @@
 		if (retryBtn) retryBtn.style.display = 'inline-flex';
 
 		if (connText) {
-			var baseMsg = 'Connection to the Finlyzer calculation API was lost';
-			if (errDetail && typeof errDetail === 'string' && errDetail.trim() !== '') {
-				connText.textContent = baseMsg + ' (' + errDetail.trim() + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+			var baseMsg = 'Connection to the Finlyzer calculation service was lost';
+			// sanitize error detail: never leak technical HTTP status codes, JSON objects, worker errors or HTML to merchants
+			var safeDetail = '';
+			if (errDetail && typeof errDetail === 'string') {
+				var trimmed = errDetail.trim();
+				// suppress JSON payloads, HTTP status dumps, HTML tags, and technical stack keys
+				var isTechnical = trimmed.indexOf('{') !== -1 ||
+					trimmed.indexOf('HTTP') !== -1 ||
+					trimmed.indexOf('worker_') !== -1 ||
+					trimmed.indexOf('<') !== -1 ||
+					trimmed.indexOf('signature') !== -1 ||
+					trimmed.indexOf('status') !== -1;
+				if (!isTechnical && trimmed.length > 0 && trimmed.length < 80) {
+					safeDetail = trimmed;
+				}
+			}
+
+			if (safeDetail) {
+				connText.textContent = baseMsg + ' (' + safeDetail + '). Attempted ' + MAX_ATTEMPTS + ' times.';
 			} else {
 				connText.textContent = baseMsg + '. We attempted to reconnect ' + MAX_ATTEMPTS + ' times without success.';
 			}
@@ -524,7 +540,7 @@
 		}
 
 		// -------------------------------------------------------------
-		// CLOUD SENTINEL SETTINGS MODAL CONTROLLER (v1.26.0)
+		// CLOUD SENTINEL SETTINGS MODAL CONTROLLER (v1.27.0)
 		// -------------------------------------------------------------
 		initSettingsModal();
 	}
@@ -592,7 +608,7 @@
 				var orig = span ? span.textContent : 'Re-sync Connection';
 				if (span) span.textContent = 'Verifying...';
 
-				showVerifyResult('loading', 'Testing zero-touch cryptographic connection with Finlyzer Cloud Sentinel...');
+				showVerifyResult('loading', 'Testing secure connection with Finlyzer Cloud Sentinel...');
 
 				fetch(restBase + '/settings/cloud-resync', {
 					method: 'POST',
@@ -602,25 +618,48 @@
 					},
 					credentials: 'same-origin'
 				})
-				.then(function (res) { return res.json(); })
+				.then(function (res) {
+					return res.text().then(function (rawText) {
+						try {
+							return JSON.parse(rawText);
+						} catch (jsonErr) {
+							// response is not JSON (e.g. fatal PHP HTML error page)
+							return {
+								success: false,
+								message: 'Server returned an unexpected response. Please check server logs.'
+							};
+						}
+					});
+				})
 				.then(function (data) {
 					verifyBtn.disabled = false;
 					if (span) span.textContent = orig;
 
 					if (data.success) {
-						var msg = '✓ Cloud Sentinel Active & Verified! (Latency: ' + (data.latency_ms || 120) + 'ms · Zero-touch pairing active)';
+						var msg = '✓ Cloud Sentinel Active & Verified! (Latency: ' + (data.latency_ms || 120) + 'ms)';
 						showVerifyResult('success', msg);
 					} else {
 						var errMsg = '✗ ' + (data.message || data.error || 'Connection check failed.');
 						showVerifyResult('error', errMsg);
 					}
 				})
-				.catch(function (err) {
+				.catch(function () {
 					verifyBtn.disabled = false;
 					if (span) span.textContent = orig;
-					showVerifyResult('error', '✗ Re-sync request failed: ' + err.message);
+					showVerifyResult('error', '✗ Re-sync request failed. Please check connection and retry.');
 				});
 			});
+		}
+
+		function sanitizeMessage(str) {
+			if (!str || typeof str !== 'string') return '';
+			// strip any HTML tags to prevent markup or fatal error display leaks
+			var cleaned = str.replace(/<[^>]*>/g, '').trim();
+			// if message indicates critical error or technical stack dump, replace with clean generic message
+			if (cleaned.indexOf('critical error') !== -1 || cleaned.indexOf('Fatal error') !== -1 || cleaned.indexOf('stack trace') !== -1) {
+				return 'A server error occurred. Please check server logs.';
+			}
+			return cleaned;
 		}
 
 		function showVerifyResult(type, message) {
@@ -628,7 +667,7 @@
 			if (!resBox) return;
 			resBox.style.display = 'block';
 			resBox.className = 'finlyzer-verify-result finlyzer-verify-result--' + type;
-			resBox.textContent = message;
+			resBox.textContent = sanitizeMessage(message);
 		}
 	}
 

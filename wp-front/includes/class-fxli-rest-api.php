@@ -246,8 +246,8 @@ final class FXLI_REST_API {
 			}
 
 			return new WP_REST_Response([
-				'code'    => $summary->get_error_code(),
-				'message' => $summary->get_error_message(),
+				'code'    => 'calculation_service_unavailable',
+				'message' => __('Finlyzer calculation service is temporarily unavailable.', 'finlyzer'),
 			], 503);
 		}
 
@@ -274,8 +274,8 @@ final class FXLI_REST_API {
 			}
 
 			return new WP_REST_Response([
-				'code'    => $summary->get_error_code(),
-				'message' => $summary->get_error_message(),
+				'code'    => 'calculation_service_unavailable',
+				'message' => __('Finlyzer calculation service is temporarily unavailable.', 'finlyzer'),
 			], 503);
 		}
 
@@ -478,15 +478,23 @@ final class FXLI_REST_API {
 
 	// execute automated zero-touch pairing re-synchronization
 	public function handle_cloud_resync(WP_REST_Request $request): WP_REST_Response {
-		if (class_exists('FXLI_Crypto')) {
-			$result = FXLI_Crypto::force_re_pair();
-			$status_code = !empty($result['success']) ? 200 : 503;
-			return new WP_REST_Response($result, $status_code);
-		}
+		try {
+			if (class_exists('FXLI_Crypto')) {
+				$result = FXLI_Crypto::force_re_pair();
+				$status_code = !empty($result['success']) ? 200 : 503;
+				return new WP_REST_Response($result, $status_code);
+			}
 
-		return new WP_REST_Response([
-			'success' => false,
-			'message' => __('FXLI_Crypto service is unavailable.', 'finlyzer'),
-		], 500);
+			return new WP_REST_Response([
+				'success' => false,
+				'message' => __('FXLI_Crypto service is unavailable.', 'finlyzer'),
+			], 500);
+		} catch (\Throwable $e) {
+			error_log('[Finlyzer REST API] Cloud resync exception: ' . $e->getMessage());
+			return new WP_REST_Response([
+				'success' => false,
+				'message' => __('Connection re-synchronization could not be completed. Please try again shortly.', 'finlyzer'),
+			], 500);
+		}
 	}
 }

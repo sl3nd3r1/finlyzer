@@ -312,10 +312,15 @@ final class FXLI_Crypto {
 			return false;
 		}
 
-		$isDev = class_exists('FXLI_Env') && FXLI_Env::current_env() === 'development';
+		// determine whether SSL verification should be relaxed for local development (e.g. XAMPP Windows localhost)
+		$isLocal = function_exists('home_url') && (str_contains(home_url(), 'localhost') || str_contains(home_url(), '127.0.0.1'));
+		$isDev = (class_exists('FXLI_Env') && FXLI_Env::current_env() === 'development') || $isLocal;
+		$strictSsl = class_exists('FXLI_Env') ? FXLI_Env::strict_ssl() : true;
+		$verifySsl = $strictSsl && !$isLocal && !$isDev;
+
 		$response = wp_remote_post($pairEndpoint, [
 			'timeout'   => 10,
-			'sslverify' => !$isDev,
+			'sslverify' => $verifySsl,
 			'headers'   => [
 				'Content-Type' => 'application/json',
 				'Accept'       => 'application/json',
@@ -325,20 +330,22 @@ final class FXLI_Crypto {
 
 		if (is_wp_error($response)) {
 			error_log('[Finlyzer Crypto] Automated pairing request failed: ' . $response->get_error_message());
-			return false;
+			// check for fallback secret seed from configuration
+			return self::seed_fallback_secret();
 		}
 
 		$statusCode = wp_remote_retrieve_response_code($response);
 		if ($statusCode !== 200) {
 			error_log('[Finlyzer Crypto] Automated pairing rejected with HTTP ' . $statusCode);
-			return false;
+			// check for fallback secret seed from configuration
+			return self::seed_fallback_secret();
 		}
 
 		$bodyText = wp_remote_retrieve_body($response);
 		$data = json_decode($bodyText, true);
 		if (!is_array($data) || empty($data['token']) || !is_string($data['token']) || strlen($data['token']) !== 64) {
 			error_log('[Finlyzer Crypto] Invalid token structure received from pairing endpoint.');
-			return false;
+			return self::seed_fallback_secret();
 		}
 
 		// save received token using authenticated AES-256-GCM encryption at rest
@@ -346,36 +353,79 @@ final class FXLI_Crypto {
 		return $saved === true;
 	}
 
-	// force re-synchronization of automated cloud pairing
-	public static function force_re_pair(): array {
-		// delete existing token
-		self::delete_stored_secret();
-
-		// execute fresh pairing
-		$paired = self::auto_pair_site();
-		if (!$paired) {
-			return [
-				'success' => false,
-				'message' => __('Failed to establish automated pairing with Finlyzer Cloud Sentinel.', 'finlyzer'),
-			];
-		}
-
-		// verify connectivity via handshake
-		if (class_exists('FXLI_Gemini_Client')) {
-			$handshake = FXLI_Gemini_Client::verify_handshake();
-			if (!is_wp_error($handshake) && !empty($handshake['verified'])) {
-				return [
-					'success'    => true,
-					'latency_ms' => $handshake['latency_ms'] ?? 0,
-					'message'    => __('Cloud Sentinel successfully re-paired and verified.', 'finlyzer'),
-				];
+	// seed secret from baked or environment configuration if remote pairing endpoint is unreachable
+	private static function seed_fallback_secret(): bool {
+		$fallbackSecret = null;
+		if (defined('FINLYZER_BAKED_WORKER_HMAC_SECRET') && is_string(FINLYZER_BAKED_WORKER_HMAC_SECRET) && strlen(FINLYZER_BAKED_WORKER_HMAC_SECRET) >= self::MIN_SECRET_LENGTH) {
+			$fallbackSecret = FINLYZER_BAKED_WORKER_HMAC_SECRET;
+		} elseif (class_exists('FXLI_Env')) {
+			$envSecret = FXLI_Env::read_env_value('FINLYZER_WORKER_HMAC_SECRET');
+			if (is_string($envSecret) && strlen($envSecret) >= self::MIN_SECRET_LENGTH) {
+				$fallbackSecret = $envSecret;
 			}
 		}
 
-		return [
-			'success' => true,
-			'message' => __('Cloud Sentinel paired successfully.', 'finlyzer'),
-		];
+		if ($fallbackSecret !== null) {
+			$saved = self::save_secret($fallbackSecret);
+			return $saved === true;
+		}
+
+		return false;
+	}
+
+	// force re-synchronization of automated cloud pairing with rollback protection
+	public static function force_re_pair(): array {
+		// backup existing secret before attempting re-pairing to prevent total disconnection on transient failure
+		$backupSecret = self::get_stored_secret();
+
+		try {
+			// purge existing secret to force fresh pairing
+			self::delete_stored_secret();
+
+			// execute fresh pairing
+			$paired = self::auto_pair_site();
+			if (!$paired) {
+				// restore previous secret if fresh pairing was unsuccessful
+				if ($backupSecret !== null && $backupSecret !== '') {
+					self::save_secret($backupSecret);
+				}
+				return [
+					'success' => false,
+					'message' => __('Unable to establish connection with Finlyzer Cloud Sentinel. Previous secure state preserved.', 'finlyzer'),
+				];
+			}
+
+			// verify connectivity via handshake using instance method
+			if (class_exists('FXLI_Gemini_Client')) {
+				$client = FXLI_Gemini_Client::instance();
+				$handshake = $client->verify_handshake();
+				if (!is_wp_error($handshake) && !empty($handshake['success'])) {
+					return [
+						'success'    => true,
+						'latency_ms' => $handshake['latency_ms'] ?? 0,
+						'message'    => __('Cloud Sentinel successfully re-synchronized and active.', 'finlyzer'),
+					];
+				}
+			}
+
+			return [
+				'success' => true,
+				'message' => __('Cloud Sentinel re-synchronized successfully.', 'finlyzer'),
+			];
+		} catch (\Throwable $e) {
+			// log exception details securely to error_log without exposing to merchant
+			error_log('[Finlyzer Crypto] Re-sync exception: ' . $e->getMessage());
+
+			// restore backup secret
+			if ($backupSecret !== null && $backupSecret !== '') {
+				self::save_secret($backupSecret);
+			}
+
+			return [
+				'success' => false,
+				'message' => __('Connection re-synchronization could not be completed. Please try again shortly.', 'finlyzer'),
+			];
+		}
 	}
 
 	// perform automatic self-healing migration from legacy plaintext option

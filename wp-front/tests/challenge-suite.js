@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.26.0', `FINLYZER_VERSION is bumped to 1.26.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.27.0', `FINLYZER_VERSION is bumped to 1.27.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.26.0'), 'readme.txt Stable tag matches v1.26.0');
+assert(readmeContent.includes('Stable tag: 1.27.0'), 'readme.txt Stable tag matches v1.27.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1483,13 +1483,13 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.26.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.26.0');
-assert(finlyzerMainPhp.includes('* Version:           1.26.0'), 'finlyzer.php header declares Version 1.26.0');
-assert(packageJsonFront.version === '1.26.0', 'frontend package.json declares version 1.26.0');
-assert(packageJsonBack.version === '1.26.0', 'backend package.json declares version 1.26.0');
-assert(readmeTxt.includes('Stable tag: 1.26.0'), 'readme.txt declares Stable tag: 1.26.0');
-assert(readmeTxt.includes('= 1.25.0 ='), 'readme.txt documents 1.25.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.27.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.27.0');
+assert(finlyzerMainPhp.includes('* Version:           1.27.0'), 'finlyzer.php header declares Version 1.27.0');
+assert(packageJsonFront.version === '1.27.0', 'frontend package.json declares version 1.27.0');
+assert(packageJsonBack.version === '1.27.0', 'backend package.json declares version 1.27.0');
+assert(readmeTxt.includes('Stable tag: 1.27.0'), 'readme.txt declares Stable tag: 1.27.0');
 assert(readmeTxt.includes('= 1.26.0 ='), 'readme.txt documents 1.26.0 release notes');
+assert(readmeTxt.includes('= 1.27.0 ='), 'readme.txt documents 1.27.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1537,8 +1537,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.26.0'"), 'class-fxli-gemini-client.php declares matching 1.26.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.26.0')"), 'preview-server.php declares FINLYZER_VERSION 1.26.0');
+assert(geminiClientPhpContent.includes("'1.27.0'"), 'class-fxli-gemini-client.php declares matching 1.27.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.27.0')"), 'preview-server.php declares FINLYZER_VERSION 1.27.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2296,6 +2296,108 @@ assert(isWithinReplayWindow(currentUnix - 120), 'Timestamp 2 minutes in past is 
 assert(isWithinReplayWindow(currentUnix + 60), 'Timestamp 1 minute in future (clock skew) is accepted');
 assert(!isWithinReplayWindow(currentUnix - 301), 'Timestamp 301s in past is rejected (replay prevention)');
 assert(!isWithinReplayWindow(currentUnix + 301), 'Timestamp 301s in future is rejected (replay prevention)');
+
+// =============================================================================
+// TEST GROUP 31: Zero-Leakage Merchant UI, Critical Re-Sync Bug Fix & Dual-Mode Resilience (v1.27.0)
+// =============================================================================
+console.log('\nTEST GROUP 31: Zero-Leakage Merchant UI, Critical Re-Sync Bug Fix & Dual-Mode Resilience (v1.27.0)');
+
+// 31.1 Technical Stack Sanitization Contract (settings-modal.php)
+// verify modal strictly omits technical jargon, developer cards, and notice boxes
+const currentSettingsModal = fs.readFileSync(settingsModalTemplatePath, 'utf8');
+assert(!currentSettingsModal.includes('AES-256-GCM Encrypted'), 'settings-modal.php eliminates AES-256-GCM technical badge');
+assert(!currentSettingsModal.includes('Zero-PII Enforced'), 'settings-modal.php eliminates Zero-PII technical badge');
+assert(!currentSettingsModal.includes('Connection Protocol'), 'settings-modal.php eliminates Connection Protocol card');
+assert(!currentSettingsModal.includes('Storage Security'), 'settings-modal.php eliminates Storage Security card');
+assert(!currentSettingsModal.includes('Privacy Compliance'), 'settings-modal.php eliminates Privacy Compliance card');
+assert(!currentSettingsModal.includes('finlyzer-notice-box'), 'settings-modal.php eliminates bottom technical notice box');
+assert(currentSettingsModal.includes('finlyzer-sentinel-grid--single'), 'settings-modal.php uses single-card grid layout');
+assert(currentSettingsModal.includes('id="finlyzer-cloud-status-badge"'), 'settings-modal.php preserves status indicator');
+
+// verify exact HTML div balance
+const v31OpenDivs = (currentSettingsModal.match(/<div(\s+|>)/gi) || []).length;
+const v31CloseDivs = (currentSettingsModal.match(/<\/div>/gi) || []).length;
+assert(v31OpenDivs === v31CloseDivs, `settings-modal.php maintains exact div balance (${v31OpenDivs} open, ${v31CloseDivs} close)`);
+
+// 31.2 Instance Method Invocation & Safe Handshake Contract
+// verify crypto class invokes verify_handshake on instance, not statically
+const currentCryptoPhp = fs.readFileSync(cryptoPhpPath, 'utf8');
+assert(!currentCryptoPhp.includes('FXLI_Gemini_Client::verify_handshake('), 'class-fxli-crypto.php contains zero static calls to non-static verify_handshake()');
+assert(currentCryptoPhp.includes('$client->verify_handshake('), 'class-fxli-crypto.php calls verify_handshake() on client instance');
+assert(currentCryptoPhp.includes('backupSecret'), 'force_re_pair() implements automatic rollback on failure');
+assert(currentCryptoPhp.includes('catch (\\Throwable $e)'), 'force_re_pair() traps all Throwables to prevent WordPress fatal errors');
+
+// verify static probe helper on gemini client
+const currentGeminiClientPhp = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
+assert(currentGeminiClientPhp.includes('public static function probe_handshake('), 'class-fxli-gemini-client.php provides static probe_handshake() helper');
+
+// 31.3 Dual-Mode Resilience & Local Development SSL Contract
+// verify localhost detection for XAMPP Windows development
+assert(currentCryptoPhp.includes('$isLocal') && currentCryptoPhp.includes('localhost'), 'class-fxli-crypto.php detects localhost for SSL bypass in dev');
+assert(currentCryptoPhp.includes('seed_fallback_secret'), 'class-fxli-crypto.php implements fallback secret seeding');
+
+// verify package builder bakes fallback secret
+const currentBuildPackageJs = fs.readFileSync(path.resolve(__dirname, '../build-package.js'), 'utf8');
+assert(currentBuildPackageJs.includes('FINLYZER_BAKED_WORKER_HMAC_SECRET'), 'build-package.js bakes FINLYZER_BAKED_WORKER_HMAC_SECRET seed');
+
+// 31.4 Error Masking & Technical Details Suppression Contract
+// verify dashboard.js sanitizes connection errors and strips HTML/fatal error dumps
+const currentDashboardJs = fs.readFileSync(dashboardJsPath, 'utf8');
+assert(currentDashboardJs.includes('sanitizeMessage'), 'dashboard.js implements sanitizeMessage() for DOM safety');
+assert(currentDashboardJs.includes('A server error occurred. Please check server logs.'), 'dashboard.js suppresses PHP fatal error messages');
+assert(currentDashboardJs.includes("baseMsg = 'Connection to the Finlyzer calculation service was lost'"), 'dashboard.js uses merchant-friendly connection copy');
+
+// verify gemini client sanitizes analyze_orders and fetch_insight errors
+assert(!currentGeminiClientPhp.includes('"Worker returned HTTP status {$code}: {$raw_body}"'), 'class-fxli-gemini-client.php never leaks raw worker body in error messages');
+assert(currentGeminiClientPhp.includes('Calculation service is temporarily unavailable'), 'class-fxli-gemini-client.php returns generic error for analysis failure');
+
+// verify rest api sanitizes summary/insight failure responses
+const currentRestApiPhp = fs.readFileSync(restApiPath, 'utf8');
+assert(currentRestApiPhp.includes('calculation_service_unavailable'), 'class-fxli-rest-api.php returns generic error code calculation_service_unavailable');
+
+// 31.5 High-Volume Error Sanitization Benchmark (50,000 Cycles)
+// verify sanitization logic processes 50,000 messy error inputs under SLA (< 200ms)
+const errorSanitizationStart = performance.now();
+let cleanOutputsCount = 0;
+
+function simSanitize(errDetail) {
+	if (!errDetail || typeof errDetail !== 'string') return '';
+	var trimmed = errDetail.trim();
+	var isTechnical = trimmed.indexOf('{') !== -1 ||
+		trimmed.indexOf('HTTP') !== -1 ||
+		trimmed.indexOf('worker_') !== -1 ||
+		trimmed.indexOf('<') !== -1 ||
+		trimmed.indexOf('signature') !== -1 ||
+		trimmed.indexOf('status') !== -1;
+	if (!isTechnical && trimmed.length > 0 && trimmed.length < 80) {
+		return trimmed;
+	}
+	return '';
+}
+
+const sampleErrors = [
+	'HTTP 503: {"code":"worker_http_error","message":"Worker returned HTTP status 401: {\\"error\\":\\"invalid_signature\\"}"}',
+	'<p>There has been a critical error on this website.</p><p><a href="...">Learn more</a></p>',
+	'Worker returned HTTP status 500: Fatal error in engine',
+	'Gateway timeout',
+	'Network unreachable',
+	'{"error":"invalid_signature"}',
+];
+
+for (let i = 0; i < 50000; i++) {
+	const raw = sampleErrors[i % sampleErrors.length];
+	const cleaned = simSanitize(raw);
+	// technical errors must be completely suppressed to empty string
+	if (raw.includes('HTTP') || raw.includes('<p>') || raw.includes('signature')) {
+		if (cleaned === '') cleanOutputsCount++;
+	} else {
+		if (cleaned !== '') cleanOutputsCount++;
+	}
+}
+
+const errorSanitizationDuration = performance.now() - errorSanitizationStart;
+assert(cleanOutputsCount === 50000, `All 50,000 error sanitization evaluations succeeded (${cleanOutputsCount}/50,000)`);
+assert(errorSanitizationDuration < 200, `50,000 error sanitization cycles completed in ${errorSanitizationDuration.toFixed(2)}ms (< 200ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

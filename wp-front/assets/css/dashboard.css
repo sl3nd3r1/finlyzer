@@ -1947,7 +1947,7 @@
 }
 
 /* ==========================================================================
-   Finlyzer Security & Worker Settings Modal (v1.26.0)
+   Finlyzer Security & Worker Settings Modal (v1.27.0)
    ========================================================================== */
 
 .finlyzer-settings-nav-btn {
@@ -2408,6 +2408,10 @@
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 12px;
+}
+
+.finlyzer-sentinel-grid--single {
+	grid-template-columns: 1fr;
 }
 
 @media (max-width: 600px) {

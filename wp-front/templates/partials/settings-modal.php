@@ -42,33 +42,16 @@ $current_env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production'
 				<span class="finlyzer-status-dot"></span>
 				<span><?php echo $is_connected ? esc_html__('Cloud AI Active & Protected', 'finlyzer') : esc_html__('Cloud Sentinel Initializing...', 'finlyzer'); ?></span>
 			</div>
-			<div class="finlyzer-spec-chip"><?php esc_html_e('AES-256-GCM Encrypted', 'finlyzer'); ?></div>
-			<div class="finlyzer-spec-chip"><?php esc_html_e('Zero-PII Enforced', 'finlyzer'); ?></div>
 		</div>
 
 		<!-- Modal Body -->
 		<div class="finlyzer-modal-body">
-			<!-- Architecture Status Grid -->
-			<div class="finlyzer-sentinel-grid">
+			<!-- Store Identity Grid -->
+			<div class="finlyzer-sentinel-grid finlyzer-sentinel-grid--single">
 				<div class="finlyzer-sentinel-card">
 					<span class="finlyzer-sentinel-card__label"><?php esc_html_e('Site Identifier', 'finlyzer'); ?></span>
 					<span class="finlyzer-sentinel-card__val finlyzer-sentinel-card__val--mono"><?php echo esc_html($short_site_id); ?></span>
-					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('Anonymous cryptographic site identity', 'finlyzer'); ?></span>
-				</div>
-				<div class="finlyzer-sentinel-card">
-					<span class="finlyzer-sentinel-card__label"><?php esc_html_e('Connection Protocol', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__val"><?php esc_html_e('Zero-Touch Token', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('Automated per-site cryptographic pairing', 'finlyzer'); ?></span>
-				</div>
-				<div class="finlyzer-sentinel-card">
-					<span class="finlyzer-sentinel-card__label"><?php esc_html_e('Storage Security', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__val"><?php esc_html_e('AES-256-GCM AEAD', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('At-rest encryption keyed by server salts', 'finlyzer'); ?></span>
-				</div>
-				<div class="finlyzer-sentinel-card">
-					<span class="finlyzer-sentinel-card__label"><?php esc_html_e('Privacy Compliance', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__val"><?php esc_html_e('WordPress.org Sec 9', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('Zero customer PII transmitted or stored', 'finlyzer'); ?></span>
+					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('Unique store identifier for autonomous risk calculations', 'finlyzer'); ?></span>
 				</div>
 			</div>
 
@@ -88,20 +71,6 @@ $current_env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production'
 					</button>
 				</div>
 				<div id="finlyzerVerifyResult" class="finlyzer-verify-result" style="display:none;" aria-live="polite"></div>
-			</div>
-
-			<!-- Information Notice -->
-			<div class="finlyzer-notice-box">
-				<div class="finlyzer-notice-icon" aria-hidden="true">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<circle cx="12" cy="12" r="10"></circle>
-						<line x1="12" y1="16" x2="12" y2="12"></line>
-						<line x1="12" y1="8" x2="12.01" y2="8"></line>
-					</svg>
-				</div>
-				<p class="finlyzer-notice-text">
-					<?php esc_html_e('Your store is securely connected to the Finlyzer Cloud Sentinel using automated zero-touch cryptographic pairing. No API keys or technical setup required.', 'finlyzer'); ?>
-				</p>
 			</div>
 		</div>
 	</div>

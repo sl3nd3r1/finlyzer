@@ -122,7 +122,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.26.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.27.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -174,8 +174,9 @@ final class FXLI_Gemini_Client {
 			if (class_exists('FXLI_Logger')) {
 				FXLI_Logger::log_http_call($endpoint, 'POST', 'ERR', $duration, $response->get_error_message(), ['type' => 'insight']);
 			}
+			error_log('[Finlyzer Insight Network Error] ' . $response->get_error_message());
 			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
-				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable: %s', 'finlyzer'), $response->get_error_message()));
+				return new WP_Error('worker_http_error', __('Risk analysis service is temporarily unavailable.', 'finlyzer'));
 			}
 			$fallback = $this->generate_heuristic_warning($summary);
 			$ttl = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? 10 : HOUR_IN_SECONDS;
@@ -189,8 +190,9 @@ final class FXLI_Gemini_Client {
 		}
 
 		if ($code !== 200) {
+			error_log(sprintf('[Finlyzer Insight Error] HTTP %d', $code));
 			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
-				return new WP_Error('worker_http_error', sprintf(__('Finlyzer AI Risk Sentinel API unavailable (HTTP %d).', 'finlyzer'), $code));
+				return new WP_Error('worker_http_error', __('Risk analysis service is temporarily unavailable.', 'finlyzer'));
 			}
 			$fallback = $this->generate_heuristic_warning($summary);
 			$ttl = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? 10 : HOUR_IN_SECONDS;
@@ -334,7 +336,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.26.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.27.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -376,7 +378,8 @@ final class FXLI_Gemini_Client {
 					'currency'    => $payload['store_currency'] ?? 'USD',
 				]);
 			}
-			return new WP_Error('worker_http_error', sprintf(__('Worker network error: %s', 'finlyzer'), $response->get_error_message()));
+			error_log('[Finlyzer Analysis Network Error] ' . $response->get_error_message());
+			return new WP_Error('worker_http_error', __('Unable to reach calculation service. Please verify server connectivity.', 'finlyzer'));
 		}
 
 		$code = (int) wp_remote_retrieve_response_code($response);
@@ -391,7 +394,9 @@ final class FXLI_Gemini_Client {
 		}
 
 		if ($code !== 200) {
-			return new WP_Error('worker_http_error', "Worker returned HTTP status {$code}: {$raw_body}");
+			// securely log full response details internally for administrator diagnostics
+			error_log(sprintf('[Finlyzer Analysis Error] HTTP %d: %s', $code, substr($raw_body, 0, 512)));
+			return new WP_Error('worker_http_error', __('Calculation service is temporarily unavailable. Please retry shortly.', 'finlyzer'));
 		}
 
 		$data = json_decode($raw_body, true);
@@ -400,6 +405,11 @@ final class FXLI_Gemini_Client {
 		}
 
 		return $data;
+	}
+
+	// static helper to probe handshake safely via singleton instance
+	public static function probe_handshake(?string $custom_secret = null): array {
+		return self::instance()->verify_handshake($custom_secret);
 	}
 
 	// execute an authenticated HMAC handshake probe against the Cloudflare Worker verify endpoint
@@ -428,7 +438,7 @@ final class FXLI_Gemini_Client {
 		$verify_url = $clean_base . '/api/v1/verify';
 
 		$site_url = function_exists('home_url') ? home_url() : 'http://localhost';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.26.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.27.0';
 		$timestamp = time();
 		$body = wp_json_encode(['action' => 'verify', 'timestamp' => $timestamp]);
 		if ($body === false) {
