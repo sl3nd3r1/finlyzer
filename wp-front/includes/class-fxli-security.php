@@ -87,6 +87,18 @@ final class FXLI_Security {
 		return $secret;
 	}
 
+	// validate candidate secret strength against enterprise security constraints
+	public static function validate_hmac_secret_strength(string $secret): bool|string {
+		if (class_exists('FXLI_Crypto')) {
+			return FXLI_Crypto::validate_secret_entropy($secret);
+		}
+		$clean = trim($secret);
+		if (strlen($clean) < 32) {
+			return 'Secret must be at least 32 characters long.';
+		}
+		return true;
+	}
+
 	// strict allow-list sanitization for prompt values sent to LLM proxy
 	public static function sanitize_prompt_scalar(mixed $value): string {
 		// handle boolean values

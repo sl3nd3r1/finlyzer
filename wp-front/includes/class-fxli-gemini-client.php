@@ -122,7 +122,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.24.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.25.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -334,7 +334,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.24.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.25.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -400,6 +400,122 @@ final class FXLI_Gemini_Client {
 		}
 
 		return $data;
+	}
+
+	// execute an authenticated HMAC handshake probe against the Cloudflare Worker verify endpoint
+	public function verify_handshake(?string $custom_secret = null): array {
+		$secret = $custom_secret !== null && $custom_secret !== '' ? trim($custom_secret) : FXLI_Security::worker_shared_secret();
+
+		if ($secret === '') {
+			return [
+				'success' => false,
+				'error'   => __('HMAC secret is not configured.', 'finlyzer'),
+				'message' => __('Please enter or generate a valid HMAC secret first.', 'finlyzer'),
+			];
+		}
+
+		$base = $this->worker_endpoint();
+		if ($base === '') {
+			return [
+				'success' => false,
+				'error'   => __('Worker endpoint is not configured.', 'finlyzer'),
+				'message' => __('Worker endpoint URL is missing.', 'finlyzer'),
+			];
+		}
+
+		// derive canonical /api/v1/verify endpoint
+		$clean_base = preg_replace('#(/api/v1)?/(insight|analyze)/?$#', '', rtrim($base, '/'));
+		$verify_url = $clean_base . '/api/v1/verify';
+
+		$site_url = function_exists('home_url') ? home_url() : 'http://localhost';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.25.0';
+		$timestamp = time();
+		$body = wp_json_encode(['action' => 'verify', 'timestamp' => $timestamp]);
+		if ($body === false) {
+			$body = '{}';
+		}
+
+		// sign payload with timestamp prefix
+		$signature = hash_hmac('sha256', $timestamp . '.' . $body, $secret);
+
+		$timeout = class_exists('FXLI_Env') ? FXLI_Env::api_timeout() : 6;
+		$strict_ssl = class_exists('FXLI_Env') ? FXLI_Env::strict_ssl() : true;
+
+		$t0 = microtime(true);
+		$response = wp_remote_post($verify_url, [
+			'timeout'   => $timeout,
+			'sslverify' => $strict_ssl,
+			'headers'   => [
+				'Content-Type'    => 'application/json',
+				'X-FXLI-Site'     => self::site_id(),
+				'X-FXLI-Site-Url' => $site_url,
+				'X-FXLI-Version'  => $plugin_version,
+				'X-FXLI-Time'     => (string) $timestamp,
+				'X-FXLI-Sig'      => $signature,
+			],
+			'body'      => $body,
+		]);
+		$duration = round((microtime(true) - $t0) * 1000, 2);
+
+		if (is_wp_error($response)) {
+			return [
+				'success'     => false,
+				'endpoint'    => $verify_url,
+				'latency_ms'  => $duration,
+				'error'       => $response->get_error_message(),
+				'message'     => sprintf(__('Network connection failed: %s', 'finlyzer'), $response->get_error_message()),
+			];
+		}
+
+		$code = (int) wp_remote_retrieve_response_code($response);
+		$raw_body = wp_remote_retrieve_body($response);
+		$data = json_decode($raw_body, true);
+
+		if ($code === 200 && is_array($data) && !empty($data['verified'])) {
+			return [
+				'success'            => true,
+				'status_code'        => $code,
+				'endpoint'           => $verify_url,
+				'latency_ms'         => $duration,
+				'message'            => $data['message'] ?? __('HMAC handshake authenticated successfully.', 'finlyzer'),
+				'site_id'            => $data['site_id'] ?? self::site_id(),
+				'clock_skew_seconds' => $data['clock_skew_seconds'] ?? 0,
+				'environment'        => $data['environment'] ?? 'production',
+			];
+		}
+
+		// handle authentication mismatch
+		if ($code === 401) {
+			return [
+				'success'     => false,
+				'status_code' => 401,
+				'endpoint'    => $verify_url,
+				'latency_ms'  => $duration,
+				'error'       => 'invalid_signature',
+				'message'     => __('Authentication failed (HTTP 401): HMAC secret does not match Worker.', 'finlyzer'),
+			];
+		}
+
+		// handle blocked site
+		if ($code === 403) {
+			return [
+				'success'     => false,
+				'status_code' => 403,
+				'endpoint'    => $verify_url,
+				'latency_ms'  => $duration,
+				'error'       => 'site_blocked',
+				'message'     => __('Site suspended (HTTP 403): This site installation is blocked in the backoffice.', 'finlyzer'),
+			];
+		}
+
+		return [
+			'success'     => false,
+			'status_code' => $code,
+			'endpoint'    => $verify_url,
+			'latency_ms'  => $duration,
+			'error'       => "http_{$code}",
+			'message'     => sprintf(__('Worker returned unexpected status HTTP %d.', 'finlyzer'), $code),
+		];
 	}
 
 	// purge all cached insights to ensure real-time synchronization

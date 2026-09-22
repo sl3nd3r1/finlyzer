@@ -3,7 +3,7 @@
  * Plugin Name:       Finlyzer — FX Loss & Margin Insights for WooCommerce
  * Plugin URI:        https://example.com/finlyzer
  * Description:       Track hidden payment gateway conversion fees and currency loss across your international WooCommerce sales.
- * Version:           1.24.0
+ * Version:           1.25.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
@@ -18,6 +18,7 @@
  *  - Zero client-side credentials: API keys and HMAC secrets never reach the browser.
  *  - Server-to-server AI communication: WP -> Cloudflare Worker -> Gemini API.
  *  - Dual build architecture: isolated development & hardened production environment profiles.
+ *  - Authenticated at-rest encryption (AES-256-GCM) with HKDF key derivation from WordPress salts.
  *  - Capability and nonce verification on all REST endpoints (manage_woocommerce + wp_rest).
  *  - Prepared SQL queries ($wpdb->prepare()) and strictly escaped template rendering.
  *  - Full High-Performance Order Storage (HPOS) compatibility declared.
@@ -31,7 +32,7 @@ if (!defined('ABSPATH')) {
 }
 
 // core plugin constants
-define('FINLYZER_VERSION', '1.24.0');
+define('FINLYZER_VERSION', '1.25.0');
 define('FINLYZER_DB_VERSION', '3');
 define('FINLYZER_PLUGIN_FILE', __FILE__);
 define('FINLYZER_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -45,6 +46,7 @@ define('FXLI_PLUGIN_DIR', FINLYZER_PLUGIN_DIR);
 define('FXLI_PLUGIN_URL', FINLYZER_PLUGIN_URL);
 
 // explicit file inclusion to keep attack surface minimal and auditable
+require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-crypto.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-env.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-security.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-logger.php';
@@ -87,6 +89,11 @@ function finlyzer_bootstrap(): void {
 	// self-healing schema migration: ensure tables exist even if plugin was updated via direct folder copy
 	if (is_admin() && function_exists('get_option') && get_option('fxli_db_version') !== FINLYZER_DB_VERSION) {
 		FXLI_Installer::activate();
+	}
+
+	// self-healing secret migration: encrypt any legacy plaintext secrets
+	if (class_exists('FXLI_Crypto')) {
+		FXLI_Crypto::auto_migrate();
 	}
 
 	// load internationalization translation files

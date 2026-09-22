@@ -263,43 +263,102 @@ final class FXLI_Env {
 		return $clean_base . '/api/v1/analyze';
 	}
 
-	// retrieve baked or env HMAC secret
+	// retrieve HMAC secret across resolution hierarchy: constant -> env -> encrypted DB -> fallback
 	public static function hmac_secret(): string {
 		// 1. check wp-config constant override
 		if (defined('FINLYZER_WORKER_HMAC_SECRET') && is_string(FINLYZER_WORKER_HMAC_SECRET) && FINLYZER_WORKER_HMAC_SECRET !== '') {
 			return FINLYZER_WORKER_HMAC_SECRET;
 		}
 
-		// 2. check legacy constant override
+		// 2. check server environment variable
+		$server_val = getenv('FINLYZER_WORKER_HMAC_SECRET');
+		if (is_string($server_val) && $server_val !== '') {
+			return $server_val;
+		}
+
+		// 3. check legacy constant override
 		if (defined('FXLI_WORKER_HMAC_SECRET') && is_string(FXLI_WORKER_HMAC_SECRET) && FXLI_WORKER_HMAC_SECRET !== '') {
 			return FXLI_WORKER_HMAC_SECRET;
 		}
 
-		// 3. check build-time baked constant
+		// 4. check build-time baked constant
 		if (defined('FINLYZER_BAKED_WORKER_HMAC_SECRET') && is_string(FINLYZER_BAKED_WORKER_HMAC_SECRET) && FINLYZER_BAKED_WORKER_HMAC_SECRET !== '') {
 			return FINLYZER_BAKED_WORKER_HMAC_SECRET;
 		}
 
-		// 4. check database option
-		if (function_exists('get_option')) {
+		// 5. check authenticated encrypted database storage (2026 enterprise standard)
+		if (class_exists('FXLI_Crypto')) {
+			$stored = FXLI_Crypto::get_stored_secret();
+			if (is_string($stored) && $stored !== '') {
+				return $stored;
+			}
+		} elseif (function_exists('get_option')) {
 			$opt = (string) get_option('finlyzer_worker_hmac_secret', '');
 			if ($opt !== '') {
 				return $opt;
 			}
 		}
 
-		// 5. check active .env file
+		// 6. check active .env file
 		$env_val = self::read_env_value('FINLYZER_WORKER_HMAC_SECRET');
 		if ($env_val !== null && $env_val !== '') {
 			return $env_val;
 		}
 
-		// 6. development fallback
+		// 7. development fallback
 		if (self::is_development()) {
 			return 'dev-ephemeral-secret-32-byte-hex-token';
 		}
 
 		return '';
+	}
+
+	// identify active source of HMAC secret for administrator diagnostics
+	public static function hmac_secret_source(): string {
+		if (defined('FINLYZER_WORKER_HMAC_SECRET') && is_string(FINLYZER_WORKER_HMAC_SECRET) && FINLYZER_WORKER_HMAC_SECRET !== '') {
+			return 'constant';
+		}
+		$server_val = getenv('FINLYZER_WORKER_HMAC_SECRET');
+		if (is_string($server_val) && $server_val !== '') {
+			return 'env';
+		}
+		if (defined('FXLI_WORKER_HMAC_SECRET') && is_string(FXLI_WORKER_HMAC_SECRET) && FXLI_WORKER_HMAC_SECRET !== '') {
+			return 'constant';
+		}
+		if (defined('FINLYZER_BAKED_WORKER_HMAC_SECRET') && is_string(FINLYZER_BAKED_WORKER_HMAC_SECRET) && FINLYZER_BAKED_WORKER_HMAC_SECRET !== '') {
+			return 'baked';
+		}
+		if (class_exists('FXLI_Crypto')) {
+			$stored = FXLI_Crypto::get_stored_secret();
+			if (is_string($stored) && $stored !== '') {
+				return 'database';
+			}
+		} elseif (function_exists('get_option') && get_option('finlyzer_worker_hmac_secret', '') !== '') {
+			return 'database';
+		}
+		$env_val = self::read_env_value('FINLYZER_WORKER_HMAC_SECRET');
+		if ($env_val !== null && $env_val !== '') {
+			return 'dotenv';
+		}
+		if (self::is_development()) {
+			return 'dev_fallback';
+		}
+		return 'none';
+	}
+
+	// check if HMAC secret is locked by server-level configuration (constant or env)
+	public static function is_hmac_secret_locked(): bool {
+		$src = self::hmac_secret_source();
+		return $src === 'constant' || $src === 'env' || $src === 'baked';
+	}
+
+	// retrieve masked version of active HMAC secret
+	public static function get_masked_hmac_secret(): string {
+		$secret = self::hmac_secret();
+		if ($secret === '' || $secret === 'dev-ephemeral-secret-32-byte-hex-token') {
+			return '';
+		}
+		return class_exists('FXLI_Crypto') ? FXLI_Crypto::mask_secret($secret) : substr($secret, 0, 4) . '••••••••' . substr($secret, -4);
 	}
 
 	// strictly validate endpoint URL against SSRF and protocol policies

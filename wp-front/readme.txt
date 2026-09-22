@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.24.0
+Stable tag: 1.25.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -163,6 +163,15 @@ Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (
 * Telemetry: Automated dynamic client-side refresh of the Developer Telemetry table upon live diagnostic completion without requiring a page reload.
 * Observability: Transparent error surfacing in connection status banner with exact HTTP status codes and server diagnostics.
 * Development: Added clean zero-loss development baseline fallback when store has 0 cross-border orders or deferred order functions.
+
+= 1.25.0 =
+* Security: Enterprise-grade at-rest authenticated encryption (AES-256-GCM) with HKDF key derivation from WordPress core salts.
+* Security: Multi-tiered secret resolution hierarchy prioritizing wp-config.php constant overrides with locked UI safeguard.
+* Feature: Added Security & Worker Settings Modal with masked key display (e.g. 74e0••••••••25df) preventing shoulder surfing.
+* Feature: One-click 64-character high-entropy HMAC secret generator and clipboard copy utility for Cloudflare Worker synchronization.
+* Feature: Live HMAC handshake verification test against Cloudflare Worker (`/api/v1/verify`) with instant latency and clock skew metrics.
+* Performance: Self-healing automatic migration from legacy plaintext database storage to AES-256-GCM encrypted envelope.
+* Testing: Comprehensive test suite challenging tamper resistance, key derivation uniqueness, and 50,000 encryption/decryption cycles.
 
 = 1.17.0 =
 * Feature: Added structured telemetry and diagnostics logger (`FXLI_Logger`) with circular ring buffer (50 entries) and sensitive PII redaction.

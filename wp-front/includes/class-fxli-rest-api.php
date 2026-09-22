@@ -95,6 +95,53 @@ final class FXLI_REST_API {
 					'callback'            => [$this, 'handle_clear_logs'],
 					'permission_callback' => [$this, 'permission_check'],
 				]);
+
+				// register HMAC settings read endpoint
+				register_rest_route($ns, '/settings/hmac', [
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [$this, 'handle_get_hmac_settings'],
+					'permission_callback' => [$this, 'permission_check'],
+				]);
+
+				// register HMAC settings save endpoint
+				register_rest_route($ns, '/settings/hmac', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_save_hmac_settings'],
+					'permission_callback' => [$this, 'permission_check'],
+					'args'                => [
+						'secret' => [
+							'required'          => false,
+							'type'              => 'string',
+							'sanitize_callback' => static fn($v): string => sanitize_text_field((string) $v),
+						],
+						'action' => [
+							'required'          => false,
+							'type'              => 'string',
+							'sanitize_callback' => static fn($v): string => sanitize_key((string) $v),
+						],
+					],
+				]);
+
+				// register HMAC settings delete endpoint
+				register_rest_route($ns, '/settings/hmac', [
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => [$this, 'handle_delete_hmac_settings'],
+					'permission_callback' => [$this, 'permission_check'],
+				]);
+
+				// register HMAC live handshake verification endpoint
+				register_rest_route($ns, '/settings/hmac/verify', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_verify_hmac_settings'],
+					'permission_callback' => [$this, 'permission_check'],
+					'args'                => [
+						'secret' => [
+							'required'          => false,
+							'type'              => 'string',
+							'sanitize_callback' => static fn($v): string => sanitize_text_field((string) $v),
+						],
+					],
+				]);
 			}
 		});
 	}
@@ -258,5 +305,133 @@ final class FXLI_REST_API {
 			'success' => $cleared,
 			'message' => 'Telemetry logs cleared successfully.',
 		], 200);
+	}
+
+	// retrieve current HMAC secret status and masked preview safely
+	public function handle_get_hmac_settings(WP_REST_Request $request): WP_REST_Response {
+		$source = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret_source() : 'none';
+		$is_locked = class_exists('FXLI_Env') && FXLI_Env::is_hmac_secret_locked();
+		$secret = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
+		$is_configured = $secret !== '' && !str_contains($secret, 'dev-ephemeral');
+		$masked = class_exists('FXLI_Crypto') ? FXLI_Crypto::mask_secret($secret) : (class_exists('FXLI_Env') ? FXLI_Env::get_masked_hmac_secret() : '');
+
+		return new WP_REST_Response([
+			'success'       => true,
+			'configured'    => $is_configured,
+			'source'        => $source,
+			'is_locked'     => $is_locked,
+			'masked_secret' => $masked,
+			'secret_length' => strlen($secret),
+			'endpoint'      => class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '',
+			'environment'   => class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production',
+		], 200);
+	}
+
+	// save or generate HMAC secret with authenticated at-rest encryption
+	public function handle_save_hmac_settings(WP_REST_Request $request): WP_REST_Response {
+		// assert secret is not locked by server environment or wp-config.php
+		if (class_exists('FXLI_Env') && FXLI_Env::is_hmac_secret_locked()) {
+			return new WP_REST_Response([
+				'success' => false,
+				'error'   => 'locked_by_configuration',
+				'message' => __('HMAC secret is managed via server configuration (wp-config.php or environment) and cannot be overridden in the database.', 'finlyzer'),
+			], 400);
+		}
+
+		$action = (string) $request->get_param('action');
+
+		// 1. handle one-click secret generation
+		if ($action === 'generate') {
+			$new_secret = class_exists('FXLI_Crypto') ? FXLI_Crypto::generate_secret(32) : bin2hex(random_bytes(32));
+			$save_result = class_exists('FXLI_Crypto') ? FXLI_Crypto::save_secret($new_secret) : false;
+
+			if ($save_result !== true) {
+				return new WP_REST_Response([
+					'success' => false,
+					'error'   => 'save_failed',
+					'message' => is_string($save_result) ? $save_result : __('Failed to save generated secret.', 'finlyzer'),
+				], 500);
+			}
+
+			return new WP_REST_Response([
+				'success'       => true,
+				'message'       => __('New 64-character high-entropy secret generated and encrypted at rest.', 'finlyzer'),
+				'generated_key' => $new_secret, // rendered once on explicit user generation so user can configure Cloudflare Worker
+				'masked_secret' => class_exists('FXLI_Crypto') ? FXLI_Crypto::mask_secret($new_secret) : '',
+				'secret_length' => strlen($new_secret),
+				'source'        => 'database',
+				'is_locked'     => false,
+			], 200);
+		}
+
+		// 2. handle user-provided secret
+		$raw_secret = (string) $request->get_param('secret');
+		$clean_secret = trim($raw_secret);
+
+		$validation = class_exists('FXLI_Crypto') ? FXLI_Crypto::validate_secret_entropy($clean_secret) : true;
+		if ($validation !== true) {
+			return new WP_REST_Response([
+				'success' => false,
+				'error'   => 'invalid_entropy',
+				'message' => is_string($validation) ? $validation : __('Secret has insufficient entropy (< 32 chars).', 'finlyzer'),
+			], 400);
+		}
+
+		$save_result = class_exists('FXLI_Crypto') ? FXLI_Crypto::save_secret($clean_secret) : false;
+		if ($save_result !== true) {
+			return new WP_REST_Response([
+				'success' => false,
+				'error'   => 'encryption_error',
+				'message' => is_string($save_result) ? $save_result : __('Encryption failed.', 'finlyzer'),
+			], 500);
+		}
+
+		return new WP_REST_Response([
+			'success'       => true,
+			'message'       => __('HMAC secret encrypted and saved to database successfully.', 'finlyzer'),
+			'masked_secret' => class_exists('FXLI_Crypto') ? FXLI_Crypto::mask_secret($clean_secret) : '',
+			'secret_length' => strlen($clean_secret),
+			'source'        => 'database',
+			'is_locked'     => false,
+		], 200);
+	}
+
+	// delete stored database secret
+	public function handle_delete_hmac_settings(WP_REST_Request $request): WP_REST_Response {
+		if (class_exists('FXLI_Env') && FXLI_Env::is_hmac_secret_locked()) {
+			return new WP_REST_Response([
+				'success' => false,
+				'error'   => 'locked_by_configuration',
+				'message' => __('HMAC secret is defined via server configuration and cannot be deleted.', 'finlyzer'),
+			], 400);
+		}
+
+		if (class_exists('FXLI_Crypto')) {
+			FXLI_Crypto::delete_stored_secret();
+		}
+
+		return new WP_REST_Response([
+			'success' => true,
+			'message' => __('Database secret deleted successfully.', 'finlyzer'),
+		], 200);
+	}
+
+	// execute live connection verification handshake
+	public function handle_verify_hmac_settings(WP_REST_Request $request): WP_REST_Response {
+		$candidate_secret = $request->get_param('secret');
+		$secret = is_string($candidate_secret) && $candidate_secret !== '' ? trim($candidate_secret) : null;
+
+		$client = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::instance() : null;
+		if (!$client) {
+			return new WP_REST_Response([
+				'success' => false,
+				'message' => 'FXLI_Gemini_Client is not available.',
+			], 500);
+		}
+
+		$handshake = $client->verify_handshake($secret);
+		$status_code = !empty($handshake['success']) ? 200 : (isset($handshake['status_code']) ? (int) $handshake['status_code'] : 503);
+
+		return new WP_REST_Response($handshake, $status_code);
 	}
 }

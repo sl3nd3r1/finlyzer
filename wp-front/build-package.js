@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Finlyzer — Multi-Environment WordPress Package Builder (v1.24.0)
+ * Finlyzer — Multi-Environment WordPress Package Builder (v1.25.0)
  *
  * Compiles and packages the Finlyzer plugin using environment-specific (.env) profiles:
  *
@@ -161,6 +161,7 @@ console.log('\n4. Linting PHP production files...');
 const phpFilesToLint = [
 	'finlyzer.php',
 	'uninstall.php',
+	'includes/class-fxli-crypto.php',
 	'includes/class-fxli-env.php',
 	'includes/class-fxli-security.php',
 	'includes/class-fxli-installer.php',
@@ -172,6 +173,7 @@ const phpFilesToLint = [
 	'templates/partials/summary-cards.php',
 	'templates/partials/insight-note.php',
 	'templates/partials/developer-section.php',
+	'templates/partials/settings-modal.php',
 ];
 
 for (const relPath of phpFilesToLint) {
