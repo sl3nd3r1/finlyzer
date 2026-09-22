@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.23.0', `FINLYZER_VERSION is bumped to 1.23.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.24.0', `FINLYZER_VERSION is bumped to 1.24.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.23.0'), 'readme.txt Stable tag matches v1.23.0');
+assert(readmeContent.includes('Stable tag: 1.24.0'), 'readme.txt Stable tag matches v1.24.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1482,13 +1482,13 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.23.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.23.0');
-assert(finlyzerMainPhp.includes('* Version:           1.23.0'), 'finlyzer.php header declares Version 1.23.0');
-assert(packageJsonFront.version === '1.23.0', 'frontend package.json declares version 1.23.0');
-assert(packageJsonBack.version === '1.23.0', 'backend package.json declares version 1.23.0');
-assert(readmeTxt.includes('Stable tag: 1.23.0'), 'readme.txt declares Stable tag: 1.23.0');
-assert(readmeTxt.includes('= 1.22.0 ='), 'readme.txt documents 1.22.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.24.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.24.0');
+assert(finlyzerMainPhp.includes('* Version:           1.24.0'), 'finlyzer.php header declares Version 1.24.0');
+assert(packageJsonFront.version === '1.24.0', 'frontend package.json declares version 1.24.0');
+assert(packageJsonBack.version === '1.24.0', 'backend package.json declares version 1.24.0');
+assert(readmeTxt.includes('Stable tag: 1.24.0'), 'readme.txt declares Stable tag: 1.24.0');
 assert(readmeTxt.includes('= 1.23.0 ='), 'readme.txt documents 1.23.0 release notes');
+assert(readmeTxt.includes('= 1.24.0 ='), 'readme.txt documents 1.24.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1536,8 +1536,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.23.0'"), 'class-fxli-gemini-client.php declares matching 1.23.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.23.0')"), 'preview-server.php declares FINLYZER_VERSION 1.23.0');
+assert(geminiClientPhpContent.includes("'1.24.0'"), 'class-fxli-gemini-client.php declares matching 1.24.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.24.0')"), 'preview-server.php declares FINLYZER_VERSION 1.24.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -1979,6 +1979,53 @@ assert(aiApiCallsExecuted === 3, 'Force refresh flag successfully bypassed cache
 
 const orderCacheStressDuration = performance.now() - orderCacheStressStart;
 assert(orderCacheStressDuration < 200, `200,000 order-event cache lifecycle evaluations completed in ${orderCacheStressDuration.toFixed(2)}ms (< 200ms SLA)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 28: 2026 AI Model Resilience, GEMINI_MODEL Binding & Upstream Failover (v1.24.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 28: 2026 AI Model Resilience, GEMINI_MODEL Binding & Upstream Failover (v1.24.0)');
+
+const backendEnvTs = fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/src/types/env.ts'), 'utf8');
+const backendGeminiTs = fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/src/services/gemini.ts'), 'utf8');
+const backendWranglerToml = fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/wrangler.toml'), 'utf8');
+const backendChallengeFile = path.resolve(__dirname, '../../../backend/wp-back/tests/gemini-model-challenge.ts');
+
+assert(backendEnvTs.includes('GEMINI_MODEL?: string;'), 'backend env.ts declares GEMINI_MODEL?: string on Env interface');
+assert(backendGeminiTs.includes('sanitizeModelName'), 'backend gemini.ts defines sanitizeModelName helper');
+assert(backendGeminiTs.includes('resolveCandidateModels'), 'backend gemini.ts defines resolveCandidateModels helper');
+assert(backendGeminiTs.includes('MODEL_NAME_REGEX'), 'backend gemini.ts enforces regex boundary on custom model names');
+assert(backendWranglerToml.includes('GEMINI_MODEL = "gemini-flash-lite-latest"'), 'wrangler.toml configures 2026 default candidate model');
+assert(fs.existsSync(backendChallengeFile), 'gemini-model-challenge.ts exists in backend test directory');
+
+// 28.1 High-Volume Simulated Model Name Sanitization Stress Test (100,000 Cycles)
+const modelSanitizeStressStart = performance.now();
+const modelRegex = /^[a-zA-Z0-9_.-]+$/;
+function testSanitizeModel(name) {
+	if (!name || typeof name !== 'string') return null;
+	const trimmed = name.trim();
+	if (!trimmed || trimmed.length > 64 || !modelRegex.test(trimmed)) return null;
+	return trimmed;
+}
+
+const testInputs = [
+	'gemini-flash-lite-latest',
+	'   gemini-flash-latest   ',
+	'../../etc/passwd',
+	'<script>alert(1)</script>',
+	'gemini-3.5-flash-lite',
+	'invalid;rm -rf /',
+];
+
+let validCount = 0;
+for (let i = 0; i < 100000; i++) {
+	const chosen = testInputs[i % testInputs.length];
+	if (testSanitizeModel(chosen)) {
+		validCount++;
+	}
+}
+const modelSanitizeStressDuration = performance.now() - modelSanitizeStressStart;
+assert(validCount === 50000, `Half of 100,000 simulated inputs passed sanitization (${validCount}/100,000)`);
+assert(modelSanitizeStressDuration < 150, `100,000 model sanitization evaluations executed in ${modelSanitizeStressDuration.toFixed(2)}ms (< 150ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

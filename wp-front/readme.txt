@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.23.0
+Stable tag: 1.24.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,13 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.24.0 =
+* AI Resilience: Resolved Cloudflare Worker GEMINI_MODEL typing and environment binding parity.
+* Security: Implemented strict regex sanitization on custom model names to prevent header/path injection.
+* Reliability: Hardened 2026 multi-model failover cascade (gemini-flash-lite-latest, gemini-flash-latest, gemini-3.5-flash-lite, gemini-3.6-flash) with dynamic model priority reordering and deduplication.
+* Fail-Closed Security: Instant abort on 401/403 authentication failures to prevent quota burnout.
+* Concurrency: Validated with high-throughput 200-request concurrency challenge under sub-second latency SLA.
 
 = 1.23.0 =
 * Compliance: Added dedicated External Services disclosure section in readme.txt compliant with WordPress.org Plugin Directory guidelines (European Central Bank / Frankfurter API and Finlyzer Cloudflare Worker / Google Gemini Flash AI).
