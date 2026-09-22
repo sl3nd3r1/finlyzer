@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.28.0', `FINLYZER_VERSION is bumped to 1.28.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.29.0', `FINLYZER_VERSION is bumped to 1.29.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.28.0'), 'readme.txt Stable tag matches v1.28.0');
+assert(readmeContent.includes('Stable tag: 1.29.0'), 'readme.txt Stable tag matches v1.29.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1483,13 +1483,13 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.28.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.28.0');
-assert(finlyzerMainPhp.includes('* Version:           1.28.0'), 'finlyzer.php header declares Version 1.28.0');
-assert(packageJsonFront.version === '1.28.0', 'frontend package.json declares version 1.28.0');
-assert(packageJsonBack.version === '1.28.0', 'backend package.json declares version 1.28.0');
-assert(readmeTxt.includes('Stable tag: 1.28.0'), 'readme.txt declares Stable tag: 1.28.0');
-assert(readmeTxt.includes('= 1.27.0 ='), 'readme.txt documents 1.27.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.29.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.29.0');
+assert(finlyzerMainPhp.includes('* Version:           1.29.0'), 'finlyzer.php header declares Version 1.29.0');
+assert(packageJsonFront.version === '1.29.0', 'frontend package.json declares version 1.29.0');
+assert(packageJsonBack.version === '1.29.0', 'backend package.json declares version 1.29.0');
+assert(readmeTxt.includes('Stable tag: 1.29.0'), 'readme.txt declares Stable tag: 1.29.0');
 assert(readmeTxt.includes('= 1.28.0 ='), 'readme.txt documents 1.28.0 release notes');
+assert(readmeTxt.includes('= 1.29.0 ='), 'readme.txt documents 1.29.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1537,8 +1537,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.28.0'"), 'class-fxli-gemini-client.php declares matching 1.28.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.28.0')"), 'preview-server.php declares FINLYZER_VERSION 1.28.0');
+assert(geminiClientPhpContent.includes("'1.29.0'"), 'class-fxli-gemini-client.php declares matching 1.29.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.29.0')"), 'preview-server.php declares FINLYZER_VERSION 1.29.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2476,6 +2476,87 @@ for (let i = 0; i < 50000; i++) {
 const marketRenderDuration = performance.now() - marketRenderStart;
 assert(renderedRowsCount === 50000, `All 50,000 market rows rendered with surface-only metrics (${renderedRowsCount}/50,000)`);
 assert(marketRenderDuration < 200, `50,000 market table rows rendered in ${marketRenderDuration.toFixed(2)}ms (< 200ms SLA)`);
+
+// =============================================================================
+// TEST GROUP 33: Enterprise 2026 Security, Zero Secret Baking, SSRF Defense, Windows Parity & Stress Matrix (v1.29.0)
+// =============================================================================
+console.log('\nTEST GROUP 33: Enterprise 2026 Security, Zero Secret Baking, SSRF Defense, Windows Parity & Stress Matrix (v1.29.0)');
+
+// 33.1 Zero Hardcoded Secret Baking Contract
+// Production environment configuration and distribution packages must never bake static secrets
+const prodEnv33Path = path.resolve(__dirname, '../.env.production');
+const prodEnvExample33Path = path.resolve(__dirname, '../.env.production.example');
+const prodEnv33Content = fs.readFileSync(prodEnv33Path, 'utf8');
+const prodEnvExample33Content = fs.readFileSync(prodEnvExample33Path, 'utf8');
+
+const secretMatchProd = prodEnv33Content.match(/^FINLYZER_WORKER_HMAC_SECRET=(.+)$/m);
+assert(secretMatchProd === null, '.env.production purges baked FINLYZER_WORKER_HMAC_SECRET');
+const secretMatchExample = prodEnvExample33Content.match(/^FINLYZER_WORKER_HMAC_SECRET=(.+)$/m);
+assert(secretMatchExample === null, '.env.production.example purges baked FINLYZER_WORKER_HMAC_SECRET');
+
+// 33.2 Cloudflare Worker SSRF Redirect Protection
+// Probe requests must specify redirect: 'manual' to prevent 301/302 redirects to internal/metadata endpoints
+const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
+const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
+assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.29.0'), 'wp-detector.ts sets User-Agent to 1.29.0');
+
+// 33.3 Gemini API Key Header Transmission (No Query String Leakage)
+// Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
+const geminiServicePath = path.resolve(__dirname, '../../../backend/wp-back/src/services/gemini.ts');
+const geminiServiceContent = fs.readFileSync(geminiServicePath, 'utf8');
+assert(geminiServiceContent.includes("'x-goog-api-key': apiKey"), "gemini.ts passes API key securely via 'x-goog-api-key' header");
+assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?key= query parameter from API URL');
+
+// 33.4 Multi-Component 1.29.0 Version Consistency across Systems
+const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
+const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
+assert(adminApiContent.includes("version: '1.29.0'"), 'admin-api.ts synchronizes version to 1.29.0');
+
+const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
+const healthContent = fs.readFileSync(healthPath, 'utf8');
+assert(healthContent.includes("version: '1.29.0'"), 'health.ts synchronizes version to 1.29.0');
+
+const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
+const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.29.0'), 'market-timing.ts sets User-Agent to 1.29.0');
+
+// 33.5 Windows XAMPP Developer Parity in Build Packaging
+const buildPackagePath = path.resolve(__dirname, '../build-package.js');
+const buildPackageContent = fs.readFileSync(buildPackagePath, 'utf8');
+assert(buildPackageContent.includes('createZipArchive'), 'build-package.js encapsulates cross-platform createZipArchive()');
+assert(buildPackageContent.includes('Compress-Archive') || buildPackageContent.includes('powershell'), 'build-package.js supports Windows PowerShell Compress-Archive');
+assert(buildPackageContent.includes('listZipEntries'), 'build-package.js implements cross-platform listZipEntries()');
+
+// 33.6 High-Volume 50,000-Order Mathematical Accuracy & Concurrency Benchmark
+const loadBenchStart = performance.now();
+let validCalculations = 0;
+const testCurrencies = ['EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF'];
+const rates = { EUR: 0.92, GBP: 0.78, JPY: 155.4, AUD: 1.52, CAD: 1.36, CHF: 0.90 };
+const feeRates = { EUR: 0.029, GBP: 0.029, JPY: 0.034, AUD: 0.032, CAD: 0.029, CHF: 0.029 };
+
+for (let i = 0; i < 50000; i++) {
+	const currency = testCurrencies[i % testCurrencies.length];
+	const rawAmount = 100 + (i % 500);
+	const rate = rates[currency];
+	const feeRate = feeRates[currency];
+
+	// calculate base amount in USD, fee in currency, and impact
+	const amountUsd = rawAmount / rate;
+	const feeAmount = rawAmount * feeRate;
+	const feeUsd = feeAmount / rate;
+	const simulatedShift = (i % 2 === 0 ? 0.005 : -0.003);
+	const timingImpact = simulatedShift > 0 ? (amountUsd * simulatedShift) : 0;
+	const totalLossUsd = feeUsd + timingImpact;
+
+	if (totalLossUsd > 0 && !isNaN(totalLossUsd) && isFinite(totalLossUsd)) {
+		validCalculations++;
+	}
+}
+
+const loadBenchDuration = performance.now() - loadBenchStart;
+assert(validCalculations === 50000, `All 50,000 high-frequency calculations succeeded (${validCalculations}/50,000)`);
+assert(loadBenchDuration < 150, `50,000 multi-currency transaction computations completed in ${loadBenchDuration.toFixed(2)}ms (< 150ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

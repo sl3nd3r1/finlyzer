@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.28.0
+Stable tag: 1.29.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,14 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.29.0 =
+* Security: Eliminated static HMAC secret baking into distribution packages; enforced zero-touch cloud pairing and runtime key derivation.
+* Security: Modernized Google Gemini AI integration to pass API keys via x-goog-api-key HTTP header, preventing secret exposure in URL parameters.
+* Security: Hardened remote WordPress detector probe against SSRF redirect attacks by enforcing manual redirect validation.
+* Cross-Platform: Added native Windows PowerShell Compress-Archive fallback to build packaging pipeline, ensuring seamless operation in Windows XAMPP environments.
+* Production Readiness: Hardened environment boundary detection and cURL SSL certificate verification for Windows XAMPP and production deployments.
+* Version Parity: Synchronized telemetry and system versions to 1.29.0 across all frontend and backend services.
 
 = 1.28.0 =
 * UI/UX: Streamlined merchant dashboard to display surface-only business metrics, completely eliminating exposure of internal reference calculation mechanics.

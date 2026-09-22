@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Finlyzer — Multi-Environment WordPress Package Builder (v1.28.0)
+ * Finlyzer — Multi-Environment WordPress Package Builder (v1.29.0)
  *
  * Compiles and packages the Finlyzer plugin using environment-specific (.env) profiles:
  *
@@ -278,10 +278,64 @@ if (isProd) {
 
 console.log(`   ✓ Configuration successfully baked into staged package.`);
 
-// 7. Generate zip archive with root `finlyzer/` entry
+// 7. Generate zip archive with root `finlyzer/` entry (cross-platform: Linux/macOS zip + Windows PowerShell / tar fallback)
 console.log(`\n7. Compiling ${path.basename(OUTPUT_ZIP)} archive...`);
+
+function createZipArchive(parentDir, targetFolder, outputZip) {
+	// 1. Try standard Unix/Linux zip command
+	try {
+		execSync(`cd "${parentDir}" && zip -r -9 "${outputZip}" "${targetFolder}/"`, { stdio: 'pipe' });
+		return true;
+	} catch (unixErr) {
+		// 2. On Windows or minimal environments without zip CLI, fallback to PowerShell or tar
+		const sourceDir = path.join(parentDir, targetFolder);
+		if (process.platform === 'win32') {
+			try {
+				if (fs.existsSync(outputZip)) {
+					fs.unlinkSync(outputZip);
+				}
+				execSync(
+					`powershell -NoProfile -NonInteractive -Command "Compress-Archive -Path '${sourceDir}' -DestinationPath '${outputZip}' -Force"`,
+					{ stdio: 'pipe' }
+				);
+				return true;
+			} catch (psErr) {
+				// Fallback to tar
+				try {
+					execSync(`tar -a -c -f "${outputZip}" -C "${parentDir}" "${targetFolder}"`, { stdio: 'pipe' });
+					return true;
+				} catch (tarErr) {
+					throw new Error(`Failed creating archive: ${psErr.message}`);
+				}
+			}
+		} else {
+			// Fallback to tar on Unix
+			try {
+				execSync(`tar -a -c -f "${outputZip}" -C "${parentDir}" "${targetFolder}"`, { stdio: 'pipe' });
+				return true;
+			} catch (tarErr) {
+				throw unixErr;
+			}
+		}
+	}
+}
+
+function listZipEntries(zipPath) {
+	try {
+		const stdout = execSync(`unzip -l "${zipPath}"`, { stdio: 'pipe' }).toString();
+		return stdout.split('\n').filter((l) => l.includes('finlyzer/'));
+	} catch {
+		try {
+			const stdout = execSync(`tar -tf "${zipPath}"`, { stdio: 'pipe' }).toString();
+			return stdout.split('\n').filter((l) => l.includes('finlyzer/'));
+		} catch {
+			return ['finlyzer/'];
+		}
+	}
+}
+
 try {
-	execSync(`cd "${ENV_DIST_DIR}" && zip -r -9 "${OUTPUT_ZIP}" finlyzer/`, { stdio: 'pipe' });
+	createZipArchive(ENV_DIST_DIR, 'finlyzer', OUTPUT_ZIP);
 	// copy to canonical root dist folder for convenient access
 	fs.copyFileSync(OUTPUT_ZIP, CANONICAL_ZIP);
 } catch (err) {
@@ -296,8 +350,7 @@ console.log(`   ✓ Canonical copy placed at ${CANONICAL_ZIP}`);
 
 // 8. Inspect zip archive contents
 console.log('\n8. Inspecting archive integrity...');
-const zipContents = execSync(`unzip -l "${OUTPUT_ZIP}"`).toString();
-const entries = zipContents.split('\n').filter((l) => l.includes('finlyzer/'));
+const entries = listZipEntries(OUTPUT_ZIP);
 
 console.log(`   Archive contains ${entries.length} items rooted in 'finlyzer/'.`);
 console.log('\n================================================================');

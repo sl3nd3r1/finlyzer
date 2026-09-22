@@ -1,6 +1,6 @@
 <?php
 /**
- * Standalone PHP Challenge Suite for Finlyzer REST API Fragment Serving (v1.28.0)
+ * Standalone PHP Challenge Suite for Finlyzer REST API Fragment Serving (v1.29.0)
  *
  * Verifies that HTML fragment responses for htmx:
  * 1. Do NOT attempt to invoke protected method WP_REST_Server::set_status().
@@ -19,7 +19,7 @@ if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/../');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.28.0');
+	define('FINLYZER_VERSION', '1.29.0');
 }
 
 // -----------------------------------------------------------------------------
@@ -169,7 +169,7 @@ function assert_test(bool $condition, string $message): void {
 }
 
 echo "================================================================\n";
-echo "⚡ FINLYZER REST API FRAGMENT SERVING CHALLENGE SUITE (v1.28.0)\n";
+echo "⚡ FINLYZER REST API FRAGMENT SERVING CHALLENGE SUITE (v1.29.0)\n";
 echo "================================================================\n\n";
 
 // TEST 1: Serve HTML fragment without invoking protected method WP_REST_Server::set_status()
