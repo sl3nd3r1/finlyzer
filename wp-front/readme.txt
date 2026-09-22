@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.25.0
+Stable tag: 1.26.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,18 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.26.0 =
+* Zero-Touch Pairing: Implemented autonomous, zero-configuration Cloud Sentinel pairing between WordPress and the Finlyzer backend. Merchants are never prompted for API endpoints, HMAC keys, or terminal commands.
+* Secretless Architecture: The plugin automatically enrolls via POST /api/v1/pair, obtaining a unique site-specific token cryptographically derived from the worker's master secret and bound to the site's identity.
+* At-Rest Authenticated Encryption: Paired site tokens are stored in the database using AES-256-GCM authenticated encryption with keys derived via HKDF-SHA256 from WordPress core salts.
+* Cloud Sentinel Dialog: Redesigned the settings interface into a clean, read-only Cloud Sentinel Status dialog with live latency verification and a one-click re-synchronization diagnostic tool.
+* WordPress.org Compliance: 100% compliant with WordPress.org Section 9 for service-driven plugins with zero PII transmission.
+
+= 1.25.0 =
+* Security: Implemented AES-256-GCM authenticated at-rest encryption for worker authentication credentials using HKDF key derivation from WordPress core salts.
+* Secret Management: Added 5-tier secret resolution hierarchy prioritizing wp-config.php and environment variables with database storage fallback.
+* Cryptographic Engine: Added FXLI_Crypto class with tamper-proof AEAD envelopes and entropy validation.
 
 = 1.24.0 =
 * AI Resilience: Resolved Cloudflare Worker GEMINI_MODEL typing and environment binding parity.

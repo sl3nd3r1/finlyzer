@@ -263,6 +263,16 @@ final class FXLI_Env {
 		return $clean_base . '/api/v1/analyze';
 	}
 
+	// extract worker base URL origin (e.g. https://finlyzer-worker-prod.ebi1055lol.workers.dev)
+	public static function worker_base_url(): string {
+		$endpoint = self::worker_endpoint();
+		if ($endpoint === '') {
+			return '';
+		}
+		$clean = preg_replace('#(/api/v1)?/(insight|analyze|verify|benchmark|pair)/?$#', '', rtrim($endpoint, '/'));
+		return $clean;
+	}
+
 	// retrieve HMAC secret across resolution hierarchy: constant -> env -> encrypted DB -> fallback
 	public static function hmac_secret(): string {
 		// 1. check wp-config constant override
@@ -291,6 +301,17 @@ final class FXLI_Env {
 			$stored = FXLI_Crypto::get_stored_secret();
 			if (is_string($stored) && $stored !== '') {
 				return $stored;
+			}
+
+			// trigger zero-touch automated cloud pairing if not yet provisioned
+			if (function_exists('wp_remote_post')) {
+				$paired = FXLI_Crypto::auto_pair_site();
+				if ($paired) {
+					$new_secret = FXLI_Crypto::get_stored_secret();
+					if (is_string($new_secret) && $new_secret !== '') {
+						return $new_secret;
+					}
+				}
 			}
 		} elseif (function_exists('get_option')) {
 			$opt = (string) get_option('finlyzer_worker_hmac_secret', '');

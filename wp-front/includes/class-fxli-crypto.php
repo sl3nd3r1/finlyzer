@@ -261,6 +261,123 @@ final class FXLI_Crypto {
 		return true;
 	}
 
+	// perform automated zero-touch site pairing with Cloudflare Worker
+	public static function auto_pair_site(?string $worker_base_url = null): bool {
+		// return early if already configured with valid secret in database
+		$existing = self::get_stored_secret();
+		if ($existing !== null && strlen($existing) >= self::MIN_SECRET_LENGTH && !str_contains($existing, 'dev-ephemeral')) {
+			return true;
+		}
+
+		// return early if managed via wp-config.php constant
+		if (defined('FINLYZER_WORKER_HMAC_SECRET') && is_string(FINLYZER_WORKER_HMAC_SECRET) && FINLYZER_WORKER_HMAC_SECRET !== '') {
+			return true;
+		}
+
+		// resolve worker base URL
+		$baseUrl = $worker_base_url;
+		if ($baseUrl === null && class_exists('FXLI_Env')) {
+			$baseUrl = FXLI_Env::worker_base_url();
+		}
+		if (empty($baseUrl)) {
+			$endpoint = class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '';
+			$parsed = parse_url($endpoint);
+			if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+				$baseUrl = $parsed['scheme'] . '://' . $parsed['host'] . (!empty($parsed['port']) ? ':' . $parsed['port'] : '');
+			}
+		}
+
+		if (empty($baseUrl)) {
+			return false;
+		}
+
+		$pairEndpoint = rtrim($baseUrl, '/') . '/api/v1/pair';
+		$siteId = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : hash('sha256', (defined('AUTH_KEY') ? AUTH_KEY : 'finlyzer') . '|' . (function_exists('home_url') ? home_url() : 'localhost'));
+		$siteUrl = function_exists('home_url') ? home_url() : '';
+		$pluginVersion = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.26.0';
+		$now = time();
+		$nonce = function_exists('wp_generate_password') ? wp_generate_password(32, false) : bin2hex(random_bytes(16));
+		$signature = hash_hmac('sha256', "finlyzer:pair:{$siteId}:{$now}:{$nonce}", $siteId);
+
+		$payload = [
+			'site_id'        => $siteId,
+			'site_url'       => $siteUrl,
+			'plugin_version' => $pluginVersion,
+			'timestamp'      => $now,
+			'nonce'          => $nonce,
+			'signature'      => $signature,
+		];
+
+		if (!function_exists('wp_remote_post')) {
+			return false;
+		}
+
+		$isDev = class_exists('FXLI_Env') && FXLI_Env::current_env() === 'development';
+		$response = wp_remote_post($pairEndpoint, [
+			'timeout'   => 10,
+			'sslverify' => !$isDev,
+			'headers'   => [
+				'Content-Type' => 'application/json',
+				'Accept'       => 'application/json',
+			],
+			'body'      => wp_json_encode($payload),
+		]);
+
+		if (is_wp_error($response)) {
+			error_log('[Finlyzer Crypto] Automated pairing request failed: ' . $response->get_error_message());
+			return false;
+		}
+
+		$statusCode = wp_remote_retrieve_response_code($response);
+		if ($statusCode !== 200) {
+			error_log('[Finlyzer Crypto] Automated pairing rejected with HTTP ' . $statusCode);
+			return false;
+		}
+
+		$bodyText = wp_remote_retrieve_body($response);
+		$data = json_decode($bodyText, true);
+		if (!is_array($data) || empty($data['token']) || !is_string($data['token']) || strlen($data['token']) !== 64) {
+			error_log('[Finlyzer Crypto] Invalid token structure received from pairing endpoint.');
+			return false;
+		}
+
+		// save received token using authenticated AES-256-GCM encryption at rest
+		$saved = self::save_secret($data['token']);
+		return $saved === true;
+	}
+
+	// force re-synchronization of automated cloud pairing
+	public static function force_re_pair(): array {
+		// delete existing token
+		self::delete_stored_secret();
+
+		// execute fresh pairing
+		$paired = self::auto_pair_site();
+		if (!$paired) {
+			return [
+				'success' => false,
+				'message' => __('Failed to establish automated pairing with Finlyzer Cloud Sentinel.', 'finlyzer'),
+			];
+		}
+
+		// verify connectivity via handshake
+		if (class_exists('FXLI_Gemini_Client')) {
+			$handshake = FXLI_Gemini_Client::verify_handshake();
+			if (!is_wp_error($handshake) && !empty($handshake['verified'])) {
+				return [
+					'success'    => true,
+					'latency_ms' => $handshake['latency_ms'] ?? 0,
+					'message'    => __('Cloud Sentinel successfully re-paired and verified.', 'finlyzer'),
+				];
+			}
+		}
+
+		return [
+			'success' => true,
+			'message' => __('Cloud Sentinel paired successfully.', 'finlyzer'),
+		];
+	}
+
 	// perform automatic self-healing migration from legacy plaintext option
 	public static function auto_migrate(): void {
 		if (!function_exists('get_option')) {

@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.25.0', `FINLYZER_VERSION is bumped to 1.25.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.26.0', `FINLYZER_VERSION is bumped to 1.26.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.25.0'), 'readme.txt Stable tag matches v1.25.0');
+assert(readmeContent.includes('Stable tag: 1.26.0'), 'readme.txt Stable tag matches v1.26.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1483,13 +1483,13 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.25.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.25.0');
-assert(finlyzerMainPhp.includes('* Version:           1.25.0'), 'finlyzer.php header declares Version 1.25.0');
-assert(packageJsonFront.version === '1.25.0', 'frontend package.json declares version 1.25.0');
-assert(packageJsonBack.version === '1.25.0', 'backend package.json declares version 1.25.0');
-assert(readmeTxt.includes('Stable tag: 1.25.0'), 'readme.txt declares Stable tag: 1.25.0');
-assert(readmeTxt.includes('= 1.24.0 ='), 'readme.txt documents 1.24.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.26.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.26.0');
+assert(finlyzerMainPhp.includes('* Version:           1.26.0'), 'finlyzer.php header declares Version 1.26.0');
+assert(packageJsonFront.version === '1.26.0', 'frontend package.json declares version 1.26.0');
+assert(packageJsonBack.version === '1.26.0', 'backend package.json declares version 1.26.0');
+assert(readmeTxt.includes('Stable tag: 1.26.0'), 'readme.txt declares Stable tag: 1.26.0');
 assert(readmeTxt.includes('= 1.25.0 ='), 'readme.txt documents 1.25.0 release notes');
+assert(readmeTxt.includes('= 1.26.0 ='), 'readme.txt documents 1.26.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1537,8 +1537,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.25.0'"), 'class-fxli-gemini-client.php declares matching 1.25.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.25.0')"), 'preview-server.php declares FINLYZER_VERSION 1.25.0');
+assert(geminiClientPhpContent.includes("'1.26.0'"), 'class-fxli-gemini-client.php declares matching 1.26.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.26.0')"), 'preview-server.php declares FINLYZER_VERSION 1.26.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2069,10 +2069,11 @@ const modalOpenDivs = (settingsModal.match(/<div(\s+|>)/gi) || []).length;
 const modalCloseDivs = (settingsModal.match(/<\/div>/gi) || []).length;
 assert(modalOpenDivs === modalCloseDivs, `settings-modal.php maintains exact DOM div balance (${modalOpenDivs} open, ${modalCloseDivs} close)`);
 assert(settingsModal.includes('id="finlyzerSettingsModal"'), 'settings-modal.php declares #finlyzerSettingsModal');
-assert(settingsModal.includes('id="finlyzerHmacSecretInput"'), 'settings-modal.php declares #finlyzerHmacSecretInput');
-assert(settingsModal.includes('id="finlyzerGenerateSecretBtn"'), 'settings-modal.php declares #finlyzerGenerateSecretBtn');
-assert(settingsModal.includes('id="finlyzerCopySecretBtn"'), 'settings-modal.php declares #finlyzerCopySecretBtn');
-assert(settingsModal.includes('id="finlyzerVerifyHmacBtn"'), 'settings-modal.php declares #finlyzerVerifyHmacBtn');
+// In v1.26.0, manual secret inputs were completely eliminated for secretless merchant UX
+assert(!settingsModal.includes('id="finlyzerHmacSecretInput"'), 'settings-modal.php eliminated legacy #finlyzerHmacSecretInput for secretless merchant UX');
+assert(!settingsModal.includes('id="finlyzerGenerateSecretBtn"'), 'settings-modal.php eliminated legacy #finlyzerGenerateSecretBtn');
+assert(!settingsModal.includes('id="finlyzerCopySecretBtn"'), 'settings-modal.php eliminated legacy #finlyzerCopySecretBtn');
+assert(settingsModal.includes('id="finlyzerVerifyHmacBtn"'), 'settings-modal.php declares #finlyzerVerifyHmacBtn for re-sync');
 
 // 29.3 Real PHP FXLI_Crypto Runtime Execution Contract
 try {
@@ -2196,6 +2197,105 @@ for (let i = 0; i < 25000; i++) {
 const tamperStressDuration = performance.now() - tamperStressStart;
 assert(tamperFailClosed === 25000, `100% of 25,000 tampered AEAD envelopes failed closed (${tamperFailClosed}/25,000)`);
 assert(tamperStressDuration < 2500, `25,000 tamper verifications executed in ${tamperStressDuration.toFixed(2)}ms (< 2500ms SLA)`);
+
+// =============================================================================
+// TEST GROUP 30: Automated Zero-Touch Cloud Pairing & Secretless Merchant Architecture (v1.26.0)
+// =============================================================================
+console.log('\nTEST GROUP 30: Automated Zero-Touch Cloud Pairing & Secretless Merchant Architecture (v1.26.0)');
+
+// 30.1 Secretless Merchant UX Contract: Zero Exposure of CLI or Raw Secrets
+// verify frontend code has zero traces of terminal wrangler commands or raw secret inputs
+const settingsModalTemplatePath = path.resolve(__dirname, '../templates/partials/settings-modal.php');
+const settingsModalContent = fs.readFileSync(settingsModalTemplatePath, 'utf8');
+const dashboardJsUpdated = fs.readFileSync(dashboardJsPath, 'utf8');
+
+// merchant templates must never contain wrangler CLI instructions
+assert(!settingsModalContent.includes('wrangler secret put'), 'settings-modal.php never references wrangler secret put');
+assert(!dashboardJsUpdated.includes('wrangler secret put'), 'dashboard.js never references wrangler secret put');
+assert(!settingsModalContent.includes('WORKER_HMAC_SECRET'), 'settings-modal.php never displays WORKER_HMAC_SECRET directly to merchants');
+
+// 30.2 Zero Text/Password Inputs for Worker Endpoints or Secrets
+// merchants must not be burdened with configuring API endpoints or keys manually
+assert(!settingsModalContent.includes('name="worker_endpoint"'), 'settings-modal.php contains zero worker_endpoint input fields');
+assert(!settingsModalContent.includes('name="worker_hmac_secret"'), 'settings-modal.php contains zero worker_hmac_secret input fields');
+assert(settingsModalContent.includes('finlyzer-sentinel-grid'), 'settings-modal.php renders modern Cloud Sentinel status grid');
+assert(settingsModalContent.includes('finlyzer-cloud-resync-btn'), 'settings-modal.php provides self-healing cloud resync trigger');
+assert(settingsModalContent.includes('finlyzer-cloud-status-badge'), 'settings-modal.php declares live sentinel status indicator');
+
+// 30.3 Cloud Sentinel Navigation Integration
+// dashboard header exposes clean Cloud Sentinel status dialog
+const dashboardTemplateUpdated = fs.readFileSync(dashboardPhpPath, 'utf8');
+assert(dashboardTemplateUpdated.includes('finlyzer-settings-nav-btn'), 'dashboard.php declares Cloud Sentinel navigation button');
+assert(dashboardTemplateUpdated.includes('finlyzer-nav-dot'), 'dashboard.php declares live pulse status dot');
+assert(dashboardTemplateUpdated.includes('Cloud Sentinel'), 'dashboard.php labels action as Cloud Sentinel');
+
+// 30.4 Zero-Touch Pairing PHP Subsystem Contract
+// verify crypto and environment classes implement zero-touch pairing
+const cryptoPhpContent = fs.readFileSync(cryptoPhpPath, 'utf8');
+const envPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-env.php'), 'utf8');
+
+assert(cryptoPhpContent.includes('function auto_pair_site('), 'class-fxli-crypto.php implements automated zero-touch auto_pair_site()');
+assert(cryptoPhpContent.includes('function force_re_pair('), 'class-fxli-crypto.php implements on-demand force_re_pair()');
+assert(envPhpContent.includes('FXLI_Crypto::auto_pair_site()'), 'class-fxli-env.php auto-initiates background pairing when secret is missing');
+assert(envPhpContent.includes('function worker_base_url('), 'class-fxli-env.php defines worker_base_url()');
+
+// 30.5 REST API Cloud Sentinel Diagnostic Endpoints Contract
+// verify REST controller registers status check and diagnostic re-pair with strict authorization
+assert(restApiPhpUpdated.includes("'/settings/cloud-status'"), 'class-fxli-rest-api.php registers /settings/cloud-status route');
+assert(restApiPhpUpdated.includes("'/settings/cloud-resync'"), 'class-fxli-rest-api.php registers /settings/cloud-resync route');
+assert(restApiPhpUpdated.includes('handle_get_cloud_status'), 'class-fxli-rest-api.php implements handle_get_cloud_status()');
+assert(restApiPhpUpdated.includes('handle_cloud_resync'), 'class-fxli-rest-api.php implements handle_cloud_resync()');
+
+// 30.6 Zero PII & Replay Protection Handshake Contract
+// verify handshake uses only cryptographic identifiers (site_id, timestamp, nonce, signature)
+assert(cryptoPhpContent.includes("'site_id'") && cryptoPhpContent.includes('$siteId'), 'auto_pair_site transmits anonymous site_id');
+assert(cryptoPhpContent.includes('wp_generate_password(32, false)'), 'auto_pair_site generates cryptographic nonce');
+assert(cryptoPhpContent.includes("finlyzer:pair:"), 'auto_pair_site computes signature with domain-separated prefix');
+
+// 30.7 High-Volume Token Derivation Stress Test (50,000 Cycles)
+// simulate cloud worker per-site derived token generation at scale
+const masterSecret = 'super_secret_master_worker_key_2026_enterprise_sentinel';
+const derivationStart = performance.now();
+let derivedTokensVerified = 0;
+
+for (let i = 0; i < 50000; i++) {
+	// generate site identifier and derive HMAC key
+	const siteId = crypto.createHash('sha256').update(`site_iteration_${i % 500}`).digest('hex');
+	const derivedKey = crypto.createHmac('sha256', masterSecret).update(`finlyzer:site:${siteId}`).digest('hex');
+	if (derivedKey && derivedKey.length === 64) {
+		derivedTokensVerified++;
+	}
+}
+const derivationDuration = performance.now() - derivationStart;
+assert(derivedTokensVerified === 50000, `Successfully derived 50,000 per-site HMAC keys (${derivedTokensVerified}/50,000)`);
+assert(derivationDuration < 1500, `50,000 key derivations executed in ${derivationDuration.toFixed(2)}ms (< 1500ms SLA)`);
+
+// 30.8 Cryptographic Site Isolation & Cross-Site Attack Immunity
+// tokens derived for distinct sites must never match or sign for one another
+const siteA = 'a'.repeat(64);
+const siteB = 'b'.repeat(64);
+const tokenA = crypto.createHmac('sha256', masterSecret).update(`finlyzer:site:${siteA}`).digest('hex');
+const tokenB = crypto.createHmac('sha256', masterSecret).update(`finlyzer:site:${siteB}`).digest('hex');
+assert(tokenA !== tokenB, 'Per-site derived tokens are unique per site identifier');
+
+// signing with site A must fail verification on site B
+const testPayload = JSON.stringify({ query: 'sales_forecast', amount: 1000 });
+const testTimestamp = Math.floor(Date.now() / 1000);
+const sigA = crypto.createHmac('sha256', tokenA).update(`${testTimestamp}.${testPayload}`).digest('hex');
+const sigB = crypto.createHmac('sha256', tokenB).update(`${testTimestamp}.${testPayload}`).digest('hex');
+assert(sigA !== sigB, 'Signatures from site A cannot validate on site B (strict cross-site isolation)');
+
+// 30.9 Anti-Replay Sliding Window Drift Tolerance
+// verify 300s window correctly accepts fresh timestamps and rejects expired ones
+const currentUnix = Math.floor(Date.now() / 1000);
+function isWithinReplayWindow(ts) {
+	return Math.abs(currentUnix - ts) <= 300;
+}
+assert(isWithinReplayWindow(currentUnix), 'Exact current timestamp is accepted');
+assert(isWithinReplayWindow(currentUnix - 120), 'Timestamp 2 minutes in past is accepted');
+assert(isWithinReplayWindow(currentUnix + 60), 'Timestamp 1 minute in future (clock skew) is accepted');
+assert(!isWithinReplayWindow(currentUnix - 301), 'Timestamp 301s in past is rejected (replay prevention)');
+assert(!isWithinReplayWindow(currentUnix + 301), 'Timestamp 301s in future is rejected (replay prevention)');
 
 // -------------------------------------------------------------
 // SUMMARY

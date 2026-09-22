@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.25.0');
+	define('FINLYZER_VERSION', '1.26.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');

@@ -142,6 +142,20 @@ final class FXLI_REST_API {
 						],
 					],
 				]);
+
+				// register zero-touch cloud sentinel status endpoint
+				register_rest_route($ns, '/settings/cloud-status', [
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [$this, 'handle_get_cloud_status'],
+					'permission_callback' => [$this, 'permission_check'],
+				]);
+
+				// register zero-touch cloud sentinel re-sync endpoint
+				register_rest_route($ns, '/settings/cloud-resync', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_cloud_resync'],
+					'permission_callback' => [$this, 'permission_check'],
+				]);
 			}
 		});
 	}
@@ -433,5 +447,46 @@ final class FXLI_REST_API {
 		$status_code = !empty($handshake['success']) ? 200 : (isset($handshake['status_code']) ? (int) $handshake['status_code'] : 503);
 
 		return new WP_REST_Response($handshake, $status_code);
+	}
+
+	// retrieve high-level zero-touch Cloud Sentinel status
+	public function handle_get_cloud_status(WP_REST_Request $request): WP_REST_Response {
+		$site_id = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : '';
+		$short_site_id = strlen($site_id) >= 12 ? substr($site_id, 0, 4) . '••••••••' . substr($site_id, -4) : $site_id;
+		$source = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret_source() : 'none';
+		$is_locked = class_exists('FXLI_Env') && FXLI_Env::is_hmac_secret_locked();
+		$env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production';
+
+		// verify if secret is currently active
+		$active_secret = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
+		$is_paired = $active_secret !== '' && !str_contains($active_secret, 'dev-ephemeral');
+
+		return new WP_REST_Response([
+			'success'          => true,
+			'connected'        => $is_paired,
+			'status'           => $is_paired ? 'active' : 'unpaired',
+			'site_id'          => $site_id,
+			'short_site_id'    => $short_site_id,
+			'mode'             => 'zero_touch_automated',
+			'encryption'       => 'AES-256-GCM',
+			'privacy_standard' => 'zero_pii',
+			'source'           => $source,
+			'is_locked'        => $is_locked,
+			'environment'      => $env,
+		], 200);
+	}
+
+	// execute automated zero-touch pairing re-synchronization
+	public function handle_cloud_resync(WP_REST_Request $request): WP_REST_Response {
+		if (class_exists('FXLI_Crypto')) {
+			$result = FXLI_Crypto::force_re_pair();
+			$status_code = !empty($result['success']) ? 200 : 503;
+			return new WP_REST_Response($result, $status_code);
+		}
+
+		return new WP_REST_Response([
+			'success' => false,
+			'message' => __('FXLI_Crypto service is unavailable.', 'finlyzer'),
+		], 500);
 	}
 }

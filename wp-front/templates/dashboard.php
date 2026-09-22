@@ -37,12 +37,13 @@ window.FXLI = window.Finlyzer;
 				<button type="button" class="finlyzer-range-btn" data-days="60" aria-pressed="false" title="<?php esc_attr_e('View 60-day analytics', 'finlyzer'); ?>">60D</button>
 				<button type="button" class="finlyzer-range-btn" data-days="90" aria-pressed="false" title="<?php esc_attr_e('View 90-day analytics', 'finlyzer'); ?>">90D</button>
 			</div>
-			<button type="button" class="finlyzer-settings-nav-btn" id="finlyzerSettingsNavBtn" title="<?php esc_attr_e('Security & Worker Settings', 'finlyzer'); ?>">
+			<button type="button" class="finlyzer-settings-nav-btn" id="finlyzerSettingsNavBtn" title="<?php esc_attr_e('Finlyzer Cloud Sentinel Status', 'finlyzer'); ?>">
+				<span class="finlyzer-nav-dot" aria-hidden="true"></span>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<circle cx="12" cy="12" r="3"></circle>
-					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+					<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+					<path d="M9 12l2 2 4-4"/>
 				</svg>
-				<span><?php esc_html_e('Settings', 'finlyzer'); ?></span>
+				<span><?php esc_html_e('Cloud Sentinel', 'finlyzer'); ?></span>
 			</button>
 			<button type="button" class="finlyzer-about-nav-btn" id="finlyzerAboutNavBtn" title="<?php esc_attr_e('About Finlyzer & Author', 'finlyzer'); ?>">
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

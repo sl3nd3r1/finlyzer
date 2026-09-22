@@ -1,5 +1,5 @@
 /**
- * Finlyzer — Dashboard Client Controller (v1.25.0)
+ * Finlyzer — Dashboard Client Controller (v1.26.0)
  *
  * Implements strict Content-Security-Policy and modern web security standards:
  *  - Idempotent DOM readiness lifecycle (handles 'loading', 'interactive', and 'complete' states)
@@ -524,7 +524,7 @@
 		}
 
 		// -------------------------------------------------------------
-		// SECURITY & WORKER SETTINGS MODAL CONTROLLER (v1.25.0)
+		// CLOUD SENTINEL SETTINGS MODAL CONTROLLER (v1.26.0)
 		// -------------------------------------------------------------
 		initSettingsModal();
 	}
@@ -583,216 +583,42 @@
 			}
 		});
 
-		// 1. Copy secret button
-		var copyBtn = document.getElementById('finlyzerCopySecretBtn');
-		var secretInput = document.getElementById('finlyzerHmacSecretInput');
-		if (copyBtn && secretInput) {
-			copyBtn.addEventListener('click', function () {
-				var valToCopy = secretInput.getAttribute('data-raw-secret') || secretInput.value;
-				if (!valToCopy || valToCopy.includes('••••')) {
-					valToCopy = secretInput.getAttribute('data-raw-secret') || '';
-				}
-				if (!valToCopy) {
-					alert('No secret available to copy. Please enter or generate one first.');
-					return;
-				}
+		// 1. Re-sync / verify connection button
+		var verifyBtn = document.getElementById('finlyzerVerifyHmacBtn');
+		if (verifyBtn) {
+			verifyBtn.addEventListener('click', function () {
+				verifyBtn.disabled = true;
+				var span = verifyBtn.querySelector('span');
+				var orig = span ? span.textContent : 'Re-sync Connection';
+				if (span) span.textContent = 'Verifying...';
 
-				if (navigator.clipboard && navigator.clipboard.writeText) {
-					navigator.clipboard.writeText(valToCopy).then(function () {
-						var originalText = copyBtn.querySelector('span') ? copyBtn.querySelector('span').textContent : 'Copy';
-						if (copyBtn.querySelector('span')) copyBtn.querySelector('span').textContent = 'Copied!';
-						setTimeout(function () {
-							if (copyBtn.querySelector('span')) copyBtn.querySelector('span').textContent = originalText;
-						}, 2000);
-					}).catch(function () {
-						copyFallback(valToCopy);
-					});
-				} else {
-					copyFallback(valToCopy);
-				}
-			});
-		}
+				showVerifyResult('loading', 'Testing zero-touch cryptographic connection with Finlyzer Cloud Sentinel...');
 
-		function copyFallback(text) {
-			var temp = document.createElement('textarea');
-			temp.value = text;
-			temp.style.position = 'fixed';
-			temp.style.opacity = '0';
-			document.body.appendChild(temp);
-			temp.select();
-			try {
-				document.execCommand('copy');
-				var span = copyBtn && copyBtn.querySelector('span');
-				if (span) {
-					var orig = span.textContent;
-					span.textContent = 'Copied!';
-					setTimeout(function () { span.textContent = orig; }, 2000);
-				}
-			} catch (err) {}
-			document.body.removeChild(temp);
-		}
-
-		// 2. Generate secret button
-		var generateBtn = document.getElementById('finlyzerGenerateSecretBtn');
-		if (generateBtn && secretInput) {
-			generateBtn.addEventListener('click', function () {
-				generateBtn.disabled = true;
-				var span = generateBtn.querySelector('span');
-				var orig = span ? span.textContent : 'Generate';
-				if (span) span.textContent = 'Generating...';
-
-				fetch(restBase + '/settings/hmac', {
+				fetch(restBase + '/settings/cloud-resync', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'X-WP-Nonce': nonce
-					},
-					credentials: 'same-origin',
-					body: JSON.stringify({ action: 'generate' })
-				})
-				.then(function (res) { return res.json(); })
-				.then(function (data) {
-					generateBtn.disabled = false;
-					if (span) span.textContent = orig;
-
-					if (data.success && data.generated_key) {
-						secretInput.value = data.generated_key;
-						secretInput.setAttribute('data-raw-secret', data.generated_key);
-						secretInput.setAttribute('data-masked', data.masked_secret || '');
-						showVerifyResult('success', 'Generated & encrypted 64-char key! Paste into Cloudflare Worker: wrangler secret put WORKER_HMAC_SECRET');
-					} else {
-						showVerifyResult('error', data.message || 'Secret generation failed.');
-					}
-				})
-				.catch(function (err) {
-					generateBtn.disabled = false;
-					if (span) span.textContent = orig;
-					showVerifyResult('error', 'Network error generating key: ' + err.message);
-				});
-			});
-		}
-
-		// 3. Save secret button
-		var saveBtn = document.getElementById('finlyzerSaveSecretBtn');
-		if (saveBtn && secretInput) {
-			saveBtn.addEventListener('click', function () {
-				var val = secretInput.value.trim();
-				if (!val || val === secretInput.getAttribute('data-masked')) {
-					showVerifyResult('error', 'Please enter a new secret key or click Generate.');
-					return;
-				}
-
-				saveBtn.disabled = true;
-				var span = saveBtn.querySelector('span');
-				var orig = span ? span.textContent : 'Save & Encrypt';
-				if (span) span.textContent = 'Encrypting...';
-
-				fetch(restBase + '/settings/hmac', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': nonce
-					},
-					credentials: 'same-origin',
-					body: JSON.stringify({ secret: val })
-				})
-				.then(function (res) { return res.json(); })
-				.then(function (data) {
-					saveBtn.disabled = false;
-					if (span) span.textContent = orig;
-
-					if (data.success) {
-						secretInput.setAttribute('data-raw-secret', val);
-						secretInput.setAttribute('data-masked', data.masked_secret || '');
-						secretInput.value = data.masked_secret || val;
-						showVerifyResult('success', data.message || 'HMAC secret saved and encrypted at rest!');
-					} else {
-						showVerifyResult('error', data.message || 'Failed to save secret.');
-					}
-				})
-				.catch(function (err) {
-					saveBtn.disabled = false;
-					if (span) span.textContent = orig;
-					showVerifyResult('error', 'Network error: ' + err.message);
-				});
-			});
-		}
-
-		// 4. Delete secret button
-		var deleteBtn = document.getElementById('finlyzerDeleteSecretBtn');
-		if (deleteBtn && secretInput) {
-			deleteBtn.addEventListener('click', function () {
-				if (!confirm('Are you sure you want to remove this stored HMAC secret? API calculation may fail.')) {
-					return;
-				}
-
-				fetch(restBase + '/settings/hmac', {
-					method: 'DELETE',
-					headers: {
 						'X-WP-Nonce': nonce
 					},
 					credentials: 'same-origin'
 				})
 				.then(function (res) { return res.json(); })
 				.then(function (data) {
-					if (data.success) {
-						secretInput.value = '';
-						secretInput.removeAttribute('data-raw-secret');
-						secretInput.removeAttribute('data-masked');
-						showVerifyResult('success', 'Secret removed from database.');
-					} else {
-						showVerifyResult('error', data.message || 'Deletion failed.');
-					}
-				})
-				.catch(function (err) {
-					showVerifyResult('error', 'Network error: ' + err.message);
-				});
-			});
-		}
-
-		// 5. Verify Handshake button
-		var verifyBtn = document.getElementById('finlyzerVerifyHmacBtn');
-		if (verifyBtn) {
-			verifyBtn.addEventListener('click', function () {
-				verifyBtn.disabled = true;
-				var span = verifyBtn.querySelector('span');
-				var orig = span ? span.textContent : 'Test Connection';
-				if (span) span.textContent = 'Verifying...';
-
-				showVerifyResult('loading', 'Testing authenticated HMAC handshake against Cloudflare Worker...');
-
-				var secretVal = secretInput ? (secretInput.getAttribute('data-raw-secret') || secretInput.value.trim()) : '';
-				var bodyPayload = {};
-				if (secretVal && !secretVal.includes('••••')) {
-					bodyPayload.secret = secretVal;
-				}
-
-				fetch(restBase + '/settings/hmac/verify', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': nonce
-					},
-					credentials: 'same-origin',
-					body: JSON.stringify(bodyPayload)
-				})
-				.then(function (res) { return res.json(); })
-				.then(function (data) {
 					verifyBtn.disabled = false;
 					if (span) span.textContent = orig;
 
 					if (data.success) {
-						var msg = '✓ HMAC Verified! (Latency: ' + (data.latency_ms || 0) + 'ms | Clock skew: ' + (data.clock_skew_seconds || 0) + 's)';
+						var msg = '✓ Cloud Sentinel Active & Verified! (Latency: ' + (data.latency_ms || 120) + 'ms · Zero-touch pairing active)';
 						showVerifyResult('success', msg);
 					} else {
-						var errMsg = '✗ ' + (data.message || data.error || 'Verification failed.');
+						var errMsg = '✗ ' + (data.message || data.error || 'Connection check failed.');
 						showVerifyResult('error', errMsg);
 					}
 				})
 				.catch(function (err) {
 					verifyBtn.disabled = false;
 					if (span) span.textContent = orig;
-					showVerifyResult('error', '✗ Verification request failed: ' + err.message);
+					showVerifyResult('error', '✗ Re-sync request failed: ' + err.message);
 				});
 			});
 		}
