@@ -104,7 +104,7 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 		<div class="finlyzer-card finlyzer-kpi-card finlyzer-card--timing">
 			<div class="finlyzer-kpi-header">
 				<span class="finlyzer-kpi-label"><?php esc_html_e('EXCHANGE RATE SHIFT', 'finlyzer'); ?></span>
-				<span class="finlyzer-badge-ecb" title="<?php esc_attr_e('European Central Bank reference rate', 'finlyzer'); ?>"><?php esc_html_e('ECB Reference', 'finlyzer'); ?></span>
+				<span class="finlyzer-badge-ecb finlyzer-badge-market" title="<?php esc_attr_e('Global market reference rate', 'finlyzer'); ?>"><?php esc_html_e('Market Reference', 'finlyzer'); ?></span>
 			</div>
 			<span class="finlyzer-kpi-val <?php echo $total_market_timing_loss > 0 ? 'finlyzer-val--timing' : ''; ?>">
 				<?php echo wp_kses_post($formatted_timing_loss); ?>
@@ -172,7 +172,7 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 				<?php esc_html_e('Deep Financial Breakdown & Audit Statements', 'finlyzer'); ?>
 			</h3>
 			<p class="finlyzer-breakdown-toggle-desc">
-				<?php esc_html_e('Explore optional forensic tables: per-currency loss, live European Central Bank rate shifts, gateway fee spreads, and product-level fee attribution.', 'finlyzer'); ?>
+				<?php esc_html_e('Explore optional forensic tables: per-currency loss, live global market rate shifts, gateway fee spreads, and product-level fee attribution.', 'finlyzer'); ?>
 			</p>
 		</div>
 		<div class="finlyzer-breakdown-toggle-actions">
@@ -210,7 +210,7 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 				💱 <?php esc_html_e('Currencies', 'finlyzer'); ?> (<?php echo esc_html(count($by_currency)); ?>)
 			</button>
 			<button type="button" class="finlyzer-subtab" data-panel="timing" data-panel-target="timing" role="tab" aria-selected="false">
-				🌐 <?php esc_html_e('ECB Market Shifts', 'finlyzer'); ?> (<?php echo esc_html(count($active_markets)); ?>)
+				🌐 <?php esc_html_e('Global Market Shifts', 'finlyzer'); ?> (<?php echo esc_html(count($active_markets)); ?>)
 			</button>
 			<button type="button" class="finlyzer-subtab" data-panel="processors" data-panel-target="processors" role="tab" aria-selected="false">
 				💳 <?php esc_html_e('Payment Processors', 'finlyzer'); ?> (<?php echo esc_html(count($gateways)); ?>)
@@ -274,18 +274,18 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 </div>
 		</div> <!-- end panel currency -->
 
-		<!-- Panel 2: Market Timing Volatility Impact (Frankfurter ECB Integration) -->
+		<!-- Panel 2: Market Timing Volatility Impact (Global Market Rates) -->
 		<div class="finlyzer-breakdown-panel" data-panel="timing">
-			<!-- Active Currency Markets & Market Timing Volatility Impact (Frankfurter ECB Integration) -->
+			<!-- Active Currency Markets & Market Timing Volatility Impact (Global Market Rates) -->
 			<div class="finlyzer-ledger-card finlyzer-timing-card">
 	<div class="finlyzer-ledger-header">
 		<div>
 			<h3 class="finlyzer-ledger-title">
-				<span class="finlyzer-title-badge">ECB</span>
+				<span class="finlyzer-title-badge"><?php esc_html_e('GLOBAL', 'finlyzer'); ?></span>
 				<?php esc_html_e('Exchange Rate Impact by Market', 'finlyzer'); ?>
 			</h3>
 			<p class="finlyzer-ledger-subtitle">
-				<?php esc_html_e('Comparing order exchange rates with live European Central Bank reference rates for your active currencies.', 'finlyzer'); ?>
+				<?php esc_html_e('Impact of global currency market fluctuations on your international sales.', 'finlyzer'); ?>
 			</p>
 		</div>
 		<span class="finlyzer-badge-filter-notice">
@@ -300,7 +300,6 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 	<div class="finlyzer-ledger finlyzer-timing-table" role="table" aria-label="<?php esc_attr_e('Exchange rate impact by market statement', 'finlyzer'); ?>">
 		<div class="finlyzer-ledger__row finlyzer-ledger__row--head" role="row">
 			<span role="columnheader"><?php esc_html_e('Market / Country', 'finlyzer'); ?></span>
-			<span role="columnheader"><?php esc_html_e('Order vs Current Rate', 'finlyzer'); ?></span>
 			<span role="columnheader"><?php esc_html_e('Gateway Fee', 'finlyzer'); ?></span>
 			<span role="columnheader"><?php esc_html_e('Rate Change Impact', 'finlyzer'); ?></span>
 			<span role="columnheader" class="finlyzer-text-right"><?php esc_html_e('Total Loss', 'finlyzer'); ?></span>
@@ -308,7 +307,7 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 
 		<?php if (empty($active_markets)) : ?>
 			<div class="finlyzer-ledger__row finlyzer-ledger__empty" role="row">
-				<span role="cell" colspan="5">
+				<span role="cell" colspan="4">
 					<span class="finlyzer-empty-icon">&#x2714;</span>
 					<?php esc_html_e('No international currency sales in this period.', 'finlyzer'); ?>
 				</span>
@@ -320,9 +319,6 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 				$m_country  = (string) ($market['country'] ?? $m_curr);
 				$m_flag     = (string) ($market['flag_emoji'] ?? '🌐');
 				$m_name     = (string) ($market['currency_name'] ?? $m_curr);
-				$order_rate = (float) ($market['order_exchange_rate'] ?? 0.0);
-				$spot_rate  = (float) ($market['spot_exchange_rate'] ?? 0.0);
-				$rate_pct   = (float) ($market['rate_change_pct'] ?? 0.0);
 				$is_loss    = !empty($market['is_timing_loss']);
 				$t_loss     = (float) ($market['market_timing_loss'] ?? 0.0);
 				$s_loss     = (float) ($market['gateway_spread_loss'] ?? 0.0);
@@ -335,28 +331,6 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 						<span class="finlyzer-market-info">
 							<strong class="finlyzer-country-name"><?php echo esc_html($m_country); ?></strong>
 							<span class="finlyzer-curr-sub"><?php echo esc_html($m_curr); ?> &bull; <?php echo esc_html($m_name); ?></span>
-						</span>
-					</span>
-
-					<!-- Rate Comparison & Shift -->
-					<span role="cell" class="finlyzer-rate-cell">
-						<div class="finlyzer-rate-values">
-							<span class="finlyzer-rate-val" title="<?php esc_attr_e('Historical Order Rate', 'finlyzer'); ?>">
-								<?php echo esc_html(number_format($order_rate, 4)); ?>
-							</span>
-							<span class="finlyzer-rate-arrow">&rarr;</span>
-							<span class="finlyzer-rate-val finlyzer-rate-val--spot" title="<?php esc_attr_e('Current Reference Spot Rate', 'finlyzer'); ?>">
-								<?php echo esc_html(number_format($spot_rate, 4)); ?>
-							</span>
-						</div>
-						<span class="finlyzer-shift-pill <?php echo $rate_pct < 0 ? 'finlyzer-shift--deprec' : 'finlyzer-shift--apprec'; ?>">
-							<?php if ($rate_pct < 0) : ?>
-								&darr; <?php echo esc_html(abs($rate_pct)); ?>% <?php esc_html_e('Lower', 'finlyzer'); ?>
-							<?php elseif ($rate_pct > 0) : ?>
-								&uarr; +<?php echo esc_html($rate_pct); ?>% <?php esc_html_e('Higher', 'finlyzer'); ?>
-							<?php else : ?>
-								&bull; 0.0% <?php esc_html_e('Stable', 'finlyzer'); ?>
-							<?php endif; ?>
 						</span>
 					</span>
 

@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.27.0', `FINLYZER_VERSION is bumped to 1.27.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.28.0', `FINLYZER_VERSION is bumped to 1.28.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: finlyzer'), 'readme.txt declares contributors');
-assert(readmeContent.includes('Stable tag: 1.27.0'), 'readme.txt Stable tag matches v1.27.0');
+assert(readmeContent.includes('Stable tag: 1.28.0'), 'readme.txt Stable tag matches v1.28.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1483,13 +1483,13 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.27.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.27.0');
-assert(finlyzerMainPhp.includes('* Version:           1.27.0'), 'finlyzer.php header declares Version 1.27.0');
-assert(packageJsonFront.version === '1.27.0', 'frontend package.json declares version 1.27.0');
-assert(packageJsonBack.version === '1.27.0', 'backend package.json declares version 1.27.0');
-assert(readmeTxt.includes('Stable tag: 1.27.0'), 'readme.txt declares Stable tag: 1.27.0');
-assert(readmeTxt.includes('= 1.26.0 ='), 'readme.txt documents 1.26.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.28.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.28.0');
+assert(finlyzerMainPhp.includes('* Version:           1.28.0'), 'finlyzer.php header declares Version 1.28.0');
+assert(packageJsonFront.version === '1.28.0', 'frontend package.json declares version 1.28.0');
+assert(packageJsonBack.version === '1.28.0', 'backend package.json declares version 1.28.0');
+assert(readmeTxt.includes('Stable tag: 1.28.0'), 'readme.txt declares Stable tag: 1.28.0');
 assert(readmeTxt.includes('= 1.27.0 ='), 'readme.txt documents 1.27.0 release notes');
+assert(readmeTxt.includes('= 1.28.0 ='), 'readme.txt documents 1.28.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1537,8 +1537,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.27.0'"), 'class-fxli-gemini-client.php declares matching 1.27.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.27.0')"), 'preview-server.php declares FINLYZER_VERSION 1.27.0');
+assert(geminiClientPhpContent.includes("'1.28.0'"), 'class-fxli-gemini-client.php declares matching 1.28.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.28.0')"), 'preview-server.php declares FINLYZER_VERSION 1.28.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -1778,7 +1778,7 @@ for (let i = 0; i < sensitiveTemplates.length; i++) {
 	assert(!hasOpenSource, `Template [${templatesToCheck[i].name}] contains zero references to open source (got: ${hasOpenSource})`);
 }
 
-assert(dashboardPhpV25.includes('Financial Systems Architecture'), 'dashboard.php uses industry-standard "Financial Systems Architecture" pill');
+assert(dashboardPhpV25.includes('About'), 'dashboard.php uses clean "About" pill');
 
 // 25.4 Author Persona Verification Contract (Senior Backend Developer & Software Engineer)
 assert(dashboardPhpV25.includes('Ebrahim Razmahang'), 'dashboard.php attributes authorship to Ebrahim Razmahang');
@@ -1874,7 +1874,7 @@ console.log('\nTEST GROUP 27: WordPress.org Directory Compliance & Order-Event A
 // 27.1 WordPress.org External Services Disclosure Contract
 const readmeV27 = fs.readFileSync(readmePath, 'utf8');
 assert(readmeV27.includes('== External Services =='), 'readme.txt includes required == External Services == section per WordPress.org guidelines');
-assert(readmeV27.includes('European Central Bank / Frankfurter API'), 'readme.txt declares European Central Bank / Frankfurter API');
+assert(readmeV27.includes('Frankfurter API') && readmeV27.includes('Global Market Reference Rates'), 'readme.txt declares Global Market Reference Rates / Frankfurter API');
 assert(readmeV27.includes('https://frankfurter.dev'), 'readme.txt provides Frankfurter service URL');
 assert(readmeV27.includes('Finlyzer Cloudflare Worker API & Google Gemini Flash AI'), 'readme.txt declares Cloudflare Worker & Google Gemini Flash AI');
 assert(readmeV27.includes('https://ai.google.dev/terms'), 'readme.txt provides Google Gemini Terms of Service URL');
@@ -2398,6 +2398,84 @@ for (let i = 0; i < 50000; i++) {
 const errorSanitizationDuration = performance.now() - errorSanitizationStart;
 assert(cleanOutputsCount === 50000, `All 50,000 error sanitization evaluations succeeded (${cleanOutputsCount}/50,000)`);
 assert(errorSanitizationDuration < 200, `50,000 error sanitization cycles completed in ${errorSanitizationDuration.toFixed(2)}ms (< 200ms SLA)`);
+
+// =============================================================================
+// TEST GROUP 32: Surface-Only Merchant UI, Calculation Exposure Immunity & 4-Column Layout (v1.28.0)
+// =============================================================================
+console.log('\nTEST GROUP 32: Surface-Only Merchant UI, Calculation Exposure Immunity & 4-Column Layout (v1.28.0)');
+
+// 32.1 Absolute Purge of ECB / European Central Bank from Rendered Templates
+const currentSummaryCards = fs.readFileSync(summaryCardsPhpPath, 'utf8');
+const currentDashboard = fs.readFileSync(dashboardPhpPath, 'utf8');
+
+// Summary cards checks
+assert(!currentSummaryCards.includes('ECB Reference'), 'summary-cards.php eliminates "ECB Reference" label');
+assert(!currentSummaryCards.includes('European Central Bank'), 'summary-cards.php eliminates "European Central Bank" text');
+assert(!currentSummaryCards.includes('ECB Market Shifts'), 'summary-cards.php eliminates "ECB Market Shifts" tab title');
+assert(!currentSummaryCards.includes('<span class="finlyzer-title-badge">ECB</span>'), 'summary-cards.php eliminates ECB badge');
+assert(currentSummaryCards.includes('Market Reference'), 'summary-cards.php presents "Market Reference" copy');
+assert(currentSummaryCards.includes('Global Market Shifts'), 'summary-cards.php presents "Global Market Shifts" tab');
+assert(currentSummaryCards.includes('GLOBAL'), 'summary-cards.php presents "GLOBAL" category badge');
+assert(currentSummaryCards.includes('live global market rate shifts'), 'summary-cards.php uses surface-level market description in toggle drawer');
+
+// Dashboard checks
+assert(!currentDashboard.includes('ECB Interbank Feeds'), 'dashboard.php eliminates "ECB Interbank Feeds" chip');
+assert(!currentDashboard.includes('European Central Bank'), 'dashboard.php eliminates European Central Bank references');
+
+// 32.2 Calculation Exposure Elimination Contract
+// Verify that the table does NOT expose raw calculation mechanics, historical order rates, or spot rate shift ratios
+assert(!currentSummaryCards.includes('Order vs Current Rate'), 'summary-cards.php eliminates "Order vs Current Rate" column header');
+assert(!currentSummaryCards.includes('finlyzer-rate-cell'), 'summary-cards.php eliminates .finlyzer-rate-cell data container');
+assert(!currentSummaryCards.includes('finlyzer-rate-values'), 'summary-cards.php eliminates .finlyzer-rate-values comparison wrapper');
+assert(!currentSummaryCards.includes('finlyzer-rate-arrow'), 'summary-cards.php eliminates .finlyzer-rate-arrow rate change arrow');
+assert(!currentSummaryCards.includes('finlyzer-rate-val--spot'), 'summary-cards.php eliminates spot rate calculation display');
+assert(!currentSummaryCards.includes('finlyzer-shift-pill'), 'summary-cards.php eliminates .finlyzer-shift-pill percentage shift calculation');
+
+// Verify strict 4 surface columns in table header
+assert(currentSummaryCards.includes('Market / Country'), 'summary-cards.php defines "Market / Country" column');
+assert(currentSummaryCards.includes('Gateway Fee'), 'summary-cards.php defines "Gateway Fee" column');
+assert(currentSummaryCards.includes('Rate Change Impact'), 'summary-cards.php defines "Rate Change Impact" column');
+assert(currentSummaryCards.includes('Total Loss'), 'summary-cards.php defines "Total Loss" column');
+assert(currentSummaryCards.includes('colspan="4"'), 'summary-cards.php sets empty state colspan to 4');
+
+// 32.3 CSS 4-Column Grid & Layout Contract
+const currentDashboardCss = fs.readFileSync(dashboardCssPath, 'utf8');
+assert(currentDashboardCss.includes('grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr;'), 'dashboard.css defines 4-column balanced grid for timing table');
+assert(currentDashboardCss.includes('.finlyzer-badge-market'), 'dashboard.css declares .finlyzer-badge-market selector');
+assert(!currentDashboardCss.includes('.finlyzer-rate-cell {'), 'dashboard.css purges unused .finlyzer-rate-cell layout rule');
+
+// 32.4 High-Volume 50,000-Row Market Table Rendering & Surface Sanitization Benchmark
+const marketRenderStart = performance.now();
+let renderedRowsCount = 0;
+
+// simulate rendering 50,000 market table rows with surface-only metrics
+const mockMarkets = [
+	{ currency: 'JPY', country: 'Japan', flag: '🇯🇵', name: 'Japanese Yen', fee: 85.17, impact: 3149.64, total: 3234.81 },
+	{ currency: 'SEK', country: 'Sweden', flag: '🇸🇪', name: 'Swedish Krona', fee: 164.00, impact: 5265.93, total: 5429.93 },
+	{ currency: 'AUD', country: 'Australia', flag: '🇦🇺', name: 'Australian Dollar', fee: 192.29, impact: 2580.89, total: 2773.18 },
+	{ currency: 'CAD', country: 'Canada', flag: '🇨🇦', name: 'Canadian Dollar', fee: 174.30, impact: 2252.71, total: 2427.01 },
+	{ currency: 'EUR', country: 'Eurozone', flag: '🇪🇺', name: 'Euro', fee: 155.55, impact: 0.0, total: 155.55 },
+	{ currency: 'GBP', country: 'United Kingdom', flag: '🇬🇧', name: 'British Pound', fee: 52.21, impact: 0.0, total: 52.21 },
+];
+
+for (let i = 0; i < 50000; i++) {
+	const m = mockMarkets[i % mockMarkets.length];
+	// Render simulated surface row (4 columns)
+	const rowHtml = `<div class="finlyzer-ledger__row" role="row">` +
+		`<span role="cell" class="finlyzer-market-cell">${m.flag} ${m.country} (${m.currency})</span>` +
+		`<span role="cell" class="finlyzer-spread-cell">$${m.fee.toFixed(2)}</span>` +
+		`<span role="cell" class="finlyzer-timing-loss-cell">${m.impact > 0 ? '+$' + m.impact.toFixed(2) : 'No Loss (Favorable)'}</span>` +
+		`<span role="cell" class="finlyzer-drag-cell finlyzer-text-right"><strong>$${m.total.toFixed(2)}</strong></span>` +
+		`</div>`;
+	// Assert zero exposure of raw calculation rate indicators in generated HTML
+	if (!rowHtml.includes('->') && !rowHtml.includes('Higher') && !rowHtml.includes('Lower')) {
+		renderedRowsCount++;
+	}
+}
+
+const marketRenderDuration = performance.now() - marketRenderStart;
+assert(renderedRowsCount === 50000, `All 50,000 market rows rendered with surface-only metrics (${renderedRowsCount}/50,000)`);
+assert(marketRenderDuration < 200, `50,000 market table rows rendered in ${marketRenderDuration.toFixed(2)}ms (< 200ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

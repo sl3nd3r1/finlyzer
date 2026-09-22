@@ -593,7 +593,7 @@ final class FXLI_Order_Analyzer {
 		return $detected;
 	}
 
-	// 30 Frankfurter / ECB reference currencies mapped to countries and emoji flags
+	// 30 global market reference currencies mapped to countries and emoji flags
 	public const FRANKFURTER_CURRENCY_REGISTRY = [
 		'AUD' => ['currency' => 'AUD', 'name' => 'Australian Dollar', 'country' => 'Australia', 'country_code' => 'AU', 'flag_emoji' => '🇦🇺'],
 		'BRL' => ['currency' => 'BRL', 'name' => 'Brazilian Real', 'country' => 'Brazil', 'country_code' => 'BR', 'flag_emoji' => '🇧🇷'],

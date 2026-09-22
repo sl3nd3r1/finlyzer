@@ -125,7 +125,7 @@ window.FXLI = window.Finlyzer;
 				<div class="finlyzer-about-col finlyzer-about-col--info">
 					<div class="finlyzer-about-pill">
 						<span class="finlyzer-about-dot"></span>
-						<span><?php esc_html_e('Financial Systems Architecture', 'finlyzer'); ?></span>
+						<span><?php esc_html_e('About', 'finlyzer'); ?></span>
 					</div>
 					<h3 class="finlyzer-about-title"><?php esc_html_e('AI Powered Cross-Border Loss Visibility For WooCommerce', 'finlyzer'); ?></h3>
 					<p class="finlyzer-about-lead">
@@ -135,9 +135,6 @@ window.FXLI = window.Finlyzer;
 						<?php esc_html_e('Fast AI-driven analytics for WooCommerce foreign exchange loss.', 'finlyzer'); ?>
 					</p>
 					<div class="finlyzer-about-badges">
-						<span class="finlyzer-spec-chip">HPOS Architecture</span>
-						<span class="finlyzer-spec-chip">Zero PII Retention</span>
-						<span class="finlyzer-spec-chip">ECB Interbank Feeds</span>
 						<span class="finlyzer-spec-chip">v<?php echo esc_html(FINLYZER_VERSION); ?></span>
 					</div>
 				</div>

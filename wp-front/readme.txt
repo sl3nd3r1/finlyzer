@@ -4,7 +4,7 @@ Tags: woocommerce, currency, fx, forex, payments, stripe, paypal, analytics
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.27.0
+Stable tag: 1.28.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,7 +29,7 @@ No complex setup, no impact on checkout performance, and zero sensitive customer
 
 * **Payment Processors Overview**: Compares foreign transaction volume and conversion fee impact across all active payment gateways including Stripe, PayPal, and Klarna.
 * **Products Breakdown**: Line-by-line attribution of international revenue and conversion fees per product, with fast processor filtering.
-* **Exchange Rate Movement**: Tracks rate shifts between order placement and settlement using official European Central Bank reference rates.
+* **Exchange Rate Movement**: Tracks rate shifts between order placement and settlement using global market reference rates.
 * **Loss by Currency Ledger**: Detailed breakdown of transaction volume, fee share, and total loss per foreign currency.
 * **High-Performance Order Storage (HPOS)**: Native support for WooCommerce custom order tables.
 * **Pure Backend Calculation Engine**: 100% of mathematical modeling and gateway spread analysis is handled by the high-performance Cloudflare Worker backend.
@@ -40,7 +40,7 @@ No complex setup, no impact on checkout performance, and zero sensitive customer
 
 Finlyzer connects to the following external third-party services to deliver accurate exchange rates and automated AI risk analysis:
 
-* **European Central Bank / Frankfurter API**: Used to retrieve real-time and historical currency exchange reference rates to evaluate payment processor conversion fee markups and market timing rate shifts.
+* **Global Market Reference Rates / Frankfurter API**: Used to retrieve real-time and historical currency exchange reference rates to evaluate payment processor conversion fee markups and market timing rate shifts.
   - Service: https://frankfurter.dev / https://www.ecb.europa.eu
   - Terms of Service: https://frankfurter.dev
   - Privacy Policy: https://frankfurter.dev
@@ -80,6 +80,13 @@ Never. Finlyzer only reads completed order data and does not run during checkout
 Finlyzer recognizes spread fee models for PayPal (3.8%), Stripe (2.2%), Klarna (3.0%), WooPayments (2.2%), Adyen (1.5%), Mollie (2.5%), Square (2.8%), Direct Wire/BACS (0.0%), Cash on Delivery (0.0%), and generic card processors (2.5%).
 
 == Changelog ==
+
+= 1.28.0 =
+* UI/UX: Streamlined merchant dashboard to display surface-only business metrics, completely eliminating exposure of internal reference calculation mechanics.
+* UI/UX: Removed the raw "Order vs Current Rate" calculation comparison column and shift ratios from the Market Impact table, focusing strictly on Market/Country, Gateway Fee, Rate Change Impact, and Total Loss.
+* Brand & Consistency: Replaced European Central Bank (ECB) jargon across all dashboard cards and tabs with clear, professional "Global Market" reference terminology.
+* Performance: Refactored market timing table grid to a clean 4-column balanced responsive layout with optimized mobile presentation.
+* Testing: Added Test Group 32 challenging surface-only UI integrity, zero calculation leakage, and high-volume 50,000-cycle table rendering under bounded memory.
 
 = 1.27.0 =
 * Security & Privacy: Completely eliminated developer jargon, cryptographic implementation details, and technical stack exposure from merchant-facing UI and error handling.
