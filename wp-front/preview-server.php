@@ -50,6 +50,11 @@ function esc_url(string $url): string {
 function wp_kses_post(string $text): string {
 	return $text;
 }
+if (!function_exists('wp_unslash')) {
+	function wp_unslash(mixed $val): mixed {
+		return is_string($val) ? stripslashes($val) : $val;
+	}
+}
 function wp_strip_all_tags(string $string, bool $remove_breaks = false): string {
 	$string = preg_replace('@<(script|style)[^>]*?>.*?</\1>@si', '', $string) ?? '';
 	$string = strip_tags($string);

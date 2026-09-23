@@ -59,7 +59,7 @@ final class FXLI_Logger {
 
 		$id  = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
 		$ts  = function_exists('current_time') ? current_time('mysql') : gmdate('Y-m-d H:i:s');
-		$msg = function_exists('sanitize_text_field') ? sanitize_text_field($message) : (function_exists('wp_strip_all_tags') ? wp_strip_all_tags($message) : strip_tags($message));
+		$msg = function_exists('wp_strip_all_tags') ? wp_strip_all_tags($message) : (function_exists('sanitize_text_field') ? sanitize_text_field($message) : preg_replace('@<[\\/\\!]*?[^<>]*?>@si', '', $message));
 
 		$entry = [
 			'id'        => $id,

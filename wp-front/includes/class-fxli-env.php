@@ -28,13 +28,9 @@ final class FXLI_Env {
 		// inspect server host variables
 		$raw_host = '';
 		if (isset($_SERVER['HTTP_HOST'])) {
-			$raw_host = function_exists('wp_unslash') && function_exists('sanitize_text_field')
-				? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST']))
-				: (string) $_SERVER['HTTP_HOST'];
+			$raw_host = sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST']));
 		} elseif (isset($_SERVER['SERVER_NAME'])) {
-			$raw_host = function_exists('wp_unslash') && function_exists('sanitize_text_field')
-				? sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME']))
-				: (string) $_SERVER['SERVER_NAME'];
+			$raw_host = sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME']));
 		}
 		$host = $raw_host;
 		if ($host === '' && function_exists('home_url')) {

@@ -12,21 +12,13 @@ global $wpdb;
 $fxli_events_table = $wpdb->prefix . 'fxli_fx_events';
 $fxli_products_table = $wpdb->prefix . 'fxli_product_gateway_events';
 
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query(
-	$wpdb->prepare(
-		'DROP TABLE IF EXISTS %i',
-		$fxli_events_table
-	)
-);
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', $fxli_events_table));
 
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query(
-	$wpdb->prepare(
-		'DROP TABLE IF EXISTS %i',
-		$fxli_products_table
-	)
-);
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', $fxli_products_table));
+// phpcs:enable WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 // delete all Finlyzer and FXLI options and state settings
 delete_option('finlyzer_db_version');
