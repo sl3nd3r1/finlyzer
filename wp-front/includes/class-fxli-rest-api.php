@@ -219,6 +219,7 @@ final class FXLI_REST_API {
 				}
 
 				// echo raw un-encoded HTML directly to output stream
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-rendered and escaped template HTML fragment.
 				echo $html;
 
 				// return true to signal WordPress core that response is fully served
@@ -490,7 +491,9 @@ final class FXLI_REST_API {
 				'message' => __('FXLI_Crypto service is unavailable.', 'finlyzer'),
 			], 500);
 		} catch (\Throwable $e) {
-			error_log('[Finlyzer REST API] Cloud resync exception: ' . $e->getMessage());
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'REST_API', 'Cloud resync exception: ' . $e->getMessage());
+			}
 			return new WP_REST_Response([
 				'success' => false,
 				'message' => __('Connection re-synchronization could not be completed. Please try again shortly.', 'finlyzer'),

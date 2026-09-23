@@ -21,10 +21,13 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.29.0');
+	define('FINLYZER_VERSION', '1.0.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
+}
+if (!defined('FINLYZER_PLUGIN_URL')) {
+	define('FINLYZER_PLUGIN_URL', '/');
 }
 
 require_once __DIR__ . '/includes/class-fxli-env.php';
@@ -290,13 +293,16 @@ if (!function_exists('delete_option')) {
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
 
 // 1. Serve static assets
-if (preg_match('#^/assets/(css|js)/(.+)$#', $uri, $matches)) {
+if (preg_match('#^/assets/(css|js|images)/(.+)$#', $uri, $matches)) {
 	$filePath = __DIR__ . '/assets/' . $matches[1] . '/' . $matches[2];
 	if (file_exists($filePath) && is_file($filePath)) {
 		$ext = pathinfo($filePath, PATHINFO_EXTENSION);
 		$contentType = match ($ext) {
 			'css' => 'text/css; charset=utf-8',
 			'js' => 'application/javascript; charset=utf-8',
+			'svg' => 'image/svg+xml',
+			'png' => 'image/png',
+			'jpg', 'jpeg' => 'image/jpeg',
 			default => 'application/octet-stream',
 		};
 		header('Content-Type: ' . $contentType);

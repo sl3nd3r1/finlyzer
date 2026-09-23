@@ -15,22 +15,24 @@ if (!defined('ABSPATH')) {
  * @var bool|null        $is_optimal Optimal state flag.
  */
 
-$insight_text = is_string($insight) ? $insight : '';
-$is_optimal_state = isset($is_optimal)
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+$fxli_insight_text = is_string($insight) ? $insight : '';
+$fxli_is_optimal_state = isset($is_optimal)
 	? (bool) $is_optimal
-	: (stripos($insight_text, 'base currency') !== false
-		|| stripos($insight_text, 'no processor') !== false
-		|| stripos($insight_text, 'optimal') !== false
-		|| stripos($insight_text, 'no payment') !== false
-		|| stripos($insight_text, 'zero') !== false);
+	: (stripos($fxli_insight_text, 'base currency') !== false
+		|| stripos($fxli_insight_text, 'no processor') !== false
+		|| stripos($fxli_insight_text, 'optimal') !== false
+		|| stripos($fxli_insight_text, 'no payment') !== false
+		|| stripos($fxli_insight_text, 'zero') !== false);
+// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 ?>
-<div class="finlyzer-sentinel-box <?php echo $is_optimal_state ? 'finlyzer-sentinel-box--optimal' : ''; ?>">
+<div class="finlyzer-sentinel-box <?php echo $fxli_is_optimal_state ? 'finlyzer-sentinel-box--optimal' : ''; ?>">
 
 	<!-- Header with Fluent 2 rounded status badge -->
 	<div class="finlyzer-sentinel-header">
 		<div class="finlyzer-sentinel-title-wrap">
 			<div class="finlyzer-sentinel-icon-wrap">
-				<?php if ($is_optimal_state) : ?>
+				<?php if ($fxli_is_optimal_state) : ?>
 					<!-- Secure shield check icon for optimal margin state -->
 					<svg class="finlyzer-sentinel-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
@@ -51,21 +53,21 @@ $is_optimal_state = isset($is_optimal)
 			</div>
 		</div>
 
-		<div class="finlyzer-sentinel-tag <?php echo $is_optimal_state ? 'finlyzer-sentinel-tag--optimal' : ''; ?>">
+		<div class="finlyzer-sentinel-tag <?php echo $fxli_is_optimal_state ? 'finlyzer-sentinel-tag--optimal' : ''; ?>">
 			<span class="finlyzer-sentinel-pulse"></span>
-			<span><?php echo esc_html($is_optimal_state ? __('MARGIN SECURE', 'finlyzer') : __('FEES DETECTED', 'finlyzer')); ?></span>
+			<span><?php echo esc_html($fxli_is_optimal_state ? __('MARGIN SECURE', 'finlyzer') : __('FEES DETECTED', 'finlyzer')); ?></span>
 		</div>
 	</div>
 
 	<!-- Body content -->
 	<div class="finlyzer-sentinel-body">
-		<?php if (!empty($error) && empty($insight_text)) : ?>
+		<?php if (!empty($error) && empty($fxli_insight_text)) : ?>
 			<p class="finlyzer-sentinel-text finlyzer-sentinel-text--muted">
 				<?php esc_html_e('Audit summary temporarily unavailable — order analytics above remain verified.', 'finlyzer'); ?>
 			</p>
 		<?php else : ?>
 			<p class="finlyzer-sentinel-text">
-				<?php echo esc_html($insight_text); ?>
+				<?php echo esc_html($fxli_insight_text); ?>
 			</p>
 		<?php endif; ?>
 	</div>

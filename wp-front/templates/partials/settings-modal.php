@@ -6,11 +6,13 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
-$site_id = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : '';
-$short_site_id = strlen($site_id) >= 12 ? substr($site_id, 0, 4) . '••••••••' . substr($site_id, -4) : $site_id;
-$active_secret = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
-$is_connected = $active_secret !== '' && !str_contains($active_secret, 'dev-ephemeral');
-$current_env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production';
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+$fxli_site_id = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : '';
+$fxli_short_site_id = strlen($fxli_site_id) >= 12 ? substr($fxli_site_id, 0, 4) . '••••••••' . substr($fxli_site_id, -4) : $fxli_site_id;
+$fxli_active_secret = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
+$fxli_is_connected = $fxli_active_secret !== '' && !str_contains($fxli_active_secret, 'dev-ephemeral');
+$fxli_current_env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production';
+// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 ?>
 <div class="finlyzer-modal-backdrop" id="finlyzerSettingsModal" role="dialog" aria-modal="true" aria-labelledby="finlyzerSettingsTitle" style="display:none;">
 	<div class="finlyzer-modal-card">
@@ -38,9 +40,9 @@ $current_env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production'
 
 		<!-- Status Bar -->
 		<div class="finlyzer-modal-status-bar">
-			<div id="finlyzer-cloud-status-badge" class="finlyzer-status-pill <?php echo $is_connected ? 'finlyzer-status-pill--active' : 'finlyzer-status-pill--warn'; ?>">
+			<div id="finlyzer-cloud-status-badge" class="finlyzer-status-pill <?php echo $fxli_is_connected ? 'finlyzer-status-pill--active' : 'finlyzer-status-pill--warn'; ?>">
 				<span class="finlyzer-status-dot"></span>
-				<span><?php echo $is_connected ? esc_html__('Cloud AI Active & Protected', 'finlyzer') : esc_html__('Cloud Sentinel Initializing...', 'finlyzer'); ?></span>
+				<span><?php echo $fxli_is_connected ? esc_html__('Cloud AI Active & Protected', 'finlyzer') : esc_html__('Cloud Sentinel Initializing...', 'finlyzer'); ?></span>
 			</div>
 		</div>
 
@@ -50,7 +52,7 @@ $current_env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production'
 			<div class="finlyzer-sentinel-grid finlyzer-sentinel-grid--single">
 				<div class="finlyzer-sentinel-card">
 					<span class="finlyzer-sentinel-card__label"><?php esc_html_e('Site Identifier', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__val finlyzer-sentinel-card__val--mono"><?php echo esc_html($short_site_id); ?></span>
+					<span class="finlyzer-sentinel-card__val finlyzer-sentinel-card__val--mono"><?php echo esc_html($fxli_short_site_id); ?></span>
 					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('Unique store identifier for autonomous risk calculations', 'finlyzer'); ?></span>
 				</div>
 			</div>

@@ -69,11 +69,15 @@ final class FXLI_Security {
 		$is_prod = class_exists('FXLI_Env') ? FXLI_Env::is_production() : true;
 		if ($is_prod) {
 			if ($secret === '' || str_contains($secret, 'dev-ephemeral')) {
-				error_log('[Finlyzer Security] Production HMAC secret is unconfigured or using weak dev fallback.');
+				if (class_exists('FXLI_Logger')) {
+					FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'SECURITY', 'Production HMAC secret is unconfigured or using weak dev fallback.');
+				}
 				return '';
 			}
 			if (strlen($secret) < 32) {
-				error_log('[Finlyzer Security] Production HMAC secret has insufficient entropy (< 32 chars).');
+				if (class_exists('FXLI_Logger')) {
+					FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'SECURITY', 'Production HMAC secret has insufficient entropy (< 32 chars).');
+				}
 				return '';
 			}
 			return $secret;

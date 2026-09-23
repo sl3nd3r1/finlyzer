@@ -43,7 +43,9 @@ final class FXLI_Gemini_Client {
 		if ($endpoint !== '' && class_exists('FXLI_Env')) {
 			$validation = FXLI_Env::validate_endpoint_url($endpoint);
 			if (is_wp_error($validation)) {
-				error_log('[Finlyzer Security] Blocked insecure worker endpoint: ' . $validation->get_error_message());
+				if (class_exists('FXLI_Logger')) {
+					FXLI_Logger::log(FXLI_Logger::LEVEL_WARN, 'SECURITY', 'Blocked insecure worker endpoint.', ['error' => $validation->get_error_message()]);
+				}
 				return '';
 			}
 		}
@@ -55,11 +57,6 @@ final class FXLI_Gemini_Client {
 	public function summarize(array $summary, bool $force_refresh = false): string|WP_Error {
 		$days = max(7, min(90, (int) ($summary['period_days'] ?? 30)));
 		$option_key = "finlyzer_ai_insight_{$days}";
-
-		// inspect query parameters for administrative refresh trigger
-		if (!$force_refresh && (!empty($_GET['refresh']) || !empty($_GET['force']))) {
-			$force_refresh = true;
-		}
 
 		// calculate current order state fingerprint to detect newly arrived or modified orders
 		$current_fingerprint = class_exists('FXLI_Order_Analyzer')
@@ -122,7 +119,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.29.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.0.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -174,7 +171,6 @@ final class FXLI_Gemini_Client {
 			if (class_exists('FXLI_Logger')) {
 				FXLI_Logger::log_http_call($endpoint, 'POST', 'ERR', $duration, $response->get_error_message(), ['type' => 'insight']);
 			}
-			error_log('[Finlyzer Insight Network Error] ' . $response->get_error_message());
 			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
 				return new WP_Error('worker_http_error', __('Risk analysis service is temporarily unavailable.', 'finlyzer'));
 			}
@@ -190,7 +186,6 @@ final class FXLI_Gemini_Client {
 		}
 
 		if ($code !== 200) {
-			error_log(sprintf('[Finlyzer Insight Error] HTTP %d', $code));
 			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
 				return new WP_Error('worker_http_error', __('Risk analysis service is temporarily unavailable.', 'finlyzer'));
 			}
@@ -318,7 +313,9 @@ final class FXLI_Gemini_Client {
 		if ($endpoint !== '' && class_exists('FXLI_Env')) {
 			$validation = FXLI_Env::validate_endpoint_url($endpoint);
 			if (is_wp_error($validation)) {
-				error_log('[Finlyzer Security] Blocked insecure analyze endpoint: ' . $validation->get_error_message());
+				if (class_exists('FXLI_Logger')) {
+					FXLI_Logger::log(FXLI_Logger::LEVEL_WARN, 'SECURITY', 'Blocked insecure analyze endpoint.', ['error' => $validation->get_error_message()]);
+				}
 				return '';
 			}
 		}
@@ -336,7 +333,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.29.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.0.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -378,7 +375,6 @@ final class FXLI_Gemini_Client {
 					'currency'    => $payload['store_currency'] ?? 'USD',
 				]);
 			}
-			error_log('[Finlyzer Analysis Network Error] ' . $response->get_error_message());
 			return new WP_Error('worker_http_error', __('Unable to reach calculation service. Please verify server connectivity.', 'finlyzer'));
 		}
 
@@ -394,8 +390,6 @@ final class FXLI_Gemini_Client {
 		}
 
 		if ($code !== 200) {
-			// securely log full response details internally for administrator diagnostics
-			error_log(sprintf('[Finlyzer Analysis Error] HTTP %d: %s', $code, substr($raw_body, 0, 512)));
 			return new WP_Error('worker_http_error', __('Calculation service is temporarily unavailable. Please retry shortly.', 'finlyzer'));
 		}
 
@@ -438,7 +432,7 @@ final class FXLI_Gemini_Client {
 		$verify_url = $clean_base . '/api/v1/verify';
 
 		$site_url = function_exists('home_url') ? home_url() : 'http://localhost';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.29.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.0.0';
 		$timestamp = time();
 		$body = wp_json_encode(['action' => 'verify', 'timestamp' => $timestamp]);
 		if ($body === false) {
@@ -473,6 +467,7 @@ final class FXLI_Gemini_Client {
 				'endpoint'    => $verify_url,
 				'latency_ms'  => $duration,
 				'error'       => $response->get_error_message(),
+				/* translators: %s: Network error message. */
 				'message'     => sprintf(__('Network connection failed: %s', 'finlyzer'), $response->get_error_message()),
 			];
 		}
@@ -524,15 +519,24 @@ final class FXLI_Gemini_Client {
 			'endpoint'    => $verify_url,
 			'latency_ms'  => $duration,
 			'error'       => "http_{$code}",
+			/* translators: %d: HTTP status code. */
 			'message'     => sprintf(__('Worker returned unexpected status HTTP %d.', 'finlyzer'), $code),
 		];
 	}
 
 	// purge all cached insights to ensure real-time synchronization
 	public static function flush_cache(): void {
-		// delete any transient starting with finlyzer_insight_
+		// delete options and transients for standard periods via native WordPress API
+		$standard_periods = [7, 14, 30, 60, 90];
+		foreach ($standard_periods as $period) {
+			delete_option("finlyzer_ai_insight_{$period}");
+			delete_transient("finlyzer_insight_{$period}");
+		}
+
+		// Also clean any custom period transients using direct query with proper phpcs annotations
 		global $wpdb;
 		if (isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'query') && isset($wpdb->options)) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Wildcard transient cleanup requires direct query.
 			$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_finlyzer_insight_%' OR option_name LIKE '_transient_timeout_finlyzer_insight_%'");
 		}
 	}

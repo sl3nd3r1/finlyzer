@@ -28,13 +28,19 @@ final class FXLI_Admin_Page {
 
 	// register main admin menu item under WooCommerce
 	public function register_menu(): void {
+		// load custom SVG icon as base64 data URI for crisp, self-contained rendering
+		$icon_file = FINLYZER_PLUGIN_DIR . 'assets/images/finlyzer-icon.svg';
+		$menu_icon = file_exists($icon_file)
+			? 'data:image/svg+xml;base64,' . base64_encode((string) file_get_contents($icon_file))
+			: 'dashicons-chart-line';
+
 		add_menu_page(
 			__('Finlyzer — FX Loss & Margin Insights', 'finlyzer'),
 			__('Finlyzer', 'finlyzer'),
 			FXLI_Security::CAPABILITY,
 			self::MENU_SLUG,
 			[$this, 'render_page'],
-			'dashicons-chart-line',
+			$menu_icon,
 			56
 		);
 	}

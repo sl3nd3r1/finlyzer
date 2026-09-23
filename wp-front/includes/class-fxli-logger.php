@@ -59,7 +59,7 @@ final class FXLI_Logger {
 
 		$id  = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
 		$ts  = function_exists('current_time') ? current_time('mysql') : gmdate('Y-m-d H:i:s');
-		$msg = function_exists('sanitize_text_field') ? sanitize_text_field($message) : strip_tags($message);
+		$msg = function_exists('sanitize_text_field') ? sanitize_text_field($message) : (function_exists('wp_strip_all_tags') ? wp_strip_all_tags($message) : strip_tags($message));
 
 		$entry = [
 			'id'        => $id,
@@ -74,10 +74,11 @@ final class FXLI_Logger {
 		// append to in-memory buffer
 		self::$in_memory_buffer[] = $entry;
 
-		// write to standard PHP / WordPress error log when debugging or on error
-		if ($is_debug_enabled || in_array($level, [self::LEVEL_WARN, self::LEVEL_ERROR], true)) {
+		// write to standard PHP / WordPress debug log only when WP_DEBUG and WP_DEBUG_LOG are active
+		if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG && ($is_debug_enabled || in_array($level, [self::LEVEL_WARN, self::LEVEL_ERROR], true))) {
 			$encoded_context   = function_exists('wp_json_encode') ? wp_json_encode($clean_context, JSON_UNESCAPED_SLASHES) : json_encode($clean_context, JSON_UNESCAPED_SLASHES);
 			$formatted_context = !empty($clean_context) ? ' ' . $encoded_context : '';
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional debug logging strictly gated behind WP_DEBUG_LOG.
 			error_log(sprintf('[Finlyzer %s][%s] %s%s', strtoupper($level), strtoupper($category), $message, $formatted_context));
 		}
 

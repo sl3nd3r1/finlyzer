@@ -9,11 +9,24 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 global $wpdb;
 
 // remove Finlyzer events tables
-$events_table = $wpdb->prefix . 'fxli_fx_events';
-$products_table = $wpdb->prefix . 'fxli_product_gateway_events';
-// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table identifier only
-$wpdb->query("DROP TABLE IF EXISTS {$events_table}");
-$wpdb->query("DROP TABLE IF EXISTS {$products_table}");
+$fxli_events_table = $wpdb->prefix . 'fxli_fx_events';
+$fxli_products_table = $wpdb->prefix . 'fxli_product_gateway_events';
+
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+$wpdb->query(
+	$wpdb->prepare(
+		'DROP TABLE IF EXISTS %i',
+		$fxli_events_table
+	)
+);
+
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+$wpdb->query(
+	$wpdb->prepare(
+		'DROP TABLE IF EXISTS %i',
+		$fxli_products_table
+	)
+);
 
 // delete all Finlyzer and FXLI options and state settings
 delete_option('finlyzer_db_version');
@@ -25,7 +38,7 @@ delete_option('finlyzer_telemetry_logs');
 wp_clear_scheduled_hook('fxli_daily_scan');
 
 // purge all Finlyzer database options and cached transients
-// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 $wpdb->query(
 	"DELETE FROM {$wpdb->options}
 	 WHERE option_name LIKE 'finlyzer\\_%'

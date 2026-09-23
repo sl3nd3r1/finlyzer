@@ -26,9 +26,19 @@ final class FXLI_Env {
 		}
 
 		// inspect server host variables
-		$host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+		$raw_host = '';
+		if (isset($_SERVER['HTTP_HOST'])) {
+			$raw_host = function_exists('wp_unslash') && function_exists('sanitize_text_field')
+				? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST']))
+				: (string) $_SERVER['HTTP_HOST'];
+		} elseif (isset($_SERVER['SERVER_NAME'])) {
+			$raw_host = function_exists('wp_unslash') && function_exists('sanitize_text_field')
+				? sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME']))
+				: (string) $_SERVER['SERVER_NAME'];
+		}
+		$host = $raw_host;
 		if ($host === '' && function_exists('home_url')) {
-			$parsed = parse_url(home_url(), PHP_URL_HOST);
+			$parsed = wp_parse_url(home_url(), PHP_URL_HOST);
 			$host = is_string($parsed) ? $parsed : '';
 		}
 
@@ -388,7 +398,7 @@ final class FXLI_Env {
 			return new WP_Error('empty_endpoint', 'Worker endpoint URL is required.');
 		}
 
-		$parts = parse_url($url);
+		$parts = wp_parse_url($url);
 		if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
 			return new WP_Error('malformed_endpoint', 'Worker endpoint URL is malformed.');
 		}

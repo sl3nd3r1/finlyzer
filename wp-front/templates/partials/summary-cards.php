@@ -6,6 +6,8 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 /**
  * Server-rendered, escaped HTML fragment for the Finlyzer summary view.
  * Swapped directly into the DOM via htmx.
@@ -545,7 +547,11 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 					<!-- Product Name & ID -->
 					<span role="cell" class="finlyzer-product-cell">
 						<strong class="finlyzer-product-name"><?php echo esc_html($p_name); ?></strong>
-						<span class="finlyzer-product-id"><?php echo esc_html(sprintf(__('ID: #%d', 'finlyzer'), $p_id)); ?></span>
+						<span class="finlyzer-product-id"><?php echo esc_html(sprintf(
+							/* translators: %d: Product ID. */
+							__('ID: #%d', 'finlyzer'),
+							$p_id
+						)); ?></span>
 					</span>
 
 					<!-- Gateway Pill with Dynamic Color -->
@@ -587,5 +593,8 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 
 	</div> <!-- end #finlyzerBreakdownDrawer -->
 </div> <!-- end #finlyzerDeepBreakdownWrapper -->
+<?php
+// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 
 

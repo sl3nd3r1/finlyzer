@@ -6,11 +6,13 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
-$default_days = 30;
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+$default_days     = 30;
 $rest_summary_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/summary'));
 $rest_insight_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/insight'));
-$rest_nonce = wp_create_nonce('wp_rest');
-$rest_base_url = rest_url('finlyzer/v1');
+$rest_nonce       = wp_create_nonce('wp_rest');
+$rest_base_url    = rest_url('finlyzer/v1');
+// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 ?>
 <script>
 window.Finlyzer = window.Finlyzer || {
@@ -24,7 +26,10 @@ window.FXLI = window.Finlyzer;
 	<!-- Top Navigation and Header -->
 	<header class="finlyzer-header">
 		<div class="finlyzer-header__brand">
-			<h1 class="finlyzer-header__title"><?php esc_html_e('Finlyzer', 'finlyzer'); ?></h1>
+			<div class="finlyzer-header__identity">
+				<img src="<?php echo esc_url(FINLYZER_PLUGIN_URL . 'assets/images/finlyzer-icon.svg'); ?>" alt="<?php esc_attr_e('Finlyzer Logo', 'finlyzer'); ?>" class="finlyzer-header__logo" width="38" height="38" />
+				<h1 class="finlyzer-header__title"><?php esc_html_e('Finlyzer', 'finlyzer'); ?></h1>
+			</div>
 			<p class="finlyzer-header__sub">
 				<?php esc_html_e('Track hidden payment gateway conversion fees and currency loss across your international sales.', 'finlyzer'); ?>
 			</p>
@@ -143,15 +148,15 @@ window.FXLI = window.Finlyzer;
 					<div class="finlyzer-author-box">
 						<div class="finlyzer-author-profile">
 							<div class="finlyzer-author-avatar" aria-hidden="true">
-								<span>ER</span>
+								<span>RG</span>
 							</div>
 							<div class="finlyzer-author-meta">
-								<h4 class="finlyzer-author-name">Ebrahim Razmahang</h4>
+								<h4 class="finlyzer-author-name">RayGens</h4>
 								<span class="finlyzer-author-role"><?php esc_html_e('Software Engineer & Backend Developer', 'finlyzer'); ?></span>
 							</div>
 						</div>
 						<p class="finlyzer-author-tagline">
-							<?php esc_html_e('Founder of Finlyzer and Developer', 'finlyzer'); ?>
+							<?php esc_html_e('Founder of Finlyzer and Developer.', 'finlyzer'); ?>
 						</p>
 						<div class="finlyzer-author-links">
 							<a

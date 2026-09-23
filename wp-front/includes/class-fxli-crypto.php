@@ -82,7 +82,9 @@ final class FXLI_Crypto {
 		);
 
 		if ($ciphertext === false) {
-			error_log('[Finlyzer Crypto] Failed to encrypt HMAC secret at rest.');
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'CRYPTO', 'Failed to encrypt HMAC secret at rest.');
+			}
 			return '';
 		}
 
@@ -114,7 +116,9 @@ final class FXLI_Crypto {
 
 		// verify cipher protocol
 		if (($envelope['cipher'] ?? '') !== self::CIPHER) {
-			error_log('[Finlyzer Crypto] Unsupported cipher in encrypted secret envelope: ' . ($envelope['cipher'] ?? 'unknown'));
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'CRYPTO', 'Unsupported cipher in encrypted secret envelope.', ['cipher' => $envelope['cipher'] ?? 'unknown']);
+			}
 			return null;
 		}
 
@@ -144,7 +148,9 @@ final class FXLI_Crypto {
 		);
 
 		if ($decrypted === false) {
-			error_log('[Finlyzer Crypto] AEAD authentication tag verification failed. Secret may be tampered or salts changed.');
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'CRYPTO', 'AEAD authentication tag verification failed. Secret may be tampered or salts changed.');
+			}
 			return null;
 		}
 
@@ -188,7 +194,8 @@ final class FXLI_Crypto {
 
 		if ($len < self::MIN_SECRET_LENGTH) {
 			return sprintf(
-				__('HMAC secret is too short (%d characters). It must be at least %d characters.', 'finlyzer'),
+				/* translators: 1: Current character count, 2: Minimum character count required. */
+				__('HMAC secret is too short (%1$d characters). It must be at least %2$d characters.', 'finlyzer'),
 				$len,
 				self::MIN_SECRET_LENGTH
 			);
@@ -281,7 +288,7 @@ final class FXLI_Crypto {
 		}
 		if (empty($baseUrl)) {
 			$endpoint = class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '';
-			$parsed = parse_url($endpoint);
+			$parsed = wp_parse_url($endpoint);
 			if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
 				$baseUrl = $parsed['scheme'] . '://' . $parsed['host'] . (!empty($parsed['port']) ? ':' . $parsed['port'] : '');
 			}
@@ -329,14 +336,18 @@ final class FXLI_Crypto {
 		]);
 
 		if (is_wp_error($response)) {
-			error_log('[Finlyzer Crypto] Automated pairing request failed: ' . $response->get_error_message());
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'CRYPTO', 'Automated pairing request failed.', ['error' => $response->get_error_message()]);
+			}
 			// check for fallback secret seed from configuration
 			return self::seed_fallback_secret();
 		}
 
 		$statusCode = wp_remote_retrieve_response_code($response);
 		if ($statusCode !== 200) {
-			error_log('[Finlyzer Crypto] Automated pairing rejected with HTTP ' . $statusCode);
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'CRYPTO', 'Automated pairing rejected with HTTP ' . $statusCode);
+			}
 			// check for fallback secret seed from configuration
 			return self::seed_fallback_secret();
 		}
@@ -344,7 +355,9 @@ final class FXLI_Crypto {
 		$bodyText = wp_remote_retrieve_body($response);
 		$data = json_decode($bodyText, true);
 		if (!is_array($data) || empty($data['token']) || !is_string($data['token']) || strlen($data['token']) !== 64) {
-			error_log('[Finlyzer Crypto] Invalid token structure received from pairing endpoint.');
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'CRYPTO', 'Invalid token structure received from pairing endpoint.');
+			}
 			return self::seed_fallback_secret();
 		}
 
@@ -413,8 +426,10 @@ final class FXLI_Crypto {
 				'message' => __('Cloud Sentinel re-synchronized successfully.', 'finlyzer'),
 			];
 		} catch (\Throwable $e) {
-			// log exception details securely to error_log without exposing to merchant
-			error_log('[Finlyzer Crypto] Re-sync exception: ' . $e->getMessage());
+			// log exception details securely without exposing to merchant
+			if (class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_ERROR, 'CRYPTO', 'Re-sync exception: ' . $e->getMessage());
+			}
 
 			// restore backup secret
 			if ($backupSecret !== null && $backupSecret !== '') {

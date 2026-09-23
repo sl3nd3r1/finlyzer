@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Finlyzer — Multi-Environment WordPress Package Builder (v1.29.0)
+ * Finlyzer — Multi-Environment WordPress Package Builder (v1.0.0)
  *
  * Compiles and packages the Finlyzer plugin using environment-specific (.env) profiles:
  *
@@ -338,6 +338,13 @@ try {
 	createZipArchive(ENV_DIST_DIR, 'finlyzer', OUTPUT_ZIP);
 	// copy to canonical root dist folder for convenient access
 	fs.copyFileSync(OUTPUT_ZIP, CANONICAL_ZIP);
+
+	// sync fresh staging directory into canonical dist/finlyzer directory for direct inspection
+	const CANONICAL_DIST_DIR = path.resolve(DIST_DIR, 'finlyzer');
+	if (fs.existsSync(CANONICAL_DIST_DIR)) {
+		fs.rmSync(CANONICAL_DIST_DIR, { recursive: true, force: true });
+	}
+	copyRecursive(STAGING_DIR, CANONICAL_DIST_DIR);
 } catch (err) {
 	console.error('❌ Failed to create zip archive:', err);
 	process.exit(1);
@@ -347,6 +354,7 @@ const zipStat = fs.statSync(OUTPUT_ZIP);
 const zipSizeKb = Math.round((zipStat.size / 1024) * 10) / 10;
 console.log(`   ✓ Successfully created ${OUTPUT_ZIP} (${zipSizeKb} KB)`);
 console.log(`   ✓ Canonical copy placed at ${CANONICAL_ZIP}`);
+console.log(`   ✓ Canonical unzipped staging synchronized at ${path.resolve(DIST_DIR, 'finlyzer')}`);
 
 // 8. Inspect zip archive contents
 console.log('\n8. Inspecting archive integrity...');

@@ -194,6 +194,7 @@ final class FXLI_Order_Analyzer {
 		$paid_date = $order->get_date_paid()?->date('Y-m-d H:i:s') ?? $order->get_date_created()?->date('Y-m-d H:i:s') ?? current_time('mysql');
 
 		// insert or replace event record using integer minor units (cents)
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table event storage.
 		$wpdb->replace(
 			$events_table,
 			[
@@ -210,6 +211,7 @@ final class FXLI_Order_Analyzer {
 
 		// extract order items and attribute FX spread loss proportionally per product
 		$products_table = $wpdb->prefix . 'fxli_product_gateway_events';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table item attribution.
 		$wpdb->delete($products_table, ['order_id' => $order->get_id()], ['%d']);
 
 		$items = $order->get_items();
@@ -227,6 +229,7 @@ final class FXLI_Order_Analyzer {
 			$line_share = $total > 0 ? ($line_total / $total) : 0.0;
 			$attributed_loss = round($estimated_loss * $line_share, 2);
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table item attribution.
 			$wpdb->insert(
 				$products_table,
 				[
@@ -379,9 +382,11 @@ final class FXLI_Order_Analyzer {
 		$table = $wpdb->prefix . 'fxli_fx_events';
 
 		// if local event cache is empty, trigger an immediate on-demand scan across store orders
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transient check for empty custom table cache.
 		$existing_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE order_date >= %s",
+				'SELECT COUNT(*) FROM %i WHERE order_date >= %s',
+				$table,
 				(new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s')
 			)
 		);

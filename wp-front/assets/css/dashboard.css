@@ -142,7 +142,27 @@
 .finlyzer-header__brand {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 6px;
+}
+
+.finlyzer-header__identity {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.finlyzer-header__logo {
+	width: 38px;
+	height: 38px;
+	flex-shrink: 0;
+	border-radius: 9px;
+	filter: drop-shadow(0 2px 8px rgba(29, 165, 234, 0.28));
+	transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+}
+
+.finlyzer-header__logo:hover {
+	transform: scale(1.06);
+	filter: drop-shadow(0 4px 14px rgba(29, 165, 234, 0.45));
 }
 
 .finlyzer-header__controls {
@@ -157,6 +177,17 @@
 	letter-spacing: -0.03em;
 	margin: 0;
 	color: #FFFFFF;
+}
+
+/* WordPress Admin Menu Icon polish */
+#adminmenu .toplevel_page_finlyzer .wp-menu-image.svg {
+	background-size: 19px 19px;
+	background-position: center center;
+	transition: transform 0.15s ease;
+}
+
+#adminmenu .toplevel_page_finlyzer:hover .wp-menu-image.svg {
+	transform: scale(1.08);
 }
 
 .finlyzer-header__sub {
