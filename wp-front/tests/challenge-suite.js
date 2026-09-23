@@ -2616,6 +2616,10 @@ assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatib
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
 assert(readmeTxtV34.includes('Stable tag: 1.0.0'), 'readme.txt declares Stable tag: 1.0.0');
+assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
+assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
+assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
+assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.min.js')), 'assets/js/vendor/htmx.min.js exists');
 
 // 34.7 100,000-Iteration High-Frequency Data Sanitization & String Tokenizer Stress Test
 const pcpBenchStart = performance.now();

@@ -60,11 +60,20 @@ Finlyzer connects to the following external third-party services to deliver accu
   - Data Sent: Target and store currency ISO codes (e.g., "EUR", "USD") and order dates. No store details, customer records, or financial transaction identifiers are ever sent.
 
 * **Finlyzer Cloudflare Worker API & Google Gemini Flash AI**: Used to calculate cross-border payment gateway fee spreads, run multi-processor loss attribution, and generate executive AI financial risk assessments.
-  - Service: https://ai.google.dev
+  - Service: https://ai.google.dev / https://finlyzer-worker-prod.ebi1055lol.workers.dev
+  - Cloudflare Terms of Service: https://www.cloudflare.com/terms/
+  - Cloudflare Privacy Policy: https://www.cloudflare.com/privacypolicy/
   - Google Gemini Terms of Service: https://ai.google.dev/terms
   - Google Privacy Policy: https://policies.google.com/privacy
   - Data Sent: Anonymized, store-level aggregate order metrics (total foreign currency transaction volume, aggregate conversion fee estimates, currency breakdown, and order counts).
   - **Zero Personally Identifiable Information (PII)**: Customer names, email addresses, phone numbers, billing/shipping physical addresses, IP addresses, payment card credentials, and individual order IDs are never collected, logged, or transmitted.
+
+== Third-Party Libraries & Source Code ==
+
+* **HTMX** (v2.0.3): Used in the WordPress admin dashboard for reactive UI swaps and fragment serving without full-page reloads.
+  - Source Code: https://github.com/bigskysoftware/htmx
+  - Unminified Distribution: assets/js/vendor/htmx.js (also accessible at https://unpkg.com/htmx.org@2.0.3/dist/htmx.js)
+  - License: BSD-2-Clause (GPL-compatible) https://github.com/bigskysoftware/htmx/blob/master/LICENSE
 
 == Installation ==
 
