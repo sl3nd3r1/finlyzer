@@ -1,13 +1,15 @@
 <?php
 /**
  * Plugin Name:       Finlyzer — FX Loss & Margin Insights for WooCommerce
+ * Plugin URI:        https://github.com/sl3nd3r1/finlyzer
  * Description:       Track hidden payment gateway conversion fees and currency loss across your international WooCommerce sales.
  * Version:           1.0.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
  * WC requires at least: 8.0
- * Author:            Finlyzer Core Team & <a href="https://www.linkedin.com/in/ebrahimrazmahang" target="_blank" rel="noopener noreferrer">RayGens</a>
+ * Author:            Finlyzer Core Team & RayGens
+ * Author URI:        https://www.linkedin.com/in/ebrahimrazmahang
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       finlyzer

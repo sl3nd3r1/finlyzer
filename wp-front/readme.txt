@@ -72,7 +72,7 @@ Finlyzer connects to the following external third-party services to deliver accu
 
 * **HTMX** (v2.0.3): Used in the WordPress admin dashboard for reactive UI swaps and fragment serving without full-page reloads.
   - Source Code: https://github.com/bigskysoftware/htmx
-  - Unminified Distribution: assets/js/vendor/htmx.js (also accessible at https://unpkg.com/htmx.org@2.0.3/dist/htmx.js)
+  - Unminified Distribution: assets/js/vendor/htmx.js (also accessible at https://github.com/bigskysoftware/htmx/releases/tag/v2.0.3)
   - License: BSD-2-Clause (GPL-compatible) https://github.com/bigskysoftware/htmx/blob/master/LICENSE
 
 == Installation ==

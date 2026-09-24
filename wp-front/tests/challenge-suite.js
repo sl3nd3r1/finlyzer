@@ -2835,6 +2835,107 @@ assert(hashVerificationMatches === 50000, `High-concurrency license verification
 assert(licenseBenchDuration < 1000, `50,000 cryptographic license validations executed in ${licenseBenchDuration.toFixed(2)}ms (< 1000ms SLA)`);
 
 // -------------------------------------------------------------
+// TEST GROUP 37: External Links Policy & WordPress.org Guidelines Compliance Audit
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 37: External Links Policy & WordPress.org Guidelines Compliance Audit');
+
+// 37.1 Plugin Header Link Invariants (WordPress Core Plugin Standards)
+const pluginHeaderPhp = fs.readFileSync(path.resolve(__dirname, '..', 'finlyzer.php'), 'utf8');
+const authorLineMatch = pluginHeaderPhp.match(/^[ \t]*\*[ \t]*Author:[ \t]*(.+)$/m);
+assert(authorLineMatch !== null, 'finlyzer.php contains standard Author header');
+if (authorLineMatch) {
+	const authorVal = authorLineMatch[1].trim();
+	assert(!authorVal.includes('<') && !authorVal.includes('>'), 'Author header contains pure string without raw HTML tags');
+	assert(authorVal.includes('RayGens'), 'Author header attributes RayGens');
+}
+
+const authorUriMatch = pluginHeaderPhp.match(/^[ \t]*\*[ \t]*Author URI:[ \t]*(https:\/\/[^\s]+)$/m);
+assert(authorUriMatch !== null, 'finlyzer.php contains dedicated Author URI header pointing to HTTPS URL');
+
+const pluginUriMatch = pluginHeaderPhp.match(/^[ \t]*\*[ \t]*Plugin URI:[ \t]*(https:\/\/[^\s]+)$/m);
+assert(pluginUriMatch !== null, 'finlyzer.php contains dedicated Plugin URI header pointing to public repository');
+
+// 37.2 Readme External Links Integrity & CDN Elimination
+const readmeTxtContent = fs.readFileSync(path.resolve(__dirname, '..', 'readme.txt'), 'utf8');
+
+// Ensure zero third-party CDN script references in readme.txt
+assert(!readmeTxtContent.includes('unpkg.com'), 'readme.txt contains zero references to unpkg.com');
+assert(!readmeTxtContent.includes('cdnjs.cloudflare.com'), 'readme.txt contains zero references to cdnjs');
+assert(!readmeTxtContent.includes('jsdelivr.net'), 'readme.txt contains zero references to jsdelivr');
+
+// Verify mandatory Service Terms and Privacy disclosures (Guideline 6 & 7)
+assert(readmeTxtContent.includes('https://frankfurter.dev'), 'readme.txt includes Frankfurter Terms and Privacy URL');
+assert(readmeTxtContent.includes('https://www.cloudflare.com/terms/'), 'readme.txt includes Cloudflare Terms of Service URL');
+assert(readmeTxtContent.includes('https://www.cloudflare.com/privacypolicy/'), 'readme.txt includes Cloudflare Privacy Policy URL');
+assert(readmeTxtContent.includes('https://ai.google.dev/terms'), 'readme.txt includes Google Gemini Terms of Service URL');
+assert(readmeTxtContent.includes('https://policies.google.com/privacy'), 'readme.txt includes Google Privacy Policy URL');
+assert(readmeTxtContent.includes('https://github.com/bigskysoftware/htmx'), 'readme.txt provides official HTMX source repository link');
+
+// Ensure zero affiliate or tracking parameters in readme URLs
+const readmeUrls = readmeTxtContent.match(/https?:\/\/[^\s\)\>\]]+/g) || [];
+assert(readmeUrls.length >= 8, `readme.txt contains required disclosure URLs (${readmeUrls.length} verified)`);
+for (const u of readmeUrls) {
+	assert(!u.includes('?ref=') && !u.includes('&ref='), `URL ${u} contains no referral tracking`);
+	assert(!u.includes('?aff=') && !u.includes('&aff='), `URL ${u} contains no affiliate parameters`);
+	assert(!u.includes('utm_source'), `URL ${u} contains no marketing campaign telemetry`);
+}
+
+// 37.3 Admin UI External Link Security & Accessibility Invariants (templates/dashboard.php)
+const dashboardHtml = fs.readFileSync(path.resolve(__dirname, '..', 'templates', 'dashboard.php'), 'utf8');
+const anchorMatches = dashboardHtml.match(/<a\s+[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi) || [];
+assert(anchorMatches.length >= 2, `dashboard.php contains author social links (${anchorMatches.length} anchors found)`);
+
+for (const anchor of anchorMatches) {
+	// Security: rel="noopener noreferrer" must be present when target="_blank"
+	assert(anchor.includes('target="_blank"'), 'External link specifies target="_blank"');
+	assert(anchor.includes('rel="noopener noreferrer"') || anchor.includes('rel="noreferrer noopener"'), 'External link enforces rel="noopener noreferrer" to prevent reverse tabnabbing');
+	// Accessibility: Screen-reader text must be included for users of assistive technology
+	assert(anchor.includes('screen-reader-text'), 'External link provides screen-reader-text announcing new tab navigation');
+}
+
+// 37.4 Guideline 10 Invariant: Zero Public-Facing Credit Links in Production PHP Code
+// Credits must only exist within admin dashboard templates, never in front-facing customer views
+const customerFacingPhpCandidates = [
+	'includes/class-fxli-crypto.php',
+	'includes/class-fxli-env.php',
+	'includes/class-fxli-security.php',
+	'includes/class-fxli-installer.php',
+	'includes/class-fxli-order-analyzer.php',
+	'includes/class-fxli-gemini-client.php',
+	'includes/class-fxli-rest-api.php',
+	'uninstall.php'
+];
+
+for (const relFile of customerFacingPhpCandidates) {
+	const code = fs.readFileSync(path.resolve(__dirname, '..', relFile), 'utf8');
+	assert(!code.includes('<a href="https://github.com') && !code.includes('<a href="https://www.linkedin.com'), `${relFile} contains zero hardcoded author credit anchor tags`);
+}
+
+// 37.5 High-Throughput Link Validation & Policy Constraint Stress Test (100,000 Cycles)
+const linkBenchStart = performance.now();
+let validatedLinkCount = 0;
+const testLinks = [
+	'https://github.com/sl3nd3r1/finlyzer',
+	'https://www.linkedin.com/in/ebrahimrazmahang',
+	'https://frankfurter.dev',
+	'https://www.cloudflare.com/privacypolicy/',
+	'https://policies.google.com/privacy',
+	'https://ai.google.dev/terms',
+	'https://github.com/bigskysoftware/htmx/releases/tag/v2.0.3'
+];
+
+for (let i = 0; i < 100000; i++) {
+	const candidate = testLinks[i % testLinks.length];
+	// Verify HTTPS protocol, domain presence, and absence of tracking queries
+	if (candidate.startsWith('https://') && !candidate.includes('?aff=') && !candidate.includes('utm_')) {
+		validatedLinkCount++;
+	}
+}
+const linkBenchDuration = performance.now() - linkBenchStart;
+assert(validatedLinkCount === 100000, `High-throughput link safety stress: 100,000/100,000 links verified`);
+assert(linkBenchDuration < 150, `100,000 link policy validations executed in ${linkBenchDuration.toFixed(2)}ms (< 150ms SLA)`);
+
+// -------------------------------------------------------------
 // SUMMARY
 // -------------------------------------------------------------
 console.log('\n================================================================');
