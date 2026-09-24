@@ -5,9 +5,11 @@
  * Description:       Track hidden payment gateway conversion fees and currency loss across your international WooCommerce sales.
  * Version:           1.0.0
  * Requires at least: 6.4
+ * Tested up to:      7.1
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
  * WC requires at least: 8.0
+ * WC tested up to:   11.1
  * Author:            Finlyzer Core Team & RayGens
  * Author URI:        https://www.linkedin.com/in/ebrahimrazmahang
  * License:           GPLv2 or later
