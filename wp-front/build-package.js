@@ -35,9 +35,9 @@ for (const arg of process.argv.slice(2)) {
 		} else if (val === 'prod' || val === 'production') {
 			targetEnv = 'production';
 		}
-	} else if (arg === '--dev' || arg === '-d') {
+	} else if (arg === '--dev' || arg === '-d' || arg === 'dev' || arg === 'development') {
 		targetEnv = 'development';
-	} else if (arg === '--prod' || arg === '-p') {
+	} else if (arg === '--prod' || arg === '-p' || arg === 'prod' || arg === 'production') {
 		targetEnv = 'production';
 	}
 }
@@ -157,6 +157,20 @@ if (phpVersion !== readmeVersion || phpVersion !== pkgVersion) {
 
 console.log(`   ✓ Version verified: v${phpVersion}`);
 
+// 3.1 Verify license.txt exists and contains valid GPLv2 license text
+console.log('\n3.1. Verifying GPLv2 license integrity...');
+const licenseFilePath = path.resolve(PLUGIN_ROOT, 'license.txt');
+if (!fs.existsSync(licenseFilePath)) {
+	console.error('❌ Missing license.txt at plugin root. WordPress.org requires GPLv2 license file.');
+	process.exit(1);
+}
+const licenseTxtContent = fs.readFileSync(licenseFilePath, 'utf8');
+if (!licenseTxtContent.includes('GNU GENERAL PUBLIC LICENSE') || !licenseTxtContent.includes('Version 2, June 1991')) {
+	console.error('❌ license.txt does not contain valid GNU General Public License Version 2.');
+	process.exit(1);
+}
+console.log('   ✓ GPLv2 license verified (license.txt present with valid GNU General Public License v2 text).');
+
 // 4. Lint all production PHP files
 console.log('\n4. Linting PHP production files...');
 const phpFilesToLint = [
@@ -220,6 +234,7 @@ function copyRecursive(src, dest) {
 fs.copyFileSync(path.resolve(PLUGIN_ROOT, 'finlyzer.php'), path.resolve(STAGING_DIR, 'finlyzer.php'));
 fs.copyFileSync(path.resolve(PLUGIN_ROOT, 'uninstall.php'), path.resolve(STAGING_DIR, 'uninstall.php'));
 fs.copyFileSync(path.resolve(PLUGIN_ROOT, 'readme.txt'), path.resolve(STAGING_DIR, 'readme.txt'));
+fs.copyFileSync(path.resolve(PLUGIN_ROOT, 'license.txt'), path.resolve(STAGING_DIR, 'license.txt'));
 
 // copy subdirectories
 copyRecursive(path.resolve(PLUGIN_ROOT, 'includes'), path.resolve(STAGING_DIR, 'includes'));

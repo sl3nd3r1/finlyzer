@@ -8,10 +8,14 @@
  * Requires Plugins:  woocommerce
  * WC requires at least: 8.0
  * Author:            Finlyzer Core Team & <a href="https://www.linkedin.com/in/ebrahimrazmahang" target="_blank" rel="noopener noreferrer">RayGens</a>
- * License:           GPL-2.0-or-later
+ * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       finlyzer
  * Domain Path:       /languages
+ *
+ * @package           Finlyzer
+ * @author            Finlyzer Core Team & RayGens
+ * @license           GPL-2.0-or-later
  *
  * Security architecture (per mandatory-secure-web-skills):
  *  - Zero client-side credentials: API keys and HMAC secrets never reach the browser.

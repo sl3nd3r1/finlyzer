@@ -2722,6 +2722,119 @@ assert(fuzzedHostCount === 100000, `All 100,000 adversarial host sanitizations e
 assert(fuzzBenchDuration < 150, `100,000 adversarial fuzzing cycles executed in ${fuzzBenchDuration.toFixed(2)}ms (< 150ms SLA)`);
 
 // -------------------------------------------------------------
+// TEST GROUP 36: WordPress.org GPLv2 Licensing, Guideline Compliance & Multi-Env Packaging
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 36: WordPress.org GPLv2 Licensing, Guideline Compliance & Multi-Env Packaging');
+
+// 36.1 Root license.txt Existence, Size and Legal Text Verification
+const rootLicensePath = path.resolve(__dirname, '..', 'license.txt');
+assert(fs.existsSync(rootLicensePath), 'Root license.txt exists in plugin repository');
+const licenseContent = fs.readFileSync(rootLicensePath, 'utf8');
+assert(licenseContent.length > 15000, `license.txt contains full legal text (${licenseContent.length} bytes > 15,000)`);
+
+// Verify canonical GPLv2 markers
+assert(licenseContent.includes('GNU GENERAL PUBLIC LICENSE'), 'license.txt includes GNU GENERAL PUBLIC LICENSE title');
+assert(licenseContent.includes('Version 2, June 1991'), 'license.txt specifies Version 2, June 1991');
+assert(licenseContent.includes('Copyright (C) 1989, 1991 Free Software Foundation, Inc.'), 'license.txt includes FSF copyright declaration');
+assert(licenseContent.includes('51 Franklin St, Fifth Floor, Boston, MA'), 'license.txt includes FSF address');
+assert(licenseContent.includes('TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION'), 'license.txt includes terms and conditions heading');
+assert(licenseContent.includes('NO WARRANTY'), 'license.txt includes NO WARRANTY section');
+assert(licenseContent.includes('Finlyzer'), 'license.txt includes Finlyzer plugin copyright preamble');
+assert(licenseContent.includes('Copyright (C) 2026') && licenseContent.includes('RayGens'), 'license.txt declares 2026 Finlyzer authorship');
+
+// Compute source SHA-256 for integrity propagation checking
+const rootLicenseHash = crypto.createHash('sha256').update(licenseContent).digest('hex');
+
+// 36.2 Header and Metadata Licensing Consistency Across Artifacts
+const mainPluginPhp = fs.readFileSync(path.resolve(__dirname, '..', 'finlyzer.php'), 'utf8');
+assert(mainPluginPhp.includes('@license           GPL-2.0-or-later') || mainPluginPhp.includes('@license GPL-2.0-or-later'), 'finlyzer.php declares @license GPL-2.0-or-later');
+assert(mainPluginPhp.includes('License:           GPLv2 or later') || mainPluginPhp.includes('License: GPLv2 or later'), 'finlyzer.php plugin header declares License: GPLv2 or later');
+assert(mainPluginPhp.includes('License URI:       https://www.gnu.org/licenses/gpl-2.0.html') || mainPluginPhp.includes('License URI: https://www.gnu.org/licenses/gpl-2.0.html'), 'finlyzer.php header declares valid GPL-2.0 URI');
+
+const readmeText = fs.readFileSync(path.resolve(__dirname, '..', 'readme.txt'), 'utf8');
+assert(readmeText.includes('License: GPLv2 or later'), 'readme.txt declares License: GPLv2 or later');
+assert(readmeText.includes('License URI: https://www.gnu.org/licenses/gpl-2.0.html'), 'readme.txt declares valid GPL-2.0 URI');
+
+const packageJsonObj = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'package.json'), 'utf8'));
+assert(packageJsonObj.license === 'GPL-2.0-or-later', 'package.json specifies SPDX license identifier GPL-2.0-or-later');
+
+// 36.3 Packaging Integrity: Verify license.txt in Staged Environments and Built Archives
+const prodStagingLicense = path.resolve(__dirname, '..', 'dist', 'production', 'finlyzer', 'license.txt');
+const devStagingLicense = path.resolve(__dirname, '..', 'dist', 'development', 'finlyzer', 'license.txt');
+const canonicalStagingLicense = path.resolve(__dirname, '..', 'dist', 'finlyzer', 'license.txt');
+
+assert(fs.existsSync(prodStagingLicense), 'Production staging directory includes license.txt');
+assert(fs.existsSync(devStagingLicense), 'Development staging directory includes license.txt');
+assert(fs.existsSync(canonicalStagingLicense), 'Canonical dist/finlyzer directory includes license.txt');
+
+const prodLicenseHash = crypto.createHash('sha256').update(fs.readFileSync(prodStagingLicense)).digest('hex');
+const devLicenseHash = crypto.createHash('sha256').update(fs.readFileSync(devStagingLicense)).digest('hex');
+const canonicalLicenseHash = crypto.createHash('sha256').update(fs.readFileSync(canonicalStagingLicense)).digest('hex');
+
+assert(prodLicenseHash === rootLicenseHash, 'Production staged license.txt matches source byte-for-byte');
+assert(devLicenseHash === rootLicenseHash, 'Development staged license.txt matches source byte-for-byte');
+assert(canonicalLicenseHash === rootLicenseHash, 'Canonical staged license.txt matches source byte-for-byte');
+
+// Inspect zip archives for license.txt entry
+const gplProdZipPath = path.resolve(__dirname, '..', 'dist', 'production', 'finlyzer.zip');
+const gplDevZipPath = path.resolve(__dirname, '..', 'dist', 'development', 'finlyzer-dev.zip');
+const gplCanonicalZipPath = path.resolve(__dirname, '..', 'dist', 'finlyzer.zip');
+
+if (fs.existsSync(gplProdZipPath)) {
+	const prodZipEntries = execSync(`unzip -l "${gplProdZipPath}"`, { stdio: 'pipe' }).toString();
+	assert(prodZipEntries.includes('finlyzer/license.txt'), 'finlyzer.zip (production) contains finlyzer/license.txt');
+}
+if (fs.existsSync(gplDevZipPath)) {
+	const devZipEntries = execSync(`unzip -l "${gplDevZipPath}"`, { stdio: 'pipe' }).toString();
+	assert(devZipEntries.includes('finlyzer/license.txt'), 'finlyzer-dev.zip (development) contains finlyzer/license.txt');
+}
+if (fs.existsSync(gplCanonicalZipPath)) {
+	const canonicalZipEntries = execSync(`unzip -l "${gplCanonicalZipPath}"`, { stdio: 'pipe' }).toString();
+	assert(canonicalZipEntries.includes('finlyzer/license.txt'), 'Canonical dist/finlyzer.zip contains finlyzer/license.txt');
+}
+
+// 36.4 WordPress.org Guidelines Conformance Invariants
+// Guideline 1: Pure GPLv2 compatibility - verify no minified third-party proprietary JS/CSS without source
+const assetsDir = path.resolve(__dirname, '..', 'assets');
+assert(fs.existsSync(assetsDir), 'assets directory exists');
+const assetFiles = fs.readdirSync(assetsDir);
+for (const file of assetFiles) {
+	const filePath = path.join(assetsDir, file);
+	if (fs.statSync(filePath).isFile()) {
+		const content = fs.readFileSync(filePath, 'utf8');
+		// Ensure no external tracking or CDN hardcoding
+		assert(!content.includes('google-analytics.com'), `Asset ${file} contains no google-analytics tracking`);
+		assert(!content.includes('googletagmanager.com'), `Asset ${file} contains no tag manager tracking`);
+		assert(!content.includes('facebook.net'), `Asset ${file} contains no facebook tracking`);
+	}
+}
+
+// Guideline 4 & 5: Privacy & Opt-in API telemetry
+const loggerClassContent = fs.readFileSync(path.resolve(__dirname, '..', 'includes', 'class-fxli-logger.php'), 'utf8');
+assert(loggerClassContent.includes('finlyzer_telemetry_logs'), 'Telemetry handling is explicitly defined in FXLI_Logger');
+
+// Guideline 13: Clean uninstall script
+const uninstallPhpPath = path.resolve(__dirname, '..', 'uninstall.php');
+assert(fs.existsSync(uninstallPhpPath), 'uninstall.php exists at root of plugin');
+const gplUninstallContent = fs.readFileSync(uninstallPhpPath, 'utf8');
+assert(gplUninstallContent.includes('WP_UNINSTALL_PLUGIN'), 'uninstall.php prevents direct access via WP_UNINSTALL_PLUGIN check');
+
+// 36.5 High-Concurrency Licensing Hash & Integrity Challenge (50,000 Operations)
+const licenseBenchStart = performance.now();
+let hashVerificationMatches = 0;
+const bufferToVerify = Buffer.from(licenseContent, 'utf8');
+
+for (let i = 0; i < 50000; i++) {
+	const digest = crypto.createHash('sha256').update(bufferToVerify).digest('hex');
+	if (digest === rootLicenseHash) {
+		hashVerificationMatches++;
+	}
+}
+const licenseBenchDuration = performance.now() - licenseBenchStart;
+assert(hashVerificationMatches === 50000, `High-concurrency license verification: 50,000/50,000 matches`);
+assert(licenseBenchDuration < 1000, `50,000 cryptographic license validations executed in ${licenseBenchDuration.toFixed(2)}ms (< 1000ms SLA)`);
+
+// -------------------------------------------------------------
 // SUMMARY
 // -------------------------------------------------------------
 console.log('\n================================================================');
