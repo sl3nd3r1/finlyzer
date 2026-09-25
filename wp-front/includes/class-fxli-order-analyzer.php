@@ -377,12 +377,13 @@ final class FXLI_Order_Analyzer {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT order_currency, payment_method, COUNT(*) as order_count,
+				'SELECT order_currency, payment_method, COUNT(*) as order_count,
 				        SUM(order_total_minor) as total_volume_minor,
 				        SUM(estimated_loss_minor) as total_loss_minor
-				 FROM {$events_table}
+				 FROM %i
 				 WHERE order_date >= %s AND store_currency = %s
-				 GROUP BY order_currency, payment_method",
+				 GROUP BY order_currency, payment_method',
+				$events_table,
 				$since,
 				$store_currency
 			),
@@ -465,15 +466,16 @@ final class FXLI_Order_Analyzer {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$prod_rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT product_id, product_name, payment_method,
+				'SELECT product_id, product_name, payment_method,
 				        SUM(quantity) as units_sold,
 				        SUM(line_total_minor) as vol_minor,
 				        SUM(attributed_loss_minor) as loss_minor
-				 FROM {$products_table}
+				 FROM %i
 				 WHERE order_date >= %s
 				 GROUP BY product_id, product_name, payment_method
 				 ORDER BY loss_minor DESC
-				 LIMIT 30",
+				 LIMIT 30',
+				$products_table,
 				$since
 			),
 			ARRAY_A

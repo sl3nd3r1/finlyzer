@@ -535,7 +535,7 @@ const zipPath = path.resolve(__dirname, '../dist/finlyzer.zip');
 assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
-assert(readmeContent.includes('Contributors: sl3nd3r, finlyzer, raygens'), 'readme.txt declares contributors including sl3nd3r');
+assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
 assert(readmeContent.includes('Stable tag: 1.0.0'), 'readme.txt Stable tag matches v1.0.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
@@ -3064,6 +3064,8 @@ assert(cryptoCode.includes('FXLI_Env::is_cloud_opted_in()'), 'class-fxli-crypto.
 assert(geminiCode.includes('generate_heuristic_warning'), 'class-fxli-gemini-client.php provides offline heuristic warning');
 assert(geminiCode.includes('FXLI_Env::is_cloud_opted_in()'), 'class-fxli-gemini-client.php gates external AI calls behind opt-in');
 assert(analyzerCode.includes('calculate_local_summary'), 'class-fxli-order-analyzer.php implements local SQL-driven calculations');
+assert(analyzerCode.includes('FROM %i') && !analyzerCode.includes('FROM {$events_table}') && !analyzerCode.includes('FROM {$products_table}'), 'class-fxli-order-analyzer.php uses %i placeholder for table identifiers (Plugin Check compliant)');
+assert(/^[a-z0-9_]+(,\s*[a-z0-9_]+)*$/i.test(readmeContent.match(/Contributors:\s*([^\r\n]+)/)[1].trim()), 'readme.txt Contributors header strictly adheres to WordPress.org username format (no parentheses)');
 assert(restApiCode.includes("'/settings/cloud-optin'"), 'class-fxli-rest-api.php registers /settings/cloud-optin endpoint');
 
 // 39.2 Heavy-Load Local Ledger Aggregation Simulation (50,000 Transactions)

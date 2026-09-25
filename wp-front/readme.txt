@@ -1,5 +1,5 @@
 === Finlyzer — FX Loss & Margin Insights for WooCommerce ===
-Contributors: ebrahimrazmahang(raygens)
+Contributors: sl3nd3r, raygens, finlyzer
 Tags: woocommerce, currency, fx, payments, conversion fees
 Requires at least: 6.4
 Tested up to: 7.1
