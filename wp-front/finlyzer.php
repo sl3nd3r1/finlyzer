@@ -9,7 +9,7 @@
  * Requires Plugins:  woocommerce
  * WC requires at least: 8.0
  * WC tested up to:   11.1
- * Author:            Finlyzer Core Team & RayGens
+ * Author:            Ebrahim Razmahang (RayGens)
  * Author URI:        https://www.linkedin.com/in/ebrahimrazmahang
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -17,7 +17,7 @@
  * Domain Path:       /languages
  *
  * @package           Finlyzer
- * @author            Finlyzer Core Team & RayGens
+ * @author            Ebrahim Razmahang (RayGens)
  * @license           GPL-2.0-or-later
  *
  * Security architecture (per mandatory-secure-web-skills):

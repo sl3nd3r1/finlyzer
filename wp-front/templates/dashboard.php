@@ -141,10 +141,10 @@ $rest_base_url    = rest_url('finlyzer/v1');
 					<div class="finlyzer-author-box">
 						<div class="finlyzer-author-profile">
 							<div class="finlyzer-author-avatar" aria-hidden="true">
-								<span>RG</span>
+								<span>ER</span>
 							</div>
 							<div class="finlyzer-author-meta">
-								<h4 class="finlyzer-author-name">RayGens</h4>
+								<h4 class="finlyzer-author-name">Ebrahim Razmahang</h4>
 								<span class="finlyzer-author-role"><?php esc_html_e('Software Engineer & Backend Developer', 'finlyzer'); ?></span>
 							</div>
 						</div>

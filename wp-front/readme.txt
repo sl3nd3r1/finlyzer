@@ -50,7 +50,7 @@ Finlyzer inspects your store sales data and reveals the exact numbers:
 
 ### Developer & Maintainer
 
-Finlyzer is developed and maintained by [RayGens](https://www.linkedin.com/in/ebrahimrazmahang) (GitHub: [sl3nd3r1](https://github.com/sl3nd3r1)).
+Finlyzer is developed and maintained by [Ebrahim Razmahang](https://www.linkedin.com/in/ebrahimrazmahang) (GitHub: [sl3nd3r1](https://github.com/sl3nd3r1)).
 
 == External Services ==
 

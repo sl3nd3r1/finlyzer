@@ -1625,7 +1625,7 @@ assert(dashboardJsContentV20.includes('finlyzerAboutNavBtn'), 'dashboard.js hand
 
 // 24.4 Author Attribution & Security Contract (per mandatory-secure-web-skills)
 assert(dashboardPhpFresh.includes('id="finlyzer-about-section"'), 'dashboard.php renders dedicated #finlyzer-about-section');
-assert(dashboardPhpFresh.includes('RayGens'), 'dashboard.php attributes plugin authorship to RayGens');
+assert(dashboardPhpFresh.includes('Ebrahim Razmahang'), 'dashboard.php attributes plugin authorship to Ebrahim Razmahang');
 assert(dashboardPhpFresh.includes('https://github.com/sl3nd3r1'), 'dashboard.php links to author GitHub profile (https://github.com/sl3nd3r1)');
 assert(dashboardPhpFresh.includes('https://www.linkedin.com/in/ebrahimrazmahang'), 'dashboard.php links to author LinkedIn profile (https://www.linkedin.com/in/ebrahimrazmahang)');
 assert(dashboardPhpFresh.includes('id="finlyzerAboutNavBtn"'), 'dashboard.php provides header navigation button #finlyzerAboutNavBtn');
@@ -1784,7 +1784,7 @@ for (let i = 0; i < sensitiveTemplates.length; i++) {
 assert(dashboardPhpV25.includes('About'), 'dashboard.php uses clean "About" pill');
 
 // 25.4 Author Persona Verification Contract (Senior Backend Developer & Software Engineer)
-assert(dashboardPhpV25.includes('RayGens'), 'dashboard.php attributes authorship to RayGens');
+assert(dashboardPhpV25.includes('Ebrahim Razmahang'), 'dashboard.php attributes authorship to Ebrahim Razmahang');
 assert(
 	dashboardPhpV25.includes('Software Engineer & Backend Developer') || dashboardPhpV25.includes('Software Engineer & Backend Architect'),
 	'dashboard.php designates author role as Software Engineer & Backend Developer'
