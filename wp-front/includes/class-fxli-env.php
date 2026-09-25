@@ -156,7 +156,7 @@ final class FXLI_Env {
 		return false;
 	}
 
-	// check if calculations MUST be routed through the serverless API (no local mock bypass)
+	// check if calculations MUST be routed through the serverless API (defaults to false for local-first execution)
 	public static function force_api_calculation(): bool {
 		if (defined('FINLYZER_FORCE_API_CALCULATION')) {
 			return (bool) FINLYZER_FORCE_API_CALCULATION;
@@ -167,7 +167,7 @@ final class FXLI_Env {
 			return filter_var($val, FILTER_VALIDATE_BOOLEAN);
 		}
 
-		return true;
+		return false;
 	}
 
 	// check if strict SSL certificate validation is enforced
@@ -279,6 +279,22 @@ final class FXLI_Env {
 		return $clean;
 	}
 
+	// check if administrator has explicitly opted into Finlyzer Cloud Sentinel service (Guidelines 7 & 9 compliant)
+	public static function is_cloud_opted_in(): bool {
+		if (function_exists('get_option')) {
+			return get_option('finlyzer_cloud_opt_in', 'no') === 'yes';
+		}
+		return false;
+	}
+
+	// record administrator cloud opt-in choice
+	public static function set_cloud_opt_in(bool $opt_in): bool {
+		if (function_exists('update_option')) {
+			return update_option('finlyzer_cloud_opt_in', $opt_in ? 'yes' : 'no', false);
+		}
+		return false;
+	}
+
 	// retrieve HMAC secret across resolution hierarchy: constant -> env -> encrypted DB -> fallback
 	public static function hmac_secret(): string {
 		// 1. check wp-config constant override
@@ -307,17 +323,6 @@ final class FXLI_Env {
 			$stored = FXLI_Crypto::get_stored_secret();
 			if (is_string($stored) && $stored !== '') {
 				return $stored;
-			}
-
-			// trigger zero-touch automated cloud pairing if not yet provisioned
-			if (function_exists('wp_remote_post')) {
-				$paired = FXLI_Crypto::auto_pair_site();
-				if ($paired) {
-					$new_secret = FXLI_Crypto::get_stored_secret();
-					if (is_string($new_secret) && $new_secret !== '') {
-						return $new_secret;
-					}
-				}
 			}
 		} elseif (function_exists('get_option')) {
 			$opt = (string) get_option('finlyzer_worker_hmac_secret', '');

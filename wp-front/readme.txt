@@ -1,9 +1,10 @@
 === Finlyzer — FX Loss & Margin Insights for WooCommerce ===
-Contributors: finlyzer, raygens
+Contributors: sl3nd3r, finlyzer, raygens
 Tags: woocommerce, currency, fx, payments, conversion fees
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
+Requires Plugins: woocommerce
 WC requires at least: 8.0
 WC tested up to: 11.1
 Stable tag: 1.0.0
@@ -16,12 +17,12 @@ Track hidden payment gateway conversion fees, currency loss, and protect interna
 
 Finlyzer gives WooCommerce merchants clear, honest visibility into how much revenue is lost to foreign exchange fees and payment processor markups on international sales. It is **100% Free** with no hidden fees, no subscriptions, and no credit card required.
 
-### 🔒 100% Privacy by Design — Zero Sensitive Information
+### 🔒 100% Local by Default — Zero Surveillance Telemetry
 
 Merchants trust Finlyzer because of its privacy architecture:
+* **Runs 100% Locally on Your Store Database by Default**: All currency loss math, gateway fee spread analysis, and multi-currency ledgers are calculated entirely on your own server. Zero external network calls are made out-of-the-box.
 * **No Sensitive Information Needed**: Finlyzer **never** requests, accesses, stores, logs, or transmits sensitive customer or financial data.
 * **Zero Personally Identifiable Information (PII)**: Customer names, email addresses, phone numbers, billing/shipping physical addresses, IP addresses, credit card numbers, and individual order IDs are **never collected, saved, or sent anywhere**.
-* **Runs Directly on Your Store Database**: All calculations operate strictly on store-level numeric order totals (e.g., total sales volume, order counts, currency codes) and reference exchange rates.
 * **Zero Checkout Impact**: Runs purely in the WordPress admin dashboard for completed orders. Your checkout flow, storefront speed, and buyer experience remain 100% untouched.
 
 ### Why Every International WooCommerce Store Needs Finlyzer
@@ -53,22 +54,23 @@ Finlyzer is developed and maintained by [RayGens](https://www.linkedin.com/in/eb
 
 == External Services ==
 
-Finlyzer connects to the following external third-party services to deliver accurate exchange rates and automated AI risk analysis:
+Finlyzer operates 100% locally by default. Optionally, administrators can opt into external services for automated AI risk analysis and market rate evaluation:
 
-* **Global Market Reference Rates / Frankfurter API**: Used to retrieve real-time and historical currency exchange reference rates to evaluate payment processor conversion fee markups and market timing rate shifts.
-  - Service: https://frankfurter.dev / https://www.ecb.europa.eu
-  - Terms of Service: https://frankfurter.dev
-  - Privacy Policy: https://frankfurter.dev
-  - Data Sent: Target and store currency ISO codes (e.g., "EUR", "USD") and order dates. No store details, customer records, or financial transaction identifiers are ever sent.
-
-* **Finlyzer Cloudflare Worker API & Google Gemini Flash AI**: Used to calculate cross-border payment gateway fee spreads, run multi-processor loss attribution, and generate executive AI financial risk assessments.
+* **Finlyzer Cloudflare Worker API & Google Gemini Flash AI (Optional — 100% Opt-In Only)**: Provides automated financial margin risk audits and recommendations powered by Google Gemini via a secure Cloudflare Worker proxy.
+  - Opt-in Status: **Disabled / OFF by default**. Requires explicit administrator opt-in in the Finlyzer settings dialog before any network request is dispatched.
   - Service: https://ai.google.dev / https://finlyzer-worker-prod.ebi1055lol.workers.dev
   - Cloudflare Terms of Service: https://www.cloudflare.com/terms/
   - Cloudflare Privacy Policy: https://www.cloudflare.com/privacypolicy/
   - Google Gemini Terms of Service: https://ai.google.dev/terms
   - Google Privacy Policy: https://policies.google.com/privacy
-  - Data Sent: Anonymized, store-level aggregate order metrics (total foreign currency transaction volume, aggregate conversion fee estimates, currency breakdown, and order counts).
+  - Data Sent (only upon explicit opt-in): Strictly anonymized, store-level aggregate metrics (store currency ISO code, total transaction volume, aggregate conversion fee estimates, currency breakdown, and order counts).
   - **Zero Personally Identifiable Information (PII)**: Customer names, email addresses, phone numbers, billing/shipping physical addresses, IP addresses, payment card credentials, and individual order IDs are never collected, logged, or transmitted.
+
+* **Global Market Reference Rates / Frankfurter API (Optional Reference)**: Used to evaluate payment processor conversion fee markups and market timing rate shifts.
+  - Service: https://frankfurter.dev / https://www.ecb.europa.eu
+  - Terms of Service: https://frankfurter.dev
+  - Privacy Policy: https://frankfurter.dev
+  - Data Sent: Currency ISO codes (e.g., "EUR", "USD") and order dates. No store details, customer records, or financial transaction identifiers are ever sent.
 
 == Third-Party Libraries & Source Code ==
 

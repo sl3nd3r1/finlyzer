@@ -67,6 +67,21 @@
 			retryTimer = null;
 		}
 
+		var config = window.Finlyzer || window.FXLI || {};
+		if (!config.cloudOptIn) {
+			connStatus.style.display = 'block';
+			connStatus.className = 'finlyzer-connection-status finlyzer-connection-status--local';
+			var connSpinner = document.getElementById('finlyzer-connection-spinner');
+			var connIcon = document.getElementById('finlyzer-connection-icon');
+			var retryBtn = document.getElementById('finlyzer-retry-btn');
+			var connText = document.getElementById('finlyzer-connection-status-text');
+			if (connSpinner) connSpinner.style.display = 'none';
+			if (connIcon) connIcon.style.display = 'inline-block';
+			if (retryBtn) retryBtn.style.display = 'none';
+			if (connText) connText.textContent = 'Local Calculation Engine Active — 100% Private On-Store Analytics';
+			return;
+		}
+
 		connStatus.style.display = 'block';
 		connStatus.className = 'finlyzer-connection-status finlyzer-connection-status--connecting';
 
@@ -648,6 +663,67 @@
 					if (span) span.textContent = orig;
 					showVerifyResult('error', '✗ Re-sync request failed. Please check connection and retry.');
 				});
+			});
+		}
+
+		// 2. Opt-in / Opt-out toggle handlers
+		function handleOptInToggle(optIn) {
+			showVerifyResult('loading', optIn ? 'Enabling Cloud Sentinel & pairing with AI service...' : 'Switching to 100% Local Engine...');
+
+			fetch(restBase + '/settings/cloud-optin', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': nonce
+				},
+				credentials: 'same-origin',
+				body: JSON.stringify({ opt_in: optIn })
+			})
+			.then(function (res) { return res.json(); })
+			.then(function (data) {
+				if (data.success) {
+					if (window.Finlyzer) window.Finlyzer.cloudOptIn = optIn;
+					if (window.FXLI) window.FXLI.cloudOptIn = optIn;
+
+					var statusBadge = document.getElementById('finlyzer-cloud-status-badge');
+					var pillText = document.getElementById('finlyzer-status-pill-text');
+					var engineVal = document.getElementById('finlyzerEngineModeVal');
+
+					if (optIn) {
+						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--active';
+						if (pillText) pillText.textContent = 'Cloud AI Active & Protected';
+						if (engineVal) engineVal.textContent = 'Cloud Sentinel Enabled (Google Gemini)';
+						showVerifyResult('success', '✓ ' + (data.message || 'Cloud Sentinel successfully enabled.'));
+					} else {
+						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--optimal';
+						if (pillText) pillText.textContent = 'Local Calculation Engine Active (Private)';
+						if (engineVal) engineVal.textContent = '100% Local On-Store Database Engine';
+						showVerifyResult('success', '✓ ' + (data.message || 'Switched to Local Engine.'));
+					}
+
+					setTimeout(function () {
+						window.location.reload();
+					}, 1000);
+				} else {
+					showVerifyResult('error', '✗ ' + (data.message || 'Opt-in update failed.'));
+				}
+			})
+			.catch(function () {
+				showVerifyResult('error', '✗ Failed to update opt-in preference. Please retry.');
+			});
+		}
+
+		var optInBtn = document.getElementById('finlyzerOptInBtn');
+		if (optInBtn) {
+			optInBtn.addEventListener('click', function () {
+				handleOptInToggle(true);
+			});
+		}
+
+		var optOutBtn = document.getElementById('finlyzerOptOutBtn');
+		if (optOutBtn) {
+			optOutBtn.addEventListener('click', function () {
+				handleOptInToggle(false);
 			});
 		}
 

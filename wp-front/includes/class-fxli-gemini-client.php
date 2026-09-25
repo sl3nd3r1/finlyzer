@@ -63,6 +63,23 @@ final class FXLI_Gemini_Client {
 			? FXLI_Order_Analyzer::instance()->get_order_state_fingerprint($days)
 			: hash('sha256', (string) ($summary['order_count'] ?? 0) . ':' . (string) ($summary['total_loss'] ?? 0));
 
+		// if administrator has not explicitly opted into cloud AI sentinel (default state), use local heuristic engine (0 network calls)
+		if (!class_exists('FXLI_Env') || !FXLI_Env::is_cloud_opted_in()) {
+			$fallback = $this->generate_heuristic_warning($summary);
+			$cache_key = 'finlyzer_insight_' . md5(wp_json_encode($summary));
+			set_transient($cache_key, $fallback, 6 * HOUR_IN_SECONDS);
+
+			update_option($option_key, [
+				'insight'           => $fallback,
+				'order_fingerprint' => $current_fingerprint,
+				'order_count'       => (int) ($summary['order_count'] ?? 0),
+				'total_loss'        => (float) ($summary['total_loss'] ?? 0.0),
+				'generated_at'      => time(),
+			], false);
+
+			return $fallback;
+		}
+
 		// if refresh is not forced, evaluate persisted analysis for unchanged order state
 		if (!$force_refresh) {
 			$persisted = get_option($option_key);
@@ -325,6 +342,11 @@ final class FXLI_Gemini_Client {
 
 	// delegate store order calculation directly to the Cloudflare Worker backend
 	public function analyze_orders(array $payload): array|WP_Error {
+		// return early if cloud service is not explicitly opted in by administrator (Guidelines 7 & 9 compliant)
+		if (!class_exists('FXLI_Env') || !FXLI_Env::is_cloud_opted_in()) {
+			return new WP_Error('cloud_not_opted_in', __('Cloud calculation service requires explicit administrator opt-in.', 'finlyzer'));
+		}
+
 		$endpoint = self::analyze_endpoint();
 		if ($endpoint === '') {
 			return new WP_Error('worker_unconfigured', __('Cloudflare Worker analysis endpoint is unconfigured or blocked by security policy.', 'finlyzer'));

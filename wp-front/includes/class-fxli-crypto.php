@@ -268,8 +268,13 @@ final class FXLI_Crypto {
 		return true;
 	}
 
-	// perform automated zero-touch site pairing with Cloudflare Worker
+	// perform automated site pairing with Cloudflare Worker upon explicit administrator opt-in (Guidelines 7 & 9 compliant)
 	public static function auto_pair_site(?string $worker_base_url = null): bool {
+		// return early if cloud service is not explicitly opted in by administrator
+		if (!class_exists('FXLI_Env') || !FXLI_Env::is_cloud_opted_in()) {
+			return false;
+		}
+
 		// return early if already configured with valid secret in database
 		$existing = self::get_stored_secret();
 		if ($existing !== null && strlen($existing) >= self::MIN_SECRET_LENGTH && !str_contains($existing, 'dev-ephemeral')) {
@@ -388,6 +393,14 @@ final class FXLI_Crypto {
 
 	// force re-synchronization of automated cloud pairing with rollback protection
 	public static function force_re_pair(): array {
+		// return early if cloud service is not explicitly opted in by administrator
+		if (!class_exists('FXLI_Env') || !FXLI_Env::is_cloud_opted_in()) {
+			return [
+				'success' => false,
+				'message' => __('Cloud Sentinel is disabled. Please enable Cloud AI in settings first.', 'finlyzer'),
+			];
+		}
+
 		// backup existing secret before attempting re-pairing to prevent total disconnection on transient failure
 		$backupSecret = self::get_stored_secret();
 

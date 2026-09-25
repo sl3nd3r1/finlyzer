@@ -10,3 +10,5 @@ node_modules/
 
 # Local secrets overrides
 .env*.local
+.env.production
+.env.development

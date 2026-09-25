@@ -143,14 +143,28 @@ final class FXLI_REST_API {
 					],
 				]);
 
-				// register zero-touch cloud sentinel status endpoint
+				// register cloud sentinel status endpoint
 				register_rest_route($ns, '/settings/cloud-status', [
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => [$this, 'handle_get_cloud_status'],
 					'permission_callback' => [$this, 'permission_check'],
 				]);
 
-				// register zero-touch cloud sentinel re-sync endpoint
+				// register cloud sentinel opt-in toggle endpoint (Guidelines 7 & 9 compliant)
+				register_rest_route($ns, '/settings/cloud-optin', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_cloud_optin'],
+					'permission_callback' => [$this, 'permission_check'],
+					'args'                => [
+						'opt_in' => [
+							'required'          => true,
+							'type'              => 'boolean',
+							'sanitize_callback' => static fn($v): bool => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+						],
+					],
+				]);
+
+				// register cloud sentinel re-sync endpoint
 				register_rest_route($ns, '/settings/cloud-resync', [
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => [$this, 'handle_cloud_resync'],
@@ -458,17 +472,19 @@ final class FXLI_REST_API {
 		$is_locked = class_exists('FXLI_Env') && FXLI_Env::is_hmac_secret_locked();
 		$env = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production';
 
-		// verify if secret is currently active
+		// verify if secret is currently active and cloud is opted in
+		$is_opted_in = class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in();
 		$active_secret = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
-		$is_paired = $active_secret !== '' && !str_contains($active_secret, 'dev-ephemeral');
+		$is_paired = $is_opted_in && $active_secret !== '' && !str_contains($active_secret, 'dev-ephemeral');
 
 		return new WP_REST_Response([
 			'success'          => true,
+			'cloud_opt_in'     => $is_opted_in,
 			'connected'        => $is_paired,
-			'status'           => $is_paired ? 'active' : 'unpaired',
+			'status'           => $is_paired ? 'active' : ($is_opted_in ? 'opted_in_unpaired' : 'local_only'),
 			'site_id'          => $site_id,
 			'short_site_id'    => $short_site_id,
-			'mode'             => 'zero_touch_automated',
+			'mode'             => $is_opted_in ? 'cloud_opt_in' : 'local_only',
 			'encryption'       => 'AES-256-GCM',
 			'privacy_standard' => 'zero_pii',
 			'source'           => $source,
@@ -477,8 +493,51 @@ final class FXLI_REST_API {
 		], 200);
 	}
 
-	// execute automated zero-touch pairing re-synchronization
+	// handle administrator explicit opt-in / opt-out for Finlyzer Cloud Sentinel
+	public function handle_cloud_optin(WP_REST_Request $request): WP_REST_Response {
+		$opt_in = (bool) $request->get_param('opt_in');
+
+		if (class_exists('FXLI_Env')) {
+			FXLI_Env::set_cloud_opt_in($opt_in);
+		}
+
+		if ($opt_in) {
+			// explicitly opted in: attempt pairing if needed
+			$paired = false;
+			if (class_exists('FXLI_Crypto')) {
+				$paired = FXLI_Crypto::auto_pair_site();
+			}
+
+			return new WP_REST_Response([
+				'success'      => true,
+				'cloud_opt_in' => true,
+				'connected'    => $paired,
+				'message'      => __('Finlyzer Cloud Sentinel enabled. AI risk insights are now active.', 'finlyzer'),
+			], 200);
+		}
+
+		// opted out: delete stored remote secrets and return to local mode
+		if (class_exists('FXLI_Crypto')) {
+			FXLI_Crypto::delete_stored_secret();
+		}
+
+		return new WP_REST_Response([
+			'success'      => true,
+			'cloud_opt_in' => false,
+			'connected'    => false,
+			'message'      => __('Switched to 100% Local Engine. No external network requests will be made.', 'finlyzer'),
+		], 200);
+	}
+
+	// execute automated pairing re-synchronization
 	public function handle_cloud_resync(WP_REST_Request $request): WP_REST_Response {
+		if (!class_exists('FXLI_Env') || !FXLI_Env::is_cloud_opted_in()) {
+			return new WP_REST_Response([
+				'success' => false,
+				'message' => __('Cloud Sentinel is currently disabled. Please enable Cloud Sentinel before re-synchronizing.', 'finlyzer'),
+			], 400);
+		}
+
 		try {
 			if (class_exists('FXLI_Crypto')) {
 				$result = FXLI_Crypto::force_re_pair();

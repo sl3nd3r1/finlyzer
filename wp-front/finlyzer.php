@@ -5,7 +5,6 @@
  * Description:       Track hidden payment gateway conversion fees and currency loss across your international WooCommerce sales.
  * Version:           1.0.0
  * Requires at least: 6.4
- * Tested up to:      7.1
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
  * WC requires at least: 8.0
@@ -79,7 +78,7 @@ function finlyzer_requirements_met(): bool {
 // render admin notice if requirements fail
 function finlyzer_admin_missing_requirements_notice(): void {
 	?>
-	<div class="notice notice-error">
+	<div class="notice notice-warning is-dismissible">
 		<p><?php esc_html_e('Finlyzer requires WooCommerce 8.0 or newer to be installed and active.', 'finlyzer'); ?></p>
 	</div>
 	<?php
@@ -102,10 +101,6 @@ function finlyzer_bootstrap(): void {
 	if (class_exists('FXLI_Crypto')) {
 		FXLI_Crypto::auto_migrate();
 	}
-
-	// load internationalization translation files
-	// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Safe translation loader for non-WordPress.org / local development fallbacks.
-	load_plugin_textdomain('finlyzer', false, dirname(plugin_basename(__FILE__)) . '/languages');
 
 	// initialize singletons
 	FXLI_Order_Analyzer::instance();

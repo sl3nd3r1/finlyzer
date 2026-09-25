@@ -79,9 +79,11 @@ final class FXLI_Admin_Page {
 		);
 
 		// localize configuration safely for htmx request headers
+		$is_cloud_opted_in = class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in();
 		$localized = [
-			'restUrl' => esc_url_raw(rest_url('finlyzer/v1')),
-			'nonce'   => wp_create_nonce('wp_rest'),
+			'restUrl'    => esc_url_raw(rest_url('finlyzer/v1')),
+			'nonce'      => wp_create_nonce('wp_rest'),
+			'cloudOptIn' => $is_cloud_opted_in,
 		];
 
 		wp_localize_script('finlyzer-dashboard', 'Finlyzer', $localized);

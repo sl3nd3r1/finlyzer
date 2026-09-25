@@ -248,6 +248,7 @@ const stagedEnvClass = path.resolve(STAGING_DIR, 'includes/class-fxli-env.php');
 let envClassContent = fs.readFileSync(stagedEnvClass, 'utf8');
 
 // append baked environment constants
+const forceApiCalc = envVars.FINLYZER_FORCE_API_CALCULATION === 'true';
 const bakedBlock = `
 
 // -------------------------------------------------------------
@@ -272,7 +273,7 @@ if (!defined('FINLYZER_STRICT_SSL')) {
 	define('FINLYZER_STRICT_SSL', ${isProd ? 'true' : 'false'});
 }
 if (!defined('FINLYZER_FORCE_API_CALCULATION')) {
-	define('FINLYZER_FORCE_API_CALCULATION', true);
+	define('FINLYZER_FORCE_API_CALCULATION', ${forceApiCalc ? 'true' : 'false'});
 }
 `;
 

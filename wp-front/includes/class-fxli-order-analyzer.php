@@ -365,13 +365,197 @@ final class FXLI_Order_Analyzer {
 		return new WP_Error('invalid_backend_response', __('Malformed financial analysis response from Finlyzer API.', 'finlyzer'));
 	}
 
-	// compile aggregate financial loss summary over the specified period strictly via backend calculation
+	// compile aggregate financial loss summary locally from WooCommerce store data
+	public function calculate_local_summary(int $days = 30, string $store_currency = 'USD'): array {
+		global $wpdb;
+
+		$events_table = $wpdb->prefix . 'fxli_fx_events';
+		$products_table = $wpdb->prefix . 'fxli_product_gateway_events';
+		$since = (new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
+
+		// 1. query events grouped by currency and payment method
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT order_currency, payment_method, COUNT(*) as order_count,
+				        SUM(order_total_minor) as total_volume_minor,
+				        SUM(estimated_loss_minor) as total_loss_minor
+				 FROM {$events_table}
+				 WHERE order_date >= %s AND store_currency = %s
+				 GROUP BY order_currency, payment_method",
+				$since,
+				$store_currency
+			),
+			ARRAY_A
+		);
+
+		if (!is_array($rows)) {
+			$rows = [];
+		}
+
+		$total_loss = 0.0;
+		$order_count = 0;
+		$by_currency_map = [];
+		$gateways_map = [];
+
+		foreach ($rows as $row) {
+			$curr = (string) ($row['order_currency'] ?? '');
+			if ($curr === '' || $curr === $store_currency) {
+				continue;
+			}
+			$pm = (string) ($row['payment_method'] ?? 'standard');
+			$cnt = (int) ($row['order_count'] ?? 0);
+			$vol = round(((int) ($row['total_volume_minor'] ?? 0)) / 100, 2);
+			$loss = round(((int) ($row['total_loss_minor'] ?? 0)) / 100, 2);
+
+			$total_loss = round($total_loss + $loss, 2);
+			$order_count += $cnt;
+
+			// aggregate by currency
+			if (!isset($by_currency_map[$curr])) {
+				$by_currency_map[$curr] = [
+					'currency'  => $curr,
+					'orders'    => 0,
+					'loss'      => 0.0,
+					'share_pct' => 0.0,
+				];
+			}
+			$by_currency_map[$curr]['orders'] += $cnt;
+			$by_currency_map[$curr]['loss'] = round($by_currency_map[$curr]['loss'] + $loss, 2);
+
+			// aggregate by gateway
+			if (!isset($gateways_map[$pm])) {
+				$profile = self::resolve_gateway_profile($pm);
+				$gateways_map[$pm] = array_merge($profile, [
+					'id'              => $pm,
+					'orders'          => 0,
+					'volume'          => 0.0,
+					'loss'            => 0.0,
+					'loss_share_pct'  => 0.0,
+				]);
+			}
+			$gateways_map[$pm]['orders'] += $cnt;
+			$gateways_map[$pm]['volume'] = round($gateways_map[$pm]['volume'] + $vol, 2);
+			$gateways_map[$pm]['loss'] = round($gateways_map[$pm]['loss'] + $loss, 2);
+		}
+
+		// calculate share percentages for currency breakdown
+		foreach ($by_currency_map as $curr => &$c_data) {
+			$c_data['share_pct'] = $total_loss > 0 ? round(($c_data['loss'] / $total_loss) * 100, 1) : 0.0;
+		}
+		unset($c_data);
+		// sort currencies by loss descending
+		uasort($by_currency_map, static fn($a, $b) => $b['loss'] <=> $a['loss']);
+
+		// calculate share percentages for gateways
+		foreach ($gateways_map as $pm => &$g_data) {
+			$g_data['loss_share_pct'] = $total_loss > 0 ? round(($g_data['loss'] / $total_loss) * 100, 1) : 0.0;
+		}
+		unset($g_data);
+		// sort gateways by loss descending
+		uasort($gateways_map, static fn($a, $b) => $b['loss'] <=> $a['loss']);
+
+		// identify top loss currency
+		$top_currency = '';
+		if (!empty($by_currency_map)) {
+			$top_currency = (string) array_key_first($by_currency_map);
+		}
+
+		// 2. query top products by gateway attribution
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$prod_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT product_id, product_name, payment_method,
+				        SUM(quantity) as units_sold,
+				        SUM(line_total_minor) as vol_minor,
+				        SUM(attributed_loss_minor) as loss_minor
+				 FROM {$products_table}
+				 WHERE order_date >= %s
+				 GROUP BY product_id, product_name, payment_method
+				 ORDER BY loss_minor DESC
+				 LIMIT 30",
+				$since
+			),
+			ARRAY_A
+		);
+
+		$products_by_gateway = [];
+		if (is_array($prod_rows)) {
+			foreach ($prod_rows as $pr) {
+				$pm = (string) ($pr['payment_method'] ?? 'standard');
+				$gw_profile = self::resolve_gateway_profile($pm);
+				$products_by_gateway[] = [
+					'product_id'      => (int) ($pr['product_id'] ?? 0),
+					'product_name'    => (string) ($pr['product_name'] ?? ''),
+					'payment_method'  => $pm,
+					'gateway_name'    => $gw_profile['name'] ?? $pm,
+					'units_sold'      => (int) ($pr['units_sold'] ?? 1),
+					'volume'          => round(((int) ($pr['vol_minor'] ?? 0)) / 100, 2),
+					'attributed_loss' => round(((int) ($pr['loss_minor'] ?? 0)) / 100, 2),
+				];
+			}
+		}
+
+		// 3. active currency markets
+		$active_markets = [];
+		foreach ($by_currency_map as $curr => $c_data) {
+			$reg = self::FRANKFURTER_CURRENCY_REGISTRY[$curr] ?? null;
+			$country = $reg['country'] ?? $curr;
+			$flag = $reg['flag_emoji'] ?? '🌐';
+			$name = $reg['name'] ?? $curr;
+			$loss = (float) $c_data['loss'];
+
+			$active_markets[] = [
+				'currency'             => $curr,
+				'country'              => $country,
+				'flag_emoji'           => $flag,
+				'currency_name'        => $name,
+				'gateway_spread_loss'  => $loss,
+				'market_timing_loss'   => 0.0,
+				'total_currency_drag'  => $loss,
+				'is_timing_loss'       => false,
+			];
+		}
+
+		// evaluate severity level
+		$severity = 'optimal';
+		if ($total_loss >= 200.0) {
+			$severity = 'critical';
+		} elseif ($total_loss >= 50.0) {
+			$severity = 'warning';
+		} elseif ($total_loss > 0.0) {
+			$severity = 'moderate';
+		}
+
+		$avg_loss_per_order = $order_count > 0 ? round($total_loss / $order_count, 2) : 0.0;
+		$annualized_run_rate = round(($total_loss / max(1, $days)) * 365, 2);
+
+		return [
+			'period_days'                  => $days,
+			'store_currency'               => $store_currency,
+			'total_loss'                   => $total_loss,
+			'order_count'                  => $order_count,
+			'avg_loss_per_order'           => $avg_loss_per_order,
+			'annualized_run_rate'          => $annualized_run_rate,
+			'severity_level'               => $severity,
+			'top_currency'                 => $top_currency,
+			'by_currency'                  => $by_currency_map,
+			'gateways'                     => $gateways_map,
+			'products_by_gateway'          => $products_by_gateway,
+			'total_market_timing_loss'     => 0.0,
+			'total_combined_currency_drag' => $total_loss,
+			'active_markets'               => $active_markets,
+			'is_mock'                      => false,
+		];
+	}
+
+	// compile aggregate financial loss summary over the specified period (local-first by default)
 	public function get_summary(int $days = 30): array|WP_Error {
 		// enforce valid reporting period bounds
 		$days = max(7, min(90, $days));
 		$store_currency = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
 
-		// check transient cache to avoid unnecessary network roundtrips on rapid requests
+		// check transient cache to avoid unnecessary database queries on rapid requests
 		$cache_key = 'finlyzer_sum_' . $days . '_' . md5($store_currency);
 		$cached = get_transient($cache_key);
 		if (is_array($cached)) {
@@ -390,22 +574,23 @@ final class FXLI_Order_Analyzer {
 				(new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s')
 			)
 		);
-		if ($existing_count === 0) {
+		if ($existing_count === 0 && function_exists('wc_get_orders')) {
 			$this->sync_orders($days);
 		}
 
-		// execute serverless calculation on Cloudflare Worker backend
-		$backend_result = $this->fetch_backend_analysis($days, $store_currency);
-		if (is_wp_error($backend_result)) {
-			return $backend_result;
+		// if cloud calculation is explicitly opted in and configured, attempt cloud calculation
+		if (class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in() && FXLI_Env::force_api_calculation()) {
+			$backend_result = $this->fetch_backend_analysis($days, $store_currency);
+			if (is_array($backend_result) && isset($backend_result['total_loss'])) {
+				set_transient($cache_key, $backend_result, 5 * MINUTE_IN_SECONDS);
+				return $backend_result;
+			}
 		}
 
-		if (is_array($backend_result) && isset($backend_result['total_loss'])) {
-			set_transient($cache_key, $backend_result, 5 * MINUTE_IN_SECONDS);
-			return $backend_result;
-		}
-
-		return new WP_Error('backend_unreachable', __('Unable to connect to Finlyzer calculation backend.', 'finlyzer'));
+		// local high-performance calculation engine (zero network calls, 100% private)
+		$local_result = $this->calculate_local_summary($days, $store_currency);
+		set_transient($cache_key, $local_result, 5 * MINUTE_IN_SECONDS);
+		return $local_result;
 	}
 
 	// comprehensive registry of recognized WooCommerce payment gateways with FX spread profiles
