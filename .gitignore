@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment files and secrets (never commit active .env files)
+.env
+.env.*
+*.env
+wp-front/.env.production
+wp-front/.env.development
+wp-front/.env*.local
+!wp-front/.env*.example
+
+# Build staging directories
+wp-front/dist/finlyzer/
+wp-front/dist/development/
+wp-front/dist/production/
+
+# OS & logs
+.DS_Store
+*.log
