@@ -587,13 +587,6 @@ final class FXLI_REST_API {
 
 	// execute automated pairing re-synchronization
 	public function handle_cloud_resync(WP_REST_Request $request): WP_REST_Response {
-		if (!class_exists('FXLI_Env') || !FXLI_Env::is_cloud_opted_in()) {
-			return new WP_REST_Response([
-				'success' => false,
-				'message' => __('Cloud Sentinel is currently disabled. Please enable Cloud Sentinel before re-synchronizing.', 'finlyzer'),
-			], 400);
-		}
-
 		try {
 			if (class_exists('FXLI_Crypto')) {
 				$result = FXLI_Crypto::force_re_pair();

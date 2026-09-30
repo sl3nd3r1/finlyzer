@@ -926,6 +926,47 @@
 	flex-shrink: 0;
 }
 
+.finlyzer-resync-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	appearance: none;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.45);
+	color: #FEF3C7;
+	padding: 6px 14px;
+	border-radius: var(--fl-radius-sm);
+	font-size: 0.80rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+	margin-right: 8px;
+}
+
+.finlyzer-resync-btn:hover {
+	background: rgba(245, 158, 11, 0.28);
+	border-color: #F59E0B;
+	color: #FFFFFF;
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.finlyzer-resync-btn:active {
+	transform: translateY(0);
+}
+
+.finlyzer-resync-btn svg {
+	transition: transform 0.3s ease;
+}
+
+.finlyzer-resync-btn:hover svg {
+	transform: rotate(180deg);
+}
+
+.finlyzer-resync-btn--loading svg {
+	animation: fl-spin 1s linear infinite;
+}
+
 .finlyzer-retry-btn {
 	display: inline-flex;
 	align-items: center;
@@ -963,6 +1004,12 @@
 }
 
 @keyframes fl-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes finlyzer-spin {
 	to {
 		transform: rotate(360deg);
 	}

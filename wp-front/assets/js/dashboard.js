@@ -93,6 +93,8 @@
 		if (connSpinner) connSpinner.style.display = 'inline-block';
 		if (connIcon) connIcon.style.display = 'none';
 		if (retryBtn) retryBtn.style.display = 'none';
+		var resyncBtn = document.getElementById('finlyzer-resync-btn');
+		if (resyncBtn) resyncBtn.style.display = 'none';
 
 		if (connText) {
 			if (attempt > 0) {
@@ -123,6 +125,10 @@
 		var devBox = document.getElementById('finlyzer-dev-error-box');
 		if (devBox) {
 			devBox.style.display = 'none';
+		}
+		var resyncBtn = document.getElementById('finlyzer-resync-btn');
+		if (resyncBtn) {
+			resyncBtn.style.display = 'none';
 		}
 		setTimeout(function () {
 			connStatus.style.display = 'none';
@@ -162,13 +168,34 @@
 		var isDev = !!(config && (config.isDev || config.env === 'development')) || !!document.getElementById('finlyzer-dev-section');
 		var ctx = errorContext || lastErrorContext || {};
 
+		var resyncBtn = document.getElementById('finlyzer-resync-btn');
+		var rawErr = (errDetail && typeof errDetail === 'string') ? errDetail.trim() : 'Unknown connection error';
+		var ctx = errorContext || lastErrorContext || {};
+		var respBody = (ctx && ctx.responseText) ? String(ctx.responseText) : '';
+		var errCombined = (rawErr + ' ' + respBody).toLowerCase();
+
+		var isHmacIssue = errCombined.indexOf('invalid_signature') !== -1 ||
+			errCombined.indexOf('worker_unauthorized') !== -1 ||
+			errCombined.indexOf('signature') !== -1 ||
+			errCombined.indexOf('401') !== -1 ||
+			errCombined.indexOf('hmac') !== -1;
+
+		if (isHmacIssue && resyncBtn) {
+			resyncBtn.style.display = 'inline-flex';
+		} else if (resyncBtn) {
+			resyncBtn.style.display = 'none';
+		}
+
 		if (isDev) {
 			// =========================================================
 			// DEVELOPMENT MODE: Concrete, unmasked diagnostic reporting
 			// =========================================================
-			var rawErr = (errDetail && typeof errDetail === 'string') ? errDetail.trim() : 'Unknown connection error';
 			if (connText) {
-				connText.textContent = '[DEV DIAGNOSTIC] Connection to Finlyzer calculation service failed (' + rawErr + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+				if (isHmacIssue) {
+					connText.textContent = '[DEV DIAGNOSTIC] HMAC signature rejected (' + rawErr + '). Click Re-sync HMAC to pair with API and fetch 64-character site token.';
+				} else {
+					connText.textContent = '[DEV DIAGNOSTIC] Connection to Finlyzer calculation service failed (' + rawErr + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+				}
 			}
 
 			// Render or update interactive developer diagnostics drawer
@@ -275,27 +302,31 @@
 			}
 
 			if (connText) {
-				var baseMsg = 'Connection to the Finlyzer calculation service was lost';
-				// sanitize error detail: never leak technical HTTP status codes, JSON objects, worker errors or HTML to merchants
-				var safeDetail = '';
-				if (errDetail && typeof errDetail === 'string') {
-					var trimmed = errDetail.trim();
-					// suppress JSON payloads, HTTP status dumps, HTML tags, and technical stack keys
-					var isTechnical = trimmed.indexOf('{') !== -1 ||
-						trimmed.indexOf('HTTP') !== -1 ||
-						trimmed.indexOf('worker_') !== -1 ||
-						trimmed.indexOf('<') !== -1 ||
-						trimmed.indexOf('signature') !== -1 ||
-						trimmed.indexOf('status') !== -1;
-					if (!isTechnical && trimmed.length > 0 && trimmed.length < 80) {
-						safeDetail = trimmed;
-					}
-				}
-
-				if (safeDetail) {
-					connText.textContent = baseMsg + ' (' + safeDetail + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+				if (isHmacIssue) {
+					connText.textContent = 'Authentication with the calculation service needs to be synchronized. Click Re-sync HMAC to pair securely.';
 				} else {
-					connText.textContent = baseMsg + '. We attempted to reconnect ' + MAX_ATTEMPTS + ' times without success.';
+					var baseMsg = 'Connection to the Finlyzer calculation service was lost';
+					// sanitize error detail: never leak technical HTTP status codes, JSON objects, worker errors or HTML to merchants
+					var safeDetail = '';
+					if (errDetail && typeof errDetail === 'string') {
+						var trimmed = errDetail.trim();
+						// suppress JSON payloads, HTTP status dumps, HTML tags, and technical stack keys
+						var isTechnical = trimmed.indexOf('{') !== -1 ||
+							trimmed.indexOf('HTTP') !== -1 ||
+							trimmed.indexOf('worker_') !== -1 ||
+							trimmed.indexOf('<') !== -1 ||
+							trimmed.indexOf('signature') !== -1 ||
+							trimmed.indexOf('status') !== -1;
+						if (!isTechnical && trimmed.length > 0 && trimmed.length < 80) {
+							safeDetail = trimmed;
+						}
+					}
+
+					if (safeDetail) {
+						connText.textContent = baseMsg + ' (' + safeDetail + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+					} else {
+						connText.textContent = baseMsg + '. We attempted to reconnect ' + MAX_ATTEMPTS + ' times without success.';
+					}
 				}
 			}
 		}
@@ -583,6 +614,64 @@
 				currentAttempt = 0;
 				setConnectingState(0);
 				fetchData(currentDays);
+			});
+		}
+
+		// bind in-banner HMAC re-synchronization button
+		var resyncBtn = document.getElementById('finlyzer-resync-btn');
+		if (resyncBtn) {
+			resyncBtn.addEventListener('click', function () {
+				var btnText = document.getElementById('finlyzer-resync-btn-text');
+				var origText = btnText ? btnText.textContent : 'Re-sync HMAC';
+				var connText = document.getElementById('finlyzer-connection-status-text');
+				resyncBtn.classList.add('finlyzer-resync-btn--loading');
+				resyncBtn.disabled = true;
+				if (btnText) btnText.textContent = 'Re-synchronizing...';
+				if (connText) connText.textContent = 'Re-synchronizing HMAC token with API...';
+
+				var restUrl = (config && config.restUrl) ? config.restUrl : '/wp-json/finlyzer/v1';
+				var nonce = (config && config.nonce) ? config.nonce : '';
+
+				fetch(restUrl + '/settings/cloud-resync', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': nonce
+					},
+					body: JSON.stringify({ force: true, timestamp: Math.floor(Date.now() / 1000) })
+				})
+				.then(function (res) {
+					return res.json().then(function (data) {
+						return { ok: res.ok, status: res.status, data: data };
+					});
+				})
+				.then(function (result) {
+					resyncBtn.classList.remove('finlyzer-resync-btn--loading');
+					resyncBtn.disabled = false;
+					if (result.ok && result.data && result.data.success) {
+						if (btnText) btnText.textContent = '✓ Synced!';
+						if (connText) connText.textContent = 'HMAC token successfully synchronized! Reconnecting...';
+						if (config) config.cloudOptIn = true;
+						setTimeout(function () {
+							if (btnText) btnText.textContent = origText;
+							currentAttempt = 0;
+							setConnectingState(0);
+							fetchData(currentDays, true);
+						}, 700);
+					} else {
+						if (btnText) btnText.textContent = origText;
+						var errMsg = (result.data && result.data.message) ? result.data.message : 'Re-sync failed. Please verify API endpoint and retry.';
+						if (connText) connText.textContent = errMsg;
+						console.error('[Finlyzer Re-sync Error]', result);
+					}
+				})
+				.catch(function (err) {
+					resyncBtn.classList.remove('finlyzer-resync-btn--loading');
+					resyncBtn.disabled = false;
+					if (btnText) btnText.textContent = origText;
+					if (connText) connText.textContent = 'Network error during HMAC re-synchronization. Please retry.';
+					console.error('[Finlyzer Re-sync Error]', err);
+				});
 			});
 		}
 
