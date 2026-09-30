@@ -417,11 +417,13 @@ final class FXLI_Order_Analyzer {
 				$by_currency_map[$curr] = [
 					'currency'  => $curr,
 					'orders'    => 0,
+					'volume'    => 0.0,
 					'loss'      => 0.0,
 					'share_pct' => 0.0,
 				];
 			}
 			$by_currency_map[$curr]['orders'] += $cnt;
+			$by_currency_map[$curr]['volume'] = round($by_currency_map[$curr]['volume'] + $vol, 2);
 			$by_currency_map[$curr]['loss'] = round($by_currency_map[$curr]['loss'] + $loss, 2);
 
 			// aggregate by gateway
@@ -498,14 +500,43 @@ final class FXLI_Order_Analyzer {
 			}
 		}
 
-		// 3. active currency markets
+		// 3. active currency markets and real-time market timing volatility calculation
+		$foreign_currencies = array_keys($by_currency_map);
+		// resolve rate service singleton if available
+		$rate_service = class_exists('FXLI_Rate_Service') ? FXLI_Rate_Service::instance() : null;
+		// fetch exchange rates from Frankfurter with transient caching and matrix fallback
+		$rate_data = $rate_service ? $rate_service->get_rates($store_currency, $foreign_currencies) : ['rates' => []];
+		$rates = $rate_data['rates'] ?? [];
+
 		$active_markets = [];
+		$total_market_timing_loss = 0.0;
+
 		foreach ($by_currency_map as $curr => $c_data) {
-			$reg = self::FRANKFURTER_CURRENCY_REGISTRY[$curr] ?? null;
+			// retrieve country and currency metadata
+			$reg = self::FRANKFURTER_CURRENCY_REGISTRY[$curr] ?? ($rate_service ? FXLI_Rate_Service::get_currency_metadata($curr) : null);
 			$country = $reg['country'] ?? $curr;
 			$flag = $reg['flag_emoji'] ?? '🌐';
 			$name = $reg['name'] ?? $curr;
 			$loss = (float) $c_data['loss'];
+			$vol = (float) ($c_data['volume'] ?? 0.0);
+
+			// extract spot reference rate (foreign currency units per 1 store currency)
+			$spot_rate = isset($rates[$curr]) && (float) $rates[$curr] > 0.0 ? (float) $rates[$curr] : 1.0;
+
+			// calculate timing volatility using rate service if foreign volume exists
+			$timing_metrics = $rate_service && $vol > 0.0
+				? $rate_service->calculate_timing_loss($vol, $curr, $store_currency, $spot_rate)
+				: [
+					'market_timing_loss'  => 0.0,
+					'is_timing_loss'      => false,
+					'spot_exchange_rate'  => $spot_rate,
+					'order_exchange_rate' => $spot_rate,
+					'rate_change_pct'     => 0.0,
+				];
+
+			$market_timing_loss = (float) $timing_metrics['market_timing_loss'];
+			$total_market_timing_loss += $market_timing_loss;
+			$total_currency_drag = round($loss + $market_timing_loss, 2);
 
 			$active_markets[] = [
 				'currency'             => $curr,
@@ -513,24 +544,31 @@ final class FXLI_Order_Analyzer {
 				'flag_emoji'           => $flag,
 				'currency_name'        => $name,
 				'gateway_spread_loss'  => $loss,
-				'market_timing_loss'   => 0.0,
-				'total_currency_drag'  => $loss,
-				'is_timing_loss'       => false,
+				'market_timing_loss'   => $market_timing_loss,
+				'total_currency_drag'  => $total_currency_drag,
+				'is_timing_loss'       => !empty($timing_metrics['is_timing_loss']),
+				'spot_exchange_rate'   => (float) ($timing_metrics['spot_exchange_rate'] ?? $spot_rate),
+				'order_exchange_rate'  => (float) ($timing_metrics['order_exchange_rate'] ?? $spot_rate),
+				'rate_change_pct'      => (float) ($timing_metrics['rate_change_pct'] ?? 0.0),
+				'foreign_volume'       => $vol,
 			];
 		}
 
+		$total_market_timing_loss = round($total_market_timing_loss, 2);
+		$total_combined_currency_drag = round($total_loss + $total_market_timing_loss, 2);
+
 		// evaluate severity level
 		$severity = 'optimal';
-		if ($total_loss >= 200.0) {
+		if ($total_combined_currency_drag >= 200.0) {
 			$severity = 'critical';
-		} elseif ($total_loss >= 50.0) {
+		} elseif ($total_combined_currency_drag >= 50.0) {
 			$severity = 'warning';
-		} elseif ($total_loss > 0.0) {
+		} elseif ($total_combined_currency_drag > 0.0) {
 			$severity = 'moderate';
 		}
 
 		$avg_loss_per_order = $order_count > 0 ? round($total_loss / $order_count, 2) : 0.0;
-		$annualized_run_rate = round(($total_loss / max(1, $days)) * 365, 2);
+		$annualized_run_rate = round(($total_combined_currency_drag / max(1, $days)) * 365, 2);
 
 		return [
 			'period_days'                  => $days,
@@ -544,8 +582,8 @@ final class FXLI_Order_Analyzer {
 			'by_currency'                  => $by_currency_map,
 			'gateways'                     => $gateways_map,
 			'products_by_gateway'          => $products_by_gateway,
-			'total_market_timing_loss'     => 0.0,
-			'total_combined_currency_drag' => $total_loss,
+			'total_market_timing_loss'     => $total_market_timing_loss,
+			'total_combined_currency_drag' => $total_combined_currency_drag,
 			'active_markets'               => $active_markets,
 			'is_mock'                      => false,
 		];
@@ -825,6 +863,10 @@ final class FXLI_Order_Analyzer {
 		$store_currency = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
 		foreach ($periods as $days) {
 			delete_transient('finlyzer_sum_' . $days . '_' . md5($store_currency));
+		}
+		// flush in-memory rate service cache
+		if (class_exists('FXLI_Rate_Service')) {
+			FXLI_Rate_Service::flush_cache($store_currency);
 		}
 	}
 

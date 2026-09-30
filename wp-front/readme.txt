@@ -7,7 +7,7 @@ Requires PHP: 8.1
 Requires Plugins: woocommerce
 WC requires at least: 8.0
 WC tested up to: 11.1
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,7 +43,7 @@ Finlyzer inspects your store sales data and reveals the exact numbers:
 * **Payment Gateway Fee Comparison**: Compares cross-border transaction volume and conversion fee impact across Stripe, PayPal, Klarna, WooPayments, and more.
 * **Multi-Currency Revenue Ledger**: Detailed breakdown of transaction volume, fee share, and currency loss per foreign currency.
 * **Products Breakdown**: Line-by-line attribution of international revenue and conversion fees per product, with fast processor filtering.
-* **Exchange Rate Movement**: Tracks rate shifts between order placement and settlement using global market reference rates.
+* **Exchange Rate Movement & Market Timing**: Directly queries European Central Bank reference exchange rates via the public Frankfurter API (https://api.frankfurter.dev) using WordPress HTTP API (`wp_remote_get`) to evaluate settlement timing loss between order placement and processor payout.
 * **High-Performance Order Storage (HPOS)**: Built-in native support for WooCommerce custom order tables (`wc_orders`) and traditional post meta.
 * **Lightweight & Fast**: Pure server-to-server analytics engine with cached responses and asynchronous telemetry.
 * **100% Free**: Full access to all financial analytics with zero paywalls.
@@ -66,11 +66,14 @@ Finlyzer operates 100% locally by default. Optionally, administrators can opt in
   - Data Sent (only upon explicit opt-in): Strictly anonymized, store-level aggregate metrics (store currency ISO code, total transaction volume, aggregate conversion fee estimates, currency breakdown, and order counts).
   - **Zero Personally Identifiable Information (PII)**: Customer names, email addresses, phone numbers, billing/shipping physical addresses, IP addresses, payment card credentials, and individual order IDs are never collected, logged, or transmitted.
 
-* **Global Market Reference Rates / Frankfurter API (Optional Reference)**: Used to evaluate payment processor conversion fee markups and market timing rate shifts.
-  - Service: https://frankfurter.dev / https://www.ecb.europa.eu
+* **Global Market Reference Rates / Frankfurter API (European Central Bank Reference Data)**: Used to evaluate payment processor conversion fee markups and market timing exchange rate shifts.
+  - Service: https://frankfurter.dev / https://api.frankfurter.dev (data published by European Central Bank: https://www.ecb.europa.eu)
   - Terms of Service: https://frankfurter.dev
   - Privacy Policy: https://frankfurter.dev
-  - Data Sent: Currency ISO codes (e.g., "EUR", "USD") and order dates. No store details, customer records, or financial transaction identifiers are ever sent.
+  - How It Operates: The plugin uses WordPress HTTP API (`wp_remote_get`) from your WordPress server to fetch reference exchange rates for the store's active transaction currencies.
+  - Local Transient Caching: Rates are locally cached in WordPress Transients for 12 hours (matching ECB daily 16:00 CET fixings) to minimize remote requests and maintain fast dashboard load times.
+  - Resilient Fallback: If the API is unreachable, the plugin gracefully falls back to an internal reference matrix so dashboard operations remain uninterrupted.
+  - Data Sent: Currency ISO codes (e.g., "EUR", "USD") via URL parameters. No store details, customer records, or financial transaction identifiers are ever sent.
 
 == Third-Party Libraries & Source Code ==
 
@@ -112,6 +115,12 @@ No. Finlyzer reads your existing WooCommerce order history and computes gateway 
 Finlyzer recognizes conversion spread models for PayPal, Stripe, Klarna, WooPayments, Adyen, Mollie, Square, Direct Wire/BACS, Cash on Delivery, and standard credit card gateways.
 
 == Changelog ==
+
+= 1.1.0 =
+* Feature: Direct European Central Bank (ECB) exchange rate integration via Frankfurter API (https://api.frankfurter.dev) using WordPress HTTP API (`wp_remote_get`).
+* Feature: Settlement timing volatility calculation engine (`FXLI_Rate_Service`) to track currency shifts between order placement and processor payout.
+* Performance: Multi-tier rate caching with 12-hour WordPress Transients and request-scoped memory cache.
+* Resilience: Built-in offline ECB reference matrix fallback for uninterrupted performance during network outages.
 
 = 1.0.0 =
 * Initial release: complete payment gateway conversion fee auditing, FX currency loss calculations, multi-currency ledger, HPOS compatibility, zero-PII privacy architecture, and AI-driven profit margin recommendations.

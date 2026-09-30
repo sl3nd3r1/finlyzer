@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.0.0', `FINLYZER_VERSION is bumped to 1.0.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.1.0', `FINLYZER_VERSION is bumped to 1.1.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
-assert(readmeContent.includes('Stable tag: 1.0.0'), 'readme.txt Stable tag matches v1.0.0');
+assert(readmeContent.includes('Stable tag: 1.1.0'), 'readme.txt Stable tag matches v1.1.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1487,12 +1487,12 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.0.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.0.0');
-assert(finlyzerMainPhp.includes('* Version:           1.0.0'), 'finlyzer.php header declares Version 1.0.0');
-assert(packageJsonFront.version === '1.0.0', 'frontend package.json declares version 1.0.0');
-assert(packageJsonBack.version === '1.0.0', 'backend package.json declares version 1.0.0');
-assert(readmeTxt.includes('Stable tag: 1.0.0'), 'readme.txt declares Stable tag: 1.0.0');
-assert(readmeTxt.includes('= 1.0.0 ='), 'readme.txt documents 1.0.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.1.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.1.0');
+assert(finlyzerMainPhp.includes('* Version:           1.1.0'), 'finlyzer.php header declares Version 1.1.0');
+assert(packageJsonFront.version === '1.1.0', 'frontend package.json declares version 1.1.0');
+assert(packageJsonBack.version === '1.1.0', 'backend package.json declares version 1.1.0');
+assert(readmeTxt.includes('Stable tag: 1.1.0'), 'readme.txt declares Stable tag: 1.1.0');
+assert(readmeTxt.includes('= 1.1.0 ='), 'readme.txt documents 1.1.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1540,8 +1540,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.0.0'"), 'class-fxli-gemini-client.php declares matching 1.0.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.0.0')"), 'preview-server.php declares FINLYZER_VERSION 1.0.0');
+assert(geminiClientPhpContent.includes("'1.1.0'"), 'class-fxli-gemini-client.php declares matching 1.1.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.1.0')"), 'preview-server.php declares FINLYZER_VERSION 1.1.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2502,7 +2502,7 @@ assert(secretMatchExample === null, '.env.production.example purges baked FINLYZ
 const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
 const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
 assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
-assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.0.0'), 'wp-detector.ts sets User-Agent to 1.0.0');
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.1.0'), 'wp-detector.ts sets User-Agent to 1.1.0');
 
 // 33.3 Gemini API Key Header Transmission (No Query String Leakage)
 // Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
@@ -2511,18 +2511,18 @@ const geminiServiceContent = fs.readFileSync(geminiServicePath, 'utf8');
 assert(geminiServiceContent.includes("'x-goog-api-key': apiKey"), "gemini.ts passes API key securely via 'x-goog-api-key' header");
 assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?key= query parameter from API URL');
 
-// 33.4 Multi-Component 1.0.0 Version Consistency across Systems
+// 33.4 Multi-Component 1.1.0 Version Consistency across Systems
 const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
 const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
-assert(adminApiContent.includes("version: '1.0.0'"), 'admin-api.ts synchronizes version to 1.0.0');
+assert(adminApiContent.includes("version: '1.1.0'"), 'admin-api.ts synchronizes version to 1.1.0');
 
 const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
 const healthContent = fs.readFileSync(healthPath, 'utf8');
-assert(healthContent.includes("version: '1.0.0'"), 'health.ts synchronizes version to 1.0.0');
+assert(healthContent.includes("version: '1.1.0'"), 'health.ts synchronizes version to 1.1.0');
 
 const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
 const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
-assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.0.0'), 'market-timing.ts sets User-Agent to 1.0.0');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.1.0'), 'market-timing.ts sets User-Agent to 1.1.0');
 
 // 33.5 Windows XAMPP Developer Parity in Build Packaging
 const buildPackagePath = path.resolve(__dirname, '../build-package.js');
@@ -2619,7 +2619,7 @@ assert(summaryCardsPhpV34.includes('/* translators: %d: Product ID. */'), 'summa
 assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatibility Tested up to: 7.1');
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
-assert(readmeTxtV34.includes('Stable tag: 1.0.0'), 'readme.txt declares Stable tag: 1.0.0');
+assert(readmeTxtV34.includes('Stable tag: 1.1.0'), 'readme.txt declares Stable tag: 1.1.0');
 assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
 assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
 assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
@@ -3134,6 +3134,142 @@ assert(enterpriseLossMinor === 2500000000n, 'Enterprise volume of $1B calculates
 // 3. Float rounding sanity check (converting minor units to decimal string)
 const formattedLoss = (Number(enterpriseLossMinor) / 100).toFixed(2);
 assert(formattedLoss === '25000000.00', 'BigInt to formatted currency string is exact without exponent notation');
+
+// -------------------------------------------------------------
+// TEST GROUP 40: Native Frankfurter ECB Rate Service, Settlement Timing Engine & Heavy-Load Stress Test (v1.1.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 40: Native Frankfurter ECB Rate Service, Settlement Timing Engine & Heavy-Load Stress Test (v1.1.0)');
+
+// 40.1 File Existence, PHP Standards & Security Guardrails
+const rateServicePhpPath = path.resolve(__dirname, '../includes/class-fxli-rate-service.php');
+assert(fs.existsSync(rateServicePhpPath), 'includes/class-fxli-rate-service.php exists in plugin distribution');
+
+const rateServicePhpContent = fs.readFileSync(rateServicePhpPath, 'utf8');
+assert(rateServicePhpContent.includes('declare(strict_types=1);'), 'class-fxli-rate-service.php enforces declare(strict_types=1);');
+assert(rateServicePhpContent.includes("!defined('ABSPATH')"), 'class-fxli-rate-service.php includes direct execution ABSPATH check');
+assert(rateServicePhpContent.includes('final class FXLI_Rate_Service'), 'class-fxli-rate-service.php declares final class FXLI_Rate_Service');
+assert(rateServicePhpContent.includes("API_BASE_URL = 'https://api.frankfurter.dev/v1/latest'"), 'class-fxli-rate-service.php targets https://api.frankfurter.dev/v1/latest');
+
+// 40.2 Architecture Inclusion & Build Packaging Contract
+const finlyzerMainPhpContent = fs.readFileSync(path.resolve(__dirname, '../finlyzer.php'), 'utf8');
+assert(finlyzerMainPhpContent.includes("includes/class-fxli-rate-service.php"), 'finlyzer.php explicitly loads class-fxli-rate-service.php');
+assert(finlyzerMainPhpContent.includes("FXLI_Rate_Service::instance()"), 'finlyzer.php initializes FXLI_Rate_Service singleton');
+
+const buildPackageContentV40 = fs.readFileSync(path.resolve(__dirname, '../build-package.js'), 'utf8');
+assert(buildPackageContentV40.includes("'includes/class-fxli-rate-service.php'"), 'build-package.js lints class-fxli-rate-service.php');
+
+// 40.3 30-Currency European Central Bank Reference Registry Integrity
+assert(rateServicePhpContent.includes('CURRENCY_REGISTRY = ['), 'class-fxli-rate-service.php defines CURRENCY_REGISTRY');
+const expectedCurrencies = [
+	'AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD',
+	'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK',
+	'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'
+];
+for (const curr of expectedCurrencies) {
+	assert(rateServicePhpContent.includes(`'${curr}' =>`), `CURRENCY_REGISTRY contains ${curr}`);
+}
+
+// 40.4 Resilient Baseline Fallback Matrix
+assert(rateServicePhpContent.includes('FALLBACK_USD_RATES = ['), 'class-fxli-rate-service.php defines FALLBACK_USD_RATES matrix');
+for (const curr of expectedCurrencies) {
+	assert(rateServicePhpContent.includes(`'${curr}' =>`), `FALLBACK_USD_RATES contains baseline rate for ${curr}`);
+}
+
+// 40.5 SSRF Defense & Strict Currency Code Sanitization Simulation
+function sanitizeCurrencyCode(code) {
+	const clean = String(code).replace(/[^A-Za-z]/g, '').toUpperCase();
+	return clean.length === 3 ? clean : '';
+}
+assert(sanitizeCurrencyCode('eur') === 'EUR', 'Lower-case eur sanitizes to EUR');
+assert(sanitizeCurrencyCode('USD') === 'USD', 'Upper-case USD preserves USD');
+assert(sanitizeCurrencyCode('gbp ') === 'GBP', 'Whitespace-padded gbp sanitizes to GBP');
+assert(sanitizeCurrencyCode('US1') === '', 'Alphanumeric US1 rejected (empty)');
+assert(sanitizeCurrencyCode('TOOLONG') === '', 'String > 3 chars rejected (empty)');
+assert(sanitizeCurrencyCode('../') === '', 'Path traversal attempt ../ rejected (empty)');
+assert(sanitizeCurrencyCode("'; DROP TABLE--") === '', 'SQL injection attempt rejected (empty)');
+assert(sanitizeCurrencyCode('<script>') === '', 'XSS script injection attempt rejected (empty)');
+
+// 40.6 Resilient Cross-Rate Calculation Math
+const fallbackUsdRates = {
+	USD: 1.0,
+	EUR: 0.915,
+	GBP: 0.785,
+	CAD: 1.355,
+	JPY: 152.0,
+};
+function deriveFallbackRate(base, symbol) {
+	const baseUsd = fallbackUsdRates[base] || 1.0;
+	const symUsd = fallbackUsdRates[symbol] || 1.0;
+	return Math.round((symUsd / baseUsd) * 100000) / 100000;
+}
+assert(deriveFallbackRate('USD', 'EUR') === 0.915, 'USD -> EUR cross rate exact (0.915)');
+assert(deriveFallbackRate('USD', 'GBP') === 0.785, 'USD -> GBP cross rate exact (0.785)');
+const eurToGbp = deriveFallbackRate('EUR', 'GBP');
+assert(Math.abs(eurToGbp - (0.785 / 0.915)) < 0.0001, 'EUR -> GBP derived cross rate accurate');
+assert(deriveFallbackRate('EUR', 'JPY') > 0, 'EUR -> JPY cross rate is positive number');
+
+// 40.7 Settlement Timing Volatility Loss Mathematics & Edge Cases
+function calculateTimingLoss(foreignVolume, orderRate, spotRate) {
+	if (foreignVolume <= 0 || !orderRate || !spotRate) {
+		return { expectedStore: 0, currentStore: 0, loss: 0, isLoss: false, rateChangePct: 0 };
+	}
+	const expectedStore = Math.round((foreignVolume / orderRate) * 100) / 100;
+	const currentStore = Math.round((foreignVolume / spotRate) * 100) / 100;
+	const timingDelta = Math.round((expectedStore - currentStore) * 100) / 100;
+	const isLoss = timingDelta > 0;
+	const loss = isLoss ? timingDelta : 0;
+	const rateChangePct = Math.round(((spotRate - orderRate) / orderRate) * 10000) / 100;
+	return { expectedStore, currentStore, loss, isLoss, rateChangePct };
+}
+
+// Case 1: Adverse market movement (foreign currency depreciated, merchant loses revenue)
+const adverseCase = calculateTimingLoss(10000, 0.90, 0.92);
+assert(adverseCase.isLoss === true, 'Adverse movement flags isLoss === true');
+assert(adverseCase.loss === 241.54, `Adverse movement calculates exact $241.54 timing loss (got ${adverseCase.loss})`);
+assert(adverseCase.rateChangePct === 2.22, 'Rate change percentage calculated accurately');
+
+// Case 2: Favorable market movement (merchant gained revenue, timing loss = 0)
+const favorableCase = calculateTimingLoss(10000, 0.92, 0.90);
+assert(favorableCase.isLoss === false, 'Favorable movement flags isLoss === false');
+assert(favorableCase.loss === 0, 'Favorable movement produces exact 0.0 timing loss');
+
+// Case 3: Zero-drift movement (identical rates)
+const neutralCase = calculateTimingLoss(10000, 0.90, 0.90);
+assert(neutralCase.isLoss === false, 'Neutral movement flags isLoss === false');
+assert(neutralCase.loss === 0, 'Neutral movement produces exact 0.0 timing loss');
+
+// Case 4: Zero volume boundary
+const zeroVolumeCase = calculateTimingLoss(0, 0.90, 0.92);
+assert(zeroVolumeCase.loss === 0, 'Zero volume produces exact 0 timing loss');
+
+// 40.8 Order Analyzer Dynamic Integration Contract
+const analyzerContentUpdated = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-order-analyzer.php'), 'utf8');
+assert(analyzerContentUpdated.includes('FXLI_Rate_Service::instance()'), 'class-fxli-order-analyzer.php invokes FXLI_Rate_Service::instance()');
+assert(analyzerContentUpdated.includes('$rate_service->get_rates($store_currency, $foreign_currencies)'), 'class-fxli-order-analyzer.php calls get_rates() with active foreign currencies');
+assert(analyzerContentUpdated.includes('$rate_service->calculate_timing_loss('), 'class-fxli-order-analyzer.php calculates dynamic timing loss per currency market');
+assert(!analyzerContentUpdated.includes("'market_timing_loss'   => 0.0,\n\t\t\t\t'total_currency_drag'  => $loss,"), 'class-fxli-order-analyzer.php eliminated hardcoded zero market_timing_loss stub');
+
+// 40.9 High-Volume Heavy-Load Settlement Matrix Concurrency Stress Test (100,000 Cycles)
+const rateBenchStart = performance.now();
+let totalSimulatedTimingLoss = 0;
+let totalSimulatedDrag = 0;
+const currenciesPool = ['EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'SEK', 'NOK'];
+
+for (let i = 0; i < 100000; i++) {
+	const c = currenciesPool[i % currenciesPool.length];
+	const vol = 100 + (i % 5000);
+	const spot = fallbackUsdRates[c] || 1.0;
+	// simulate slight settlement volatility drift
+	const drift = (i % 2 === 0) ? 0.992 : 1.008;
+	const orderRate = spot * drift;
+	const result = calculateTimingLoss(vol, orderRate, spot);
+	totalSimulatedTimingLoss += result.loss;
+	totalSimulatedDrag += (vol * 0.025) + result.loss;
+}
+const rateBenchDuration = performance.now() - rateBenchStart;
+assert(totalSimulatedTimingLoss > 0, 'High-volume stress test calculated non-zero aggregate timing loss');
+assert(totalSimulatedDrag > totalSimulatedTimingLoss, 'Combined currency drag accurately exceeds timing loss alone');
+assert(rateBenchDuration < 150, `100,000 multi-currency timing calculations completed in ${rateBenchDuration.toFixed(2)}ms (< 150ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

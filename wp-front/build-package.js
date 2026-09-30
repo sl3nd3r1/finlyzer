@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Finlyzer — Multi-Environment WordPress Package Builder (v1.0.0)
+ * Finlyzer — Multi-Environment WordPress Package Builder (v1.1.0)
  *
  * Compiles and packages the Finlyzer plugin using environment-specific (.env) profiles:
  *
@@ -180,6 +180,7 @@ const phpFilesToLint = [
 	'includes/class-fxli-env.php',
 	'includes/class-fxli-security.php',
 	'includes/class-fxli-installer.php',
+	'includes/class-fxli-rate-service.php',
 	'includes/class-fxli-order-analyzer.php',
 	'includes/class-fxli-gemini-client.php',
 	'includes/class-fxli-rest-api.php',

@@ -3,7 +3,7 @@
  * Plugin Name:       Finlyzer — FX Loss & Margin Insights for WooCommerce
  * Plugin URI:        https://github.com/sl3nd3r1/finlyzer
  * Description:       Track hidden payment gateway conversion fees and currency loss across your international WooCommerce sales.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
@@ -38,7 +38,7 @@ if (!defined('ABSPATH')) {
 }
 
 // core plugin constants
-define('FINLYZER_VERSION', '1.0.0');
+define('FINLYZER_VERSION', '1.1.0');
 define('FINLYZER_DB_VERSION', '3');
 define('FINLYZER_PLUGIN_FILE', __FILE__);
 define('FINLYZER_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -57,6 +57,7 @@ require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-env.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-security.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-logger.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-installer.php';
+require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-rate-service.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-order-analyzer.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-gemini-client.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-rest-api.php';
@@ -103,6 +104,7 @@ function finlyzer_bootstrap(): void {
 	}
 
 	// initialize singletons
+	FXLI_Rate_Service::instance();
 	FXLI_Order_Analyzer::instance();
 	FXLI_Gemini_Client::instance();
 	FXLI_REST_API::instance()->register_routes();
