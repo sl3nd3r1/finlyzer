@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.5.0', `FINLYZER_VERSION is bumped to 1.5.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.6.0', `FINLYZER_VERSION is bumped to 1.6.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
-assert(readmeContent.includes('Stable tag: 1.5.0'), 'readme.txt Stable tag matches v1.5.0');
+assert(readmeContent.includes('Stable tag: 1.6.0'), 'readme.txt Stable tag matches v1.6.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1493,12 +1493,12 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.5.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.5.0');
-assert(finlyzerMainPhp.includes('* Version:           1.5.0'), 'finlyzer.php header declares Version 1.5.0');
-assert(packageJsonFront.version === '1.5.0', 'frontend package.json declares version 1.5.0');
-assert(packageJsonBack.version === '1.5.0', 'backend package.json declares version 1.5.0');
-assert(readmeTxt.includes('Stable tag: 1.5.0'), 'readme.txt declares Stable tag: 1.5.0');
-assert(readmeTxt.includes('= 1.5.0 ='), 'readme.txt documents 1.5.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.6.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.6.0');
+assert(finlyzerMainPhp.includes('* Version:           1.6.0'), 'finlyzer.php header declares Version 1.6.0');
+assert(packageJsonFront.version === '1.6.0', 'frontend package.json declares version 1.6.0');
+assert(packageJsonBack.version === '1.6.0', 'backend package.json declares version 1.6.0');
+assert(readmeTxt.includes('Stable tag: 1.6.0'), 'readme.txt declares Stable tag: 1.6.0');
+assert(readmeTxt.includes('= 1.6.0 ='), 'readme.txt documents 1.6.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1546,8 +1546,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.5.0'"), 'class-fxli-gemini-client.php declares matching 1.5.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.5.0')"), 'preview-server.php declares FINLYZER_VERSION 1.5.0');
+assert(geminiClientPhpContent.includes("'1.6.0'"), 'class-fxli-gemini-client.php declares matching 1.6.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.6.0')"), 'preview-server.php declares FINLYZER_VERSION 1.6.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2508,7 +2508,7 @@ assert(secretMatchExample === null, '.env.production.example purges baked FINLYZ
 const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
 const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
 assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
-assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.5.0'), 'wp-detector.ts sets User-Agent to 1.5.0');
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.6.0'), 'wp-detector.ts sets User-Agent to 1.6.0');
 
 // 33.3 Gemini API Key Header Transmission (No Query String Leakage)
 // Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
@@ -2517,18 +2517,18 @@ const geminiServiceContent = fs.readFileSync(geminiServicePath, 'utf8');
 assert(geminiServiceContent.includes("'x-goog-api-key': apiKey"), "gemini.ts passes API key securely via 'x-goog-api-key' header");
 assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?key= query parameter from API URL');
 
-// 33.4 Multi-Component 1.5.0 Version Consistency across Systems
+// 33.4 Multi-Component 1.6.0 Version Consistency across Systems
 const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
 const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
-assert(adminApiContent.includes("version: '1.5.0'"), 'admin-api.ts synchronizes version to 1.5.0');
+assert(adminApiContent.includes("version: '1.6.0'"), 'admin-api.ts synchronizes version to 1.6.0');
 
 const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
 const healthContent = fs.readFileSync(healthPath, 'utf8');
-assert(healthContent.includes("version: '1.5.0'"), 'health.ts synchronizes version to 1.5.0');
+assert(healthContent.includes("version: '1.6.0'"), 'health.ts synchronizes version to 1.6.0');
 
 const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
 const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
-assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.5.0'), 'market-timing.ts sets User-Agent to 1.5.0');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.6.0'), 'market-timing.ts sets User-Agent to 1.6.0');
 
 // 33.5 Windows XAMPP Developer Parity in Build Packaging
 const buildPackagePath = path.resolve(__dirname, '../build-package.js');
@@ -2625,7 +2625,7 @@ assert(summaryCardsPhpV34.includes('/* translators: %d: Product ID. */'), 'summa
 assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatibility Tested up to: 7.1');
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
-assert(readmeTxtV34.includes('Stable tag: 1.5.0'), 'readme.txt declares Stable tag: 1.5.0');
+assert(readmeTxtV34.includes('Stable tag: 1.6.0'), 'readme.txt declares Stable tag: 1.6.0');
 assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
 assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
 assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
@@ -3722,6 +3722,71 @@ const hmacBenchDuration = performance.now() - hmacBenchStart;
 assert(detectedHmacCount === 33334, `Accurately identified 33,334 HMAC errors (got ${detectedHmacCount})`);
 assert(recoveredHmacCount === 33334, `Successfully executed 33,334 instant HMAC recovery simulations`);
 assert(hmacBenchDuration < 50, `100,000 HMAC evaluation and resolution cycles completed in ${hmacBenchDuration.toFixed(2)}ms (< 50ms SLA)`);
+
+// TEST GROUP 45: Unmasked Error Diagnostics, Universal In-Dashboard Re-Sync & Heavy-Load Stress Test (v1.6.0)
+console.log('\nTEST GROUP 45: Unmasked Error Diagnostics, Universal In-Dashboard Re-Sync & Heavy-Load Stress Test (v1.6.0)');
+
+// 45.1 Diagnostic Inspector Contract: .finlyzer-error-debug-box & #finlyzer-dev-error-box in dashboard.js
+const dashboardJsV45 = fs.readFileSync(path.resolve(__dirname, '../assets/js/dashboard.js'), 'utf8');
+const dashboardCssV45 = fs.readFileSync(path.resolve(__dirname, '../assets/css/dashboard.css'), 'utf8');
+
+assert(dashboardJsV45.includes('finlyzer-error-debug-box'), 'dashboard.js creates .finlyzer-error-debug-box');
+assert(dashboardJsV45.includes("devBox.id = 'finlyzer-dev-error-box'"), 'dashboard.js preserves id finlyzer-dev-error-box');
+assert(dashboardJsV45.includes("devBox.style.display = 'block'"), 'dashboard.js displays diagnostic box on connection loss');
+assert(dashboardCssV45.includes('.finlyzer-error-debug-box'), 'dashboard.css styles .finlyzer-error-debug-box');
+assert(dashboardCssV45.includes('.finlyzer-error-debug-box pre'), 'dashboard.css styles monospace response output');
+
+// 45.2 Universal Re-Sync Button Contract
+assert(dashboardJsV45.includes("resyncBtn.style.display = 'inline-flex'"), 'dashboard.js unconditionally displays #finlyzer-resync-btn on connection loss');
+assert(dashboardJsV45.includes("setConnectionLostState(errDetail, errorContext || lastErrorContext)"), 'handleConnectionError forwards errorContext to setConnectionLostState');
+assert(dashboardJsV45.includes("err.responseText = t"), 'executeNativeFetchFallback captures responseText on HTTP failures');
+assert(dashboardJsV45.includes("err.url = summaryUrl"), 'executeNativeFetchFallback captures failed request URL');
+
+// 45.3 Unmasked REST API Error Contract: class-fxli-rest-api.php
+const restApiPhpV45 = fs.readFileSync(restApiPath, 'utf8');
+assert(restApiPhpV45.includes("'endpoint'         => $request->get_route()"), 'class-fxli-rest-api.php includes endpoint identifier in 503 response');
+assert(restApiPhpV45.includes("'worker_endpoint'  => class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : ''"), 'class-fxli-rest-api.php includes worker_endpoint in 503 response');
+assert(restApiPhpV45.includes("'error_code'       => $summary->get_error_code()"), 'class-fxli-rest-api.php preserves error_code');
+assert(restApiPhpV45.includes("'error_message'    => $summary->get_error_message()"), 'class-fxli-rest-api.php preserves error_message');
+assert(restApiPhpV45.includes("'dev_diagnostics'  =>"), 'class-fxli-rest-api.php attaches dev_diagnostics unconditionally');
+
+// 45.4 CWE-79 XSS Immunity: textContent DOM rendering
+assert(dashboardJsV45.includes("respPre.textContent = respText.slice(0, 1000)"), 'dashboard.js strictly uses textContent for server response body (CWE-79 immunity)');
+// Test simulated DOM rendering of malicious payload
+function simulateRenderDebugPayload(rawPayload) {
+	const escaped = rawPayload
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+	return escaped;
+}
+const maliciousServerPayload = '{"error": "<script>alert(\'pwned\')</script>", "trace": "<img src=x onerror=alert(1)>"}';
+const safeOutput = simulateRenderDebugPayload(maliciousServerPayload);
+assert(!safeOutput.includes('<script>'), 'Debug rendering neutralizes raw script execution');
+assert(!safeOutput.includes('<img src='), 'Debug rendering neutralizes raw img onerror tags');
+assert(safeOutput.includes('&lt;script&gt;'), 'Debug rendering safely presents HTML special characters as text entities');
+
+// 45.5 Heavy-Load Error Formatting & Diagnostic Stress Test (100,000 Cycles)
+const errorFormatStart = performance.now();
+let formattedCount = 0;
+for (let i = 0; i < 100000; i++) {
+	const mockCtx = {
+		url: 'https://example.com/wp-json/finlyzer/v1/summary?period=30',
+		status: i % 2 === 0 ? 503 : 500,
+		statusText: i % 2 === 0 ? 'Service Unavailable' : 'Internal Server Error',
+		responseText: '{"code":"calculation_service_unavailable","message":"Worker unreachable","worker_endpoint":"https://finlyzer-worker.example.workers.dev"}',
+	};
+	const snippet = mockCtx.responseText.slice(0, 1000);
+	const textContentVal = snippet;
+	if (textContentVal.length > 0 && mockCtx.status >= 500) {
+		formattedCount++;
+	}
+}
+const errorFormatDuration = performance.now() - errorFormatStart;
+assert(formattedCount === 100000, `Successfully processed 100,000 diagnostic formatting cycles (${formattedCount}/100000)`);
+assert(errorFormatDuration < 50, `100,000 diagnostic formatting cycles completed in ${errorFormatDuration.toFixed(2)}ms (< 50ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

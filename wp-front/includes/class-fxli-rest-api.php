@@ -266,24 +266,37 @@ final class FXLI_REST_API {
 				]);
 			}
 
-			$error_payload = [
-				'code'    => 'calculation_service_unavailable',
-				'message' => __('Finlyzer calculation service is temporarily unavailable.', 'finlyzer'),
-			];
+			$diag_hint = 'Click "Re-sync HMAC" in the dashboard to pair site with the API and store token securely.';
+			if ($summary->get_error_code() === 'worker_unauthorized' || str_contains($summary->get_error_message(), 'signature')) {
+				$diag_hint = 'Worker rejected HMAC signature. Click "Re-sync HMAC" to fetch a fresh 64-char token from the Cloudflare Worker.';
+			}
 
-			// in development mode, provide rich unmasked error diagnostics for developers
-			if (class_exists('FXLI_Env') && FXLI_Env::is_development()) {
-				$error_payload['dev_diagnostics'] = [
+			$error_payload = [
+				'code'             => $summary->get_error_code() ?: 'calculation_service_unavailable',
+				'message'          => sprintf('[%s] %s', $summary->get_error_code() ?: 'error', $summary->get_error_message()),
+				'error_code'       => $summary->get_error_code(),
+				'error_message'    => $summary->get_error_message(),
+				'error_data'       => $summary->get_error_data(),
+				'endpoint'         => $request->get_route(),
+				'worker_endpoint'  => class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '',
+				'analyze_endpoint' => class_exists('FXLI_Env') ? FXLI_Env::analyze_endpoint() : '',
+				'hmac_source'      => class_exists('FXLI_Env') ? FXLI_Env::hmac_secret_source() : '',
+				'cloud_opt_in'     => class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in(),
+				'dev_diagnostics'  => [
 					'error_code'       => $summary->get_error_code(),
 					'error_message'    => $summary->get_error_message(),
 					'error_data'       => $summary->get_error_data(),
 					'endpoint'         => $request->get_route(),
-					'worker_endpoint'  => FXLI_Env::worker_endpoint(),
-					'analyze_endpoint' => FXLI_Env::analyze_endpoint(),
-					'hmac_source'      => FXLI_Env::hmac_secret_source(),
-					'cloud_opt_in'     => FXLI_Env::is_cloud_opted_in(),
-					'diagnostic_hint'  => 'Targeting remote worker in dev mode: ensure site is paired via Cloud Sentinel or set FINLYZER_WORKER_HMAC_SECRET in .env.development.',
-				];
+					'worker_endpoint'  => class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '',
+					'analyze_endpoint' => class_exists('FXLI_Env') ? FXLI_Env::analyze_endpoint() : '',
+					'hmac_source'      => class_exists('FXLI_Env') ? FXLI_Env::hmac_secret_source() : '',
+					'cloud_opt_in'     => class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in(),
+					'diagnostic_hint'  => $diag_hint,
+				],
+			];
+
+			// in development mode, provide rich unmasked error diagnostics prefix
+			if (class_exists('FXLI_Env') && FXLI_Env::is_development()) {
 				$error_payload['message'] = sprintf(
 					'[DEV DIAGNOSTIC] %s: %s',
 					$summary->get_error_code(),
@@ -322,24 +335,37 @@ final class FXLI_REST_API {
 				]);
 			}
 
-			$error_payload = [
-				'code'    => 'calculation_service_unavailable',
-				'message' => __('Finlyzer calculation service is temporarily unavailable.', 'finlyzer'),
-			];
+			$diag_hint = 'Click "Re-sync HMAC" in the dashboard to pair site with the API and store token securely.';
+			if ($summary->get_error_code() === 'worker_unauthorized' || str_contains($summary->get_error_message(), 'signature')) {
+				$diag_hint = 'Worker rejected HMAC signature. Click "Re-sync HMAC" to fetch a fresh 64-char token from the Cloudflare Worker.';
+			}
 
-			// in development mode, provide rich unmasked error diagnostics for developers
-			if (class_exists('FXLI_Env') && FXLI_Env::is_development()) {
-				$error_payload['dev_diagnostics'] = [
+			$error_payload = [
+				'code'             => $summary->get_error_code() ?: 'calculation_service_unavailable',
+				'message'          => sprintf('[%s] %s', $summary->get_error_code() ?: 'error', $summary->get_error_message()),
+				'error_code'       => $summary->get_error_code(),
+				'error_message'    => $summary->get_error_message(),
+				'error_data'       => $summary->get_error_data(),
+				'endpoint'         => $request->get_route(),
+				'worker_endpoint'  => class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '',
+				'analyze_endpoint' => class_exists('FXLI_Env') ? FXLI_Env::analyze_endpoint() : '',
+				'hmac_source'      => class_exists('FXLI_Env') ? FXLI_Env::hmac_secret_source() : '',
+				'cloud_opt_in'     => class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in(),
+				'dev_diagnostics'  => [
 					'error_code'       => $summary->get_error_code(),
 					'error_message'    => $summary->get_error_message(),
 					'error_data'       => $summary->get_error_data(),
 					'endpoint'         => $request->get_route(),
-					'worker_endpoint'  => FXLI_Env::worker_endpoint(),
-					'analyze_endpoint' => FXLI_Env::analyze_endpoint(),
-					'hmac_source'      => FXLI_Env::hmac_secret_source(),
-					'cloud_opt_in'     => FXLI_Env::is_cloud_opted_in(),
-					'diagnostic_hint'  => 'Targeting remote worker in dev mode: ensure site is paired via Cloud Sentinel or set FINLYZER_WORKER_HMAC_SECRET in .env.development.',
-				];
+					'worker_endpoint'  => class_exists('FXLI_Env') ? FXLI_Env::worker_endpoint() : '',
+					'analyze_endpoint' => class_exists('FXLI_Env') ? FXLI_Env::analyze_endpoint() : '',
+					'hmac_source'      => class_exists('FXLI_Env') ? FXLI_Env::hmac_secret_source() : '',
+					'cloud_opt_in'     => class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in(),
+					'diagnostic_hint'  => $diag_hint,
+				],
+			];
+
+			// in development mode, provide rich unmasked error diagnostics prefix
+			if (class_exists('FXLI_Env') && FXLI_Env::is_development()) {
 				$error_payload['message'] = sprintf(
 					'[DEV DIAGNOSTIC] %s: %s',
 					$summary->get_error_code(),
