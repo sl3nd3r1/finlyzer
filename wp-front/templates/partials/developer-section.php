@@ -21,29 +21,29 @@ if (!class_exists('FXLI_Env') || !FXLI_Env::dev_tools_enabled()) {
 	return;
 }
 
-$worker_endpoint  = FXLI_Env::worker_endpoint();
-$analyze_endpoint = FXLI_Env::analyze_endpoint();
-$api_timeout      = FXLI_Env::api_timeout();
-$current_env      = FXLI_Env::current_env();
-$store_curr       = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
+$fxli_worker_endpoint  = FXLI_Env::worker_endpoint();
+$fxli_analyze_endpoint = FXLI_Env::analyze_endpoint();
+$fxli_api_timeout      = FXLI_Env::api_timeout();
+$fxli_current_env      = FXLI_Env::current_env();
+$fxli_store_curr       = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
 
 // compute live HMAC signature fixture for terminal verification
-$dev_time = time();
-$sample_body = (string) wp_json_encode([
-	'store_currency' => $store_curr,
+$fxli_dev_time = time();
+$fxli_sample_body = (string) wp_json_encode([
+	'store_currency' => $fxli_store_curr,
 	'period_days'    => 30,
 	'orders'         => [],
 ], JSON_UNESCAPED_SLASHES);
-$dev_sig = class_exists('FXLI_Security') ? FXLI_Security::sign_worker_payload($sample_body, $dev_time) : '';
-$dev_site_id = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : 'dev-site-verifier';
-$dev_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.16.0';
+$fxli_dev_sig = class_exists('FXLI_Security') ? FXLI_Security::sign_worker_payload($fxli_sample_body, $fxli_dev_time) : '';
+$fxli_dev_site_id = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : 'dev-site-verifier';
+$fxli_dev_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.8.0';
 
 // retrieve recent outbound HTTP telemetry logs
-$recent_logs = class_exists('FXLI_Logger') ? FXLI_Logger::get_recent_logs(15) : [];
-$nonce = wp_create_nonce('wp_rest');
-$test_endpoint = rest_url('finlyzer/v1/test-connection');
-$logs_endpoint = rest_url('finlyzer/v1/logs');
-$clear_endpoint = rest_url('finlyzer/v1/clear-logs');
+$fxli_recent_logs = class_exists('FXLI_Logger') ? FXLI_Logger::get_recent_logs(15) : [];
+$fxli_nonce = wp_create_nonce('wp_rest');
+$fxli_test_endpoint = rest_url('finlyzer/v1/test-connection');
+$fxli_logs_endpoint = rest_url('finlyzer/v1/logs');
+$fxli_clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 ?>
 
 <div class="finlyzer-dev-section" id="finlyzer-dev-section" style="margin-top: 28px; border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; background: rgba(245, 158, 11, 0.03); padding: 20px;">
@@ -55,7 +55,7 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 				<?php esc_html_e('Developer Environment & API Telemetry Inspector', 'finlyzer'); ?>
 			</h3>
 			<span style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; background: rgba(245, 158, 11, 0.15); color: #FBBF24; padding: 2px 8px; border-radius: 4px;">
-				<?php echo esc_html(strtoupper($current_env)); ?> BUILD
+				<?php echo esc_html(strtoupper($fxli_current_env)); ?> BUILD
 			</span>
 		</div>
 		<span style="font-size: 12px; color: #94A3B8;">
@@ -77,13 +77,13 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 			<div style="margin-bottom: 8px;">
 				<div style="font-size: 11px; color: #94A3B8; margin-bottom: 2px;"><?php esc_html_e('AI Sentinel Endpoint:', 'finlyzer'); ?></div>
 				<code style="display: block; font-size: 12px; color: #38BDF8; word-break: break-all; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">
-					<?php echo esc_html($worker_endpoint ?: __('(Not Configured)', 'finlyzer')); ?>
+					<?php echo esc_html($fxli_worker_endpoint ?: __('(Not Configured)', 'finlyzer')); ?>
 				</code>
 			</div>
 			<div>
 				<div style="font-size: 11px; color: #94A3B8; margin-bottom: 2px;"><?php esc_html_e('Order Analyzer Endpoint:', 'finlyzer'); ?></div>
 				<code style="display: block; font-size: 12px; color: #38BDF8; word-break: break-all; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">
-					<?php echo esc_html($analyze_endpoint ?: __('(Not Configured)', 'finlyzer')); ?>
+					<?php echo esc_html($fxli_analyze_endpoint ?: __('(Not Configured)', 'finlyzer')); ?>
 				</code>
 			</div>
 		</div>
@@ -96,7 +96,7 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 			<ul style="margin: 0; padding: 0 0 0 16px; font-size: 12px; color: #CBD5E1; line-height: 1.8;">
 				<li>
 					<strong><?php esc_html_e('API Timeout:', 'finlyzer'); ?></strong>
-					<span style="color: #38BDF8;"><?php echo (int) $api_timeout; ?>s</span>
+					<span style="color: #38BDF8;"><?php echo (int) $fxli_api_timeout; ?>s</span>
 				</li>
 				<li>
 					<strong><?php esc_html_e('Loopback Allowed:', 'finlyzer'); ?></strong>
@@ -145,12 +145,12 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 		<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
 			<div style="font-size: 11px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em;">
 				<?php esc_html_e('Recent Outbound HTTP Telemetry Log', 'finlyzer'); ?>
-				<span id="finlyzer-telemetry-count" style="color: #94A3B8; font-weight: 400;">(<?php echo count($recent_logs); ?> <?php esc_html_e('entries', 'finlyzer'); ?>)</span>
+				<span id="finlyzer-telemetry-count" style="color: #94A3B8; font-weight: 400;">(<?php echo count($fxli_recent_logs); ?> <?php esc_html_e('entries', 'finlyzer'); ?>)</span>
 			</div>
 			<span style="font-size: 11px; color: #64748B;"><?php esc_html_e('Auto-captured on all outbound API calls', 'finlyzer'); ?></span>
 		</div>
 
-		<?php if (empty($recent_logs)) : ?>
+		<?php if (empty($fxli_recent_logs)) : ?>
 			<div style="text-align: center; padding: 18px; color: #64748B; font-size: 12px;">
 				<?php esc_html_e('No outbound HTTP calls logged yet. Click "Run Live Handshake Diagnostic" or refresh the page to record telemetry.', 'finlyzer'); ?>
 			</div>
@@ -168,35 +168,35 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ($recent_logs as $entry) :
-							$status = $entry['context']['status'] ?? 'N/A';
-							$is_ok = is_numeric($status) && (int) $status === 200;
-							$badge_bg = $is_ok ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
-							$badge_color = $is_ok ? '#34D399' : '#F87171';
-							$duration = $entry['context']['duration_ms'] ?? 0;
-							$err = $entry['context']['error'] ?? '';
-							$url = $entry['context']['endpoint'] ?? $entry['message'];
+						<?php foreach ($fxli_recent_logs as $fxli_entry) :
+							$fxli_status = $fxli_entry['context']['status'] ?? 'N/A';
+							$fxli_is_ok = is_numeric($fxli_status) && (int) $fxli_status === 200;
+							$fxli_badge_bg = $fxli_is_ok ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+							$fxli_badge_color = $fxli_is_ok ? '#34D399' : '#F87171';
+							$fxli_duration = $fxli_entry['context']['duration_ms'] ?? 0;
+							$fxli_err = $fxli_entry['context']['error'] ?? '';
+							$fxli_url = $fxli_entry['context']['endpoint'] ?? $fxli_entry['message'];
 						?>
 							<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04); font-family: ui-monospace, SFMono-Regular, monospace;">
 								<td style="padding: 6px 8px; color: #64748B; white-space: nowrap;">
-									<?php echo esc_html(substr($entry['timestamp'] ?? '', 11)); ?>
+									<?php echo esc_html(substr($fxli_entry['timestamp'] ?? '', 11)); ?>
 								</td>
 								<td style="padding: 6px 8px; color: #CBD5E1; font-weight: 600;">
-									<?php echo esc_html($entry['context']['method'] ?? 'POST'); ?>
+									<?php echo esc_html($fxli_entry['context']['method'] ?? 'POST'); ?>
 								</td>
 								<td style="padding: 6px 8px; color: #38BDF8; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-									<?php echo esc_html($url); ?>
+									<?php echo esc_html($fxli_url); ?>
 								</td>
 								<td style="padding: 6px 8px;">
-									<span style="background: <?php echo esc_attr($badge_bg); ?>; color: <?php echo esc_attr($badge_color); ?>; padding: 2px 6px; border-radius: 3px; font-weight: 600;">
-										<?php echo esc_html((string) $status); ?>
+									<span style="background: <?php echo esc_attr($fxli_badge_bg); ?>; color: <?php echo esc_attr($fxli_badge_color); ?>; padding: 2px 6px; border-radius: 3px; font-weight: 600;">
+										<?php echo esc_html((string) $fxli_status); ?>
 									</span>
 								</td>
 								<td style="padding: 6px 8px; color: #FBBF24; white-space: nowrap;">
-									<?php echo esc_html(number_format((float) $duration, 1)); ?> ms
+									<?php echo esc_html(number_format((float) $fxli_duration, 1)); ?> ms
 								</td>
-								<td style="padding: 6px 8px; color: <?php echo $err ? '#F87171' : '#94A3B8'; ?>; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-									<?php echo esc_html($err ?: ($is_ok ? 'Handshake Verified' : $entry['message'])); ?>
+								<td style="padding: 6px 8px; color: <?php echo $fxli_err ? '#F87171' : '#94A3B8'; ?>; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+									<?php echo esc_html($fxli_err ?: ($fxli_is_ok ? 'Handshake Verified' : $fxli_entry['message'])); ?>
 								</td>
 							</tr>
 						<?php endforeach; ?>
@@ -213,13 +213,13 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 		</summary>
 		<div style="margin-top: 12px;">
 			<div style="font-size: 11px; color: #94A3B8; margin-bottom: 4px;"><?php esc_html_e('Terminal verification curl command (pre-signed HMAC SHA-256):', 'finlyzer'); ?></div>
-			<pre style="background: #020617; border: 1px solid rgba(255,255,255,0.06); color: #A5F3FC; padding: 10px; border-radius: 4px; font-size: 11px; overflow-x: auto; margin: 0 0 10px 0;">curl -X POST "<?php echo esc_attr($analyze_endpoint ?: 'http://127.0.0.1:8787/api/v1/analyze'); ?>" \
+			<pre style="background: #020617; border: 1px solid rgba(255,255,255,0.06); color: #A5F3FC; padding: 10px; border-radius: 4px; font-size: 11px; overflow-x: auto; margin: 0 0 10px 0;">curl -X POST "<?php echo esc_attr($fxli_analyze_endpoint ?: 'http://127.0.0.1:8787/api/v1/analyze'); ?>" \
   -H "Content-Type: application/json" \
-  -H "X-FXLI-Site: <?php echo esc_attr($dev_site_id); ?>" \
-  -H "X-FXLI-Version: <?php echo esc_attr($dev_version); ?>" \
-  -H "X-FXLI-Time: <?php echo esc_attr((string) $dev_time); ?>" \
-  -H "X-FXLI-Sig: <?php echo esc_attr($dev_sig); ?>" \
-  -d '<?php echo esc_attr($sample_body); ?>'</pre>
+  -H "X-FXLI-Site: <?php echo esc_attr($fxli_dev_site_id); ?>" \
+  -H "X-FXLI-Version: <?php echo esc_attr($fxli_dev_version); ?>" \
+  -H "X-FXLI-Time: <?php echo esc_attr((string) $fxli_dev_time); ?>" \
+  -H "X-FXLI-Sig: <?php echo esc_attr($fxli_dev_sig); ?>" \
+  -d '<?php echo esc_attr($fxli_sample_body); ?>'</pre>
 		</div>
 	</details>
 </div>
@@ -229,10 +229,10 @@ $clear_endpoint = rest_url('finlyzer/v1/clear-logs');
 	var testBtn = document.getElementById('finlyzer-test-conn-btn');
 	var clearBtn = document.getElementById('finlyzer-clear-logs-btn');
 	var resultBox = document.getElementById('finlyzer-test-conn-result');
-	var testUrl = '<?php echo esc_url_raw($test_endpoint); ?>';
-	var logsUrl = '<?php echo esc_url_raw($logs_endpoint); ?>';
-	var clearUrl = '<?php echo esc_url_raw($clear_endpoint); ?>';
-	var nonce = '<?php echo esc_js($nonce); ?>';
+	var testUrl = '<?php echo esc_url_raw($fxli_test_endpoint); ?>';
+	var logsUrl = '<?php echo esc_url_raw($fxli_logs_endpoint); ?>';
+	var clearUrl = '<?php echo esc_url_raw($fxli_clear_endpoint); ?>';
+	var nonce = '<?php echo esc_js($fxli_nonce); ?>';
 
 	// dynamic DOM updater for telemetry records without page reload (XSS-safe via textContent)
 	function refreshTelemetryTable() {

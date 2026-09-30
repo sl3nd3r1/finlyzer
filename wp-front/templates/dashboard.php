@@ -6,13 +6,11 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-$default_days     = 30;
-$rest_summary_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/summary'));
-$rest_insight_url = add_query_arg('days', $default_days, rest_url('finlyzer/v1/insight'));
-$rest_nonce       = wp_create_nonce('wp_rest');
-$rest_base_url    = rest_url('finlyzer/v1');
-// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+$fxli_default_days     = 30;
+$fxli_rest_summary_url = add_query_arg('days', $fxli_default_days, rest_url('finlyzer/v1/summary'));
+$fxli_rest_insight_url = add_query_arg('days', $fxli_default_days, rest_url('finlyzer/v1/insight'));
+$fxli_rest_nonce       = wp_create_nonce('wp_rest');
+$fxli_rest_base_url    = rest_url('finlyzer/v1');
 ?>
 <div class="finlyzer-app" id="finlyzer-app">
 
@@ -90,9 +88,9 @@ $rest_base_url    = rest_url('finlyzer/v1');
 			<section
 				id="finlyzer-summary"
 				class="finlyzer-summary"
-				hx-get="<?php echo esc_url($rest_summary_url); ?>"
+				hx-get="<?php echo esc_url($fxli_rest_summary_url); ?>"
 				hx-trigger="load"
-				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
+				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($fxli_rest_nonce); ?>"}'
 				hx-swap="innerHTML"
 				aria-live="polite"
 			>
@@ -106,9 +104,9 @@ $rest_base_url    = rest_url('finlyzer/v1');
 			<section
 				id="finlyzer-insight"
 				class="finlyzer-insight"
-				hx-get="<?php echo esc_url($rest_insight_url); ?>"
+				hx-get="<?php echo esc_url($fxli_rest_insight_url); ?>"
 				hx-trigger="load"
-				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($rest_nonce); ?>"}'
+				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($fxli_rest_nonce); ?>"}'
 				hx-swap="innerHTML"
 				aria-live="polite"
 			>

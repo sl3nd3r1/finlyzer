@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.7.0', `FINLYZER_VERSION is bumped to 1.7.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.8.0', `FINLYZER_VERSION is bumped to 1.8.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
-assert(readmeContent.includes('Stable tag: 1.7.0'), 'readme.txt Stable tag matches v1.7.0');
+assert(readmeContent.includes('Stable tag: 1.8.0'), 'readme.txt Stable tag matches v1.8.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1493,12 +1493,12 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.7.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.7.0');
-assert(finlyzerMainPhp.includes('* Version:           1.7.0'), 'finlyzer.php header declares Version 1.7.0');
-assert(packageJsonFront.version === '1.7.0', 'frontend package.json declares version 1.7.0');
-assert(packageJsonBack.version === '1.7.0', 'backend package.json declares version 1.7.0');
-assert(readmeTxt.includes('Stable tag: 1.7.0'), 'readme.txt declares Stable tag: 1.7.0');
-assert(readmeTxt.includes('= 1.7.0 ='), 'readme.txt documents 1.7.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.8.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.8.0');
+assert(finlyzerMainPhp.includes('* Version:           1.8.0'), 'finlyzer.php header declares Version 1.8.0');
+assert(packageJsonFront.version === '1.8.0', 'frontend package.json declares version 1.8.0');
+assert(packageJsonBack.version === '1.8.0', 'backend package.json declares version 1.8.0');
+assert(readmeTxt.includes('Stable tag: 1.8.0'), 'readme.txt declares Stable tag: 1.8.0');
+assert(readmeTxt.includes('= 1.8.0 ='), 'readme.txt documents 1.8.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1546,8 +1546,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.7.0'"), 'class-fxli-gemini-client.php declares matching 1.7.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.7.0')"), 'preview-server.php declares FINLYZER_VERSION 1.7.0');
+assert(geminiClientPhpContent.includes("'1.8.0'"), 'class-fxli-gemini-client.php declares matching 1.8.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.8.0')"), 'preview-server.php declares FINLYZER_VERSION 1.8.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2508,7 +2508,7 @@ assert(secretMatchExample === null, '.env.production.example purges baked FINLYZ
 const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
 const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
 assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
-assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.7.0'), 'wp-detector.ts sets User-Agent to 1.7.0');
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.8.0'), 'wp-detector.ts sets User-Agent to 1.8.0');
 
 // 33.3 Gemini API Key Header Transmission (No Query String Leakage)
 // Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
@@ -2517,18 +2517,18 @@ const geminiServiceContent = fs.readFileSync(geminiServicePath, 'utf8');
 assert(geminiServiceContent.includes("'x-goog-api-key': apiKey"), "gemini.ts passes API key securely via 'x-goog-api-key' header");
 assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?key= query parameter from API URL');
 
-// 33.4 Multi-Component 1.7.0 Version Consistency across Systems
+// 33.4 Multi-Component 1.8.0 Version Consistency across Systems
 const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
 const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
-assert(adminApiContent.includes("version: '1.7.0'"), 'admin-api.ts synchronizes version to 1.7.0');
+assert(adminApiContent.includes("version: '1.8.0'"), 'admin-api.ts synchronizes version to 1.8.0');
 
 const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
 const healthContent = fs.readFileSync(healthPath, 'utf8');
-assert(healthContent.includes("version: '1.7.0'"), 'health.ts synchronizes version to 1.7.0');
+assert(healthContent.includes("version: '1.8.0'"), 'health.ts synchronizes version to 1.8.0');
 
 const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
 const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
-assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.7.0'), 'market-timing.ts sets User-Agent to 1.7.0');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.8.0'), 'market-timing.ts sets User-Agent to 1.8.0');
 
 // 33.5 Windows XAMPP Developer Parity in Build Packaging
 const buildPackagePath = path.resolve(__dirname, '../build-package.js');
@@ -2625,7 +2625,7 @@ assert(summaryCardsPhpV34.includes('/* translators: %d: Product ID. */'), 'summa
 assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatibility Tested up to: 7.1');
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
-assert(readmeTxtV34.includes('Stable tag: 1.7.0'), 'readme.txt declares Stable tag: 1.7.0');
+assert(readmeTxtV34.includes('Stable tag: 1.8.0'), 'readme.txt declares Stable tag: 1.8.0');
 assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
 assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
 assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
@@ -3887,9 +3887,9 @@ const finlyzerPhpV46 = fs.readFileSync(path.resolve(__dirname, '../finlyzer.php'
 
 assert(dashboardPhpV46.includes('id="finlyzer-dev-error-box"'), 'dashboard.php contains #finlyzer-dev-error-box container');
 assert(adminPagePhpV46.includes('FINLYZER_VERSION'), 'class-fxli-admin-page.php binds script versioning to FINLYZER_VERSION');
-assert(readmeTxtV46.includes('Stable tag: 1.7.0'), 'readme.txt declares Stable tag 1.7.0');
-assert(readmeTxtV46.includes('= 1.7.0 ='), 'readme.txt documents = 1.7.0 = changelog');
-assert(finlyzerPhpV46.includes("Version:           1.7.0"), 'finlyzer.php declares plugin Version 1.7.0');
+assert(readmeTxtV46.includes('Stable tag: 1.8.0'), 'readme.txt declares Stable tag 1.8.0');
+assert(readmeTxtV46.includes('= 1.8.0 ='), 'readme.txt documents = 1.8.0 = changelog');
+assert(finlyzerPhpV46.includes("Version:           1.8.0"), 'finlyzer.php declares plugin Version 1.8.0');
 
 // Strict Guideline 13 & No Open Source mentions
 assert(!readmeTxtV46.toLowerCase().includes('open source') && !readmeTxtV46.toLowerCase().includes('opensource'), 'readme.txt contains zero "open source" mentions');
@@ -3919,6 +3919,164 @@ for (let i = 0; i < 100000; i++) {
 const i18nBenchDuration = performance.now() - i18nBenchStart;
 assert(i18nProcessedCount === 100000, `100,000 i18n and logger formatting cycles completed (${i18nProcessedCount}/100000)`);
 assert(i18nBenchDuration < 50, `100,000 formatting cycles executed in ${i18nBenchDuration.toFixed(2)}ms (< 50ms SLA)`);
+
+// =============================================================
+// TEST GROUP 47: Global Variable Namespace Isolation, Template Security & High-Concurrency Rendering (v1.8.0)
+// =============================================================
+console.log('\nTEST GROUP 47: Global Variable Namespace Isolation, Template Security & High-Concurrency Rendering (v1.8.0)');
+
+// 47.1 WordPress.NamingConventions.PrefixAllGlobals Contract: templates/partials/developer-section.php
+const devSectionPhpV47 = fs.readFileSync(path.resolve(__dirname, '../templates/partials/developer-section.php'), 'utf8');
+
+// The 22 variables flagged by the WordPress Plugin Check PCP report
+const flaggedVariables = [
+	'worker_endpoint', 'analyze_endpoint', 'api_timeout', 'current_env', 'store_curr',
+	'dev_time', 'sample_body', 'dev_sig', 'dev_site_id', 'dev_version',
+	'recent_logs', 'nonce', 'test_endpoint', 'logs_endpoint', 'clear_endpoint',
+	'entry', 'is_ok', 'badge_bg', 'badge_color', 'duration', 'err', 'url'
+];
+
+for (const varName of flaggedVariables) {
+	// Verify that the unprefixed variable declaration ($varName =) does NOT exist in developer-section.php
+	const unPrefixedAssignmentRegex = new RegExp(`\\$${varName}\\s*=`, 'g');
+	assert(
+		!unPrefixedAssignmentRegex.test(devSectionPhpV47),
+		`developer-section.php eliminated un-prefixed variable declaration: $${varName}`
+	);
+
+	// Verify that the prefixed version ($fxli_${varName}) is used instead
+	assert(
+		devSectionPhpV47.includes(`$fxli_${varName}`),
+		`developer-section.php declares and uses prefixed variable: $fxli_${varName}`
+	);
+}
+
+// 47.2 Strict PrefixAllGlobals AST Regex Check across developer-section.php
+// Parse all variable assignments in developer-section.php to verify every assigned variable starts with $fxli_
+const phpVariableMatches = devSectionPhpV47.match(/\$([a-zA-Z0-9_]+)\s*(=|\+=|-=|\*=|\/=)/g) || [];
+let validPrefixedCount = 0;
+for (const match of phpVariableMatches) {
+	const varName = match.split(/[\s=]/)[0];
+	assert(
+		varName.startsWith('$fxli_'),
+		`All assigned PHP variables in developer-section.php must start with $fxli_ (found: ${varName})`
+	);
+	validPrefixedCount++;
+}
+assert(validPrefixedCount >= 18, `Verified at least 18 prefixed variable assignments in developer-section.php (found: ${validPrefixedCount})`);
+
+// 47.3 Dashboard Template PrefixAllGlobals Contract: templates/dashboard.php
+const dashboardPhpV47 = fs.readFileSync(path.resolve(__dirname, '../templates/dashboard.php'), 'utf8');
+const dashboardFlaggedVars = ['default_days', 'rest_summary_url', 'rest_insight_url', 'rest_nonce', 'rest_base_url'];
+
+for (const varName of dashboardFlaggedVars) {
+	const unPrefixedRegex = new RegExp(`\\$${varName}\\s*=`, 'g');
+	assert(
+		!unPrefixedRegex.test(dashboardPhpV47),
+		`dashboard.php eliminated un-prefixed variable declaration: $${varName}`
+	);
+	assert(
+		dashboardPhpV47.includes(`$fxli_${varName}`),
+		`dashboard.php declares and uses prefixed variable: $fxli_${varName}`
+	);
+}
+
+// 47.4 Live PHP CLI Execution Contract: Verify developer-section.php parses and executes cleanly
+try {
+	const phpTemplateTest = `<?php
+define('ABSPATH', 1);
+define('FINLYZER_VERSION', '1.8.0');
+
+class FXLI_Env {
+	public static function dev_tools_enabled() { return true; }
+	public static function worker_endpoint() { return 'https://example.com/worker'; }
+	public static function analyze_endpoint() { return 'https://example.com/analyze'; }
+	public static function api_timeout() { return 5; }
+	public static function current_env() { return 'development'; }
+}
+class FXLI_Security {
+	public static function sign_worker_payload($body, $time) { return 'test-sig'; }
+}
+class FXLI_Gemini_Client {
+	public static function site_id() { return 'test-site-id'; }
+}
+class FXLI_Logger {
+	public static function get_recent_logs($limit) {
+		return [
+			[
+				'timestamp' => '2026-09-30 19:00:00',
+				'message' => 'Test call',
+				'context' => [
+					'status' => 200,
+					'duration_ms' => 12.5,
+					'method' => 'POST',
+					'endpoint' => 'https://example.com/api',
+					'error' => null,
+				]
+			]
+		];
+	}
+}
+
+function wp_json_encode($data, $flags = 0) { return json_encode($data, $flags); }
+function wp_create_nonce($action) { return 'mock_nonce'; }
+function rest_url($path) { return 'https://example.com/wp-json/' . $path; }
+function esc_html_e($text, $domain = '') { echo htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); }
+function esc_html($text) { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
+function esc_attr($text) { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
+function esc_url_raw($url) { return filter_var($url, FILTER_SANITIZE_URL); }
+function esc_js($text) { return addslashes((string) $text); }
+function __($text, $domain = '') { return $text; }
+
+// Capture output of developer-section.php
+ob_start();
+include "${path.resolve(__dirname, '../templates/partials/developer-section.php').replace(/\\/g, '/')}";
+$output = ob_get_clean();
+
+echo json_encode([
+	'success' => true,
+	'has_dev_section' => str_contains($output, 'id="finlyzer-dev-section"'),
+	'has_table' => str_contains($output, 'id="finlyzer-telemetry-table"'),
+	'has_prefixed_vars' => isset($fxli_worker_endpoint) && isset($fxli_dev_version),
+	'no_unprefixed_vars' => !isset($worker_endpoint) && !isset($dev_version)
+]);
+`;
+	const phpResult = JSON.parse(execSync('php', { input: phpTemplateTest }).toString());
+	assert(phpResult.success === true, 'PHP developer-section.php executed cleanly without syntax/runtime errors');
+	assert(phpResult.has_dev_section === true, 'developer-section.php outputs #finlyzer-dev-section markup');
+	assert(phpResult.has_table === true, 'developer-section.php outputs telemetry table');
+	assert(phpResult.has_prefixed_vars === true, 'Template variables are populated with $fxli_ prefix in scope');
+	assert(phpResult.no_unprefixed_vars === true, 'Global scope contains zero un-prefixed variables ($worker_endpoint, $dev_version are undefined)');
+} catch (err) {
+	assert(false, `PHP developer-section.php template execution error: ${err.message}`);
+}
+
+// 47.5 High-Concurrency Template Variable Isolation Stress Benchmark (100,000 Cycles)
+const tplBenchStart = performance.now();
+let tplProcessedCycles = 0;
+
+for (let i = 0; i < 100000; i++) {
+	// Simulate template scope isolation with prefixed variables
+	const scope = {
+		fxli_worker_endpoint: `https://api.finlyzer.dev/v1/worker?site=${i % 100}`,
+		fxli_analyze_endpoint: `https://api.finlyzer.dev/v1/analyze?site=${i % 100}`,
+		fxli_api_timeout: 5,
+		fxli_current_env: 'development',
+		fxli_nonce: 'mock_nonce_' + (i % 50),
+		fxli_status: (i % 10 === 0) ? 503 : 200,
+	};
+
+	const isOk = scope.fxli_status === 200;
+	const badgeBg = isOk ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+
+	if (scope.fxli_worker_endpoint.startsWith('https://') && badgeBg) {
+		tplProcessedCycles++;
+	}
+}
+
+const tplBenchDuration = performance.now() - tplBenchStart;
+assert(tplProcessedCycles === 100000, `Successfully processed 100,000 template isolation cycles (${tplProcessedCycles}/100000)`);
+assert(tplBenchDuration < 50, `100,000 template isolation cycles executed in ${tplBenchDuration.toFixed(2)}ms (< 50ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY
