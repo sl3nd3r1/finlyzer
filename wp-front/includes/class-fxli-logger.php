@@ -47,26 +47,59 @@ final class FXLI_Logger {
 	private function __clone() {}
 
 	// record generic structured log entry with automatic secret redaction and polymorphic argument protection
-	public static function log(string $level_or_msg, string $category_or_level = 'GENERAL', string $message = '', array $context = []): void {
-		// handle polymorphic calls: log('message', 'debug') vs canonical log('debug', 'CATEGORY', 'message', context)
-		if ($message === '') {
-			$valid_levels = [self::LEVEL_DEBUG, self::LEVEL_INFO, self::LEVEL_WARN, 'warning', self::LEVEL_ERROR];
-			if (in_array(strtolower($category_or_level), $valid_levels, true)) {
-				$level    = strtolower($category_or_level) === 'warning' ? self::LEVEL_WARN : strtolower($category_or_level);
-				$category = 'GENERAL';
-				$message  = $level_or_msg;
-			} elseif (in_array(strtolower($level_or_msg), $valid_levels, true)) {
-				$level    = strtolower($level_or_msg) === 'warning' ? self::LEVEL_WARN : strtolower($level_or_msg);
-				$category = 'GENERAL';
-				$message  = $category_or_level;
-			} else {
+	public static function log(mixed $arg1 = '', mixed $arg2 = 'GENERAL', mixed $arg3 = '', mixed $arg4 = []): void {
+		$valid_levels = [self::LEVEL_DEBUG, self::LEVEL_INFO, self::LEVEL_WARN, 'warning', self::LEVEL_ERROR];
+
+		$level    = self::LEVEL_INFO;
+		$category = 'GENERAL';
+		$message  = '';
+		$context  = [];
+
+		// Case 1: 3 args with array context -> log($level, $message, $context)
+		if (is_array($arg3)) {
+			$level    = is_string($arg1) ? strtolower($arg1) : self::LEVEL_INFO;
+			$category = (is_string($arg4) && $arg4 !== '') ? strtoupper($arg4) : 'GENERAL';
+			$message  = is_string($arg2) ? $arg2 : (is_scalar($arg2) ? (string) $arg2 : '');
+			$context  = $arg3;
+		}
+		// Case 2: 4 args or 3 string args -> log($level, $category, $message, $context)
+		elseif (is_string($arg3) && $arg3 !== '') {
+			$level    = is_string($arg1) ? strtolower($arg1) : self::LEVEL_INFO;
+			$category = is_string($arg2) ? strtoupper($arg2) : 'GENERAL';
+			$message  = $arg3;
+			$context  = is_array($arg4) ? $arg4 : [];
+		}
+		// Case 3: 2 args -> log($level_or_msg, $category_or_level_or_context)
+		elseif ($arg3 === '' && (is_string($arg2) || is_array($arg2))) {
+			if (is_array($arg2)) {
+				// log($message, $context)
 				$level    = self::LEVEL_INFO;
 				$category = 'GENERAL';
-				$message  = $level_or_msg;
+				$message  = is_string($arg1) ? $arg1 : '';
+				$context  = $arg2;
+			} elseif (in_array(strtolower((string) $arg2), $valid_levels, true)) {
+				// log($message, $level)
+				$level    = strtolower((string) $arg2);
+				$category = 'GENERAL';
+				$message  = is_string($arg1) ? $arg1 : '';
+			} elseif (in_array(strtolower((string) $arg1), $valid_levels, true)) {
+				// log($level, $message)
+				$level    = strtolower((string) $arg1);
+				$category = 'GENERAL';
+				$message  = is_string($arg2) ? $arg2 : '';
+			} else {
+				$level    = self::LEVEL_INFO;
+				$category = is_string($arg2) ? strtoupper((string) $arg2) : 'GENERAL';
+				$message  = is_string($arg1) ? $arg1 : '';
 			}
-		} else {
-			$level    = strtolower($level_or_msg) === 'warning' ? self::LEVEL_WARN : strtolower($level_or_msg);
-			$category = $category_or_level;
+		}
+		// Case 4: 1 arg -> log($message)
+		else {
+			$message = is_string($arg1) ? $arg1 : (is_scalar($arg1) ? (string) $arg1 : '');
+		}
+
+		if ($level === 'warning') {
+			$level = self::LEVEL_WARN;
 		}
 
 		// assert debug logging is permitted or level is warning/error

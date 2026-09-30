@@ -19,7 +19,7 @@ if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/../');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.6.0');
+	define('FINLYZER_VERSION', '1.7.0');
 }
 
 // -----------------------------------------------------------------------------

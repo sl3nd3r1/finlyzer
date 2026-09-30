@@ -136,7 +136,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.6.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.7.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -384,7 +384,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.6.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.7.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -432,8 +432,14 @@ final class FXLI_Gemini_Client {
 					'currency'    => $payload['store_currency'] ?? 'USD',
 				]);
 			}
+			/* translators: 1: Endpoint URL, 2: Network error message. */
 			$msg = (class_exists('FXLI_Env') && FXLI_Env::is_development())
-				? sprintf(__('Network error to %1$s: %2$s', 'finlyzer'), $endpoint, $response->get_error_message())
+				? sprintf(
+					/* translators: 1: Endpoint URL, 2: Network error message. */
+					__('Network error to %1$s: %2$s', 'finlyzer'),
+					$endpoint,
+					$response->get_error_message()
+				)
 				: __('Unable to reach calculation service. Please verify server connectivity.', 'finlyzer');
 			return new WP_Error('worker_http_network_error', $msg, [
 				'endpoint' => $endpoint,
@@ -486,8 +492,14 @@ final class FXLI_Gemini_Client {
 		if ($code !== 200) {
 			$clean_snippet = wp_strip_all_tags(substr($raw_body, 0, 200));
 			$error_code = ($code === 401) ? 'worker_unauthorized' : ('worker_http_error_' . $code);
+			/* translators: 1: HTTP status code, 2: Error response body snippet. */
 			$msg = (class_exists('FXLI_Env') && FXLI_Env::is_development())
-				? sprintf(__('Calculation service returned HTTP %1$d: %2$s', 'finlyzer'), $code, $clean_snippet ?: 'Empty response body')
+				? sprintf(
+					/* translators: 1: HTTP status code, 2: Error response body snippet. */
+					__('Calculation service returned HTTP %1$d: %2$s', 'finlyzer'),
+					$code,
+					$clean_snippet ?: 'Empty response body'
+				)
 				: __('Calculation service is temporarily unavailable. Please retry shortly.', 'finlyzer');
 			return new WP_Error($error_code, $msg, [
 				'status'    => $code,
@@ -536,7 +548,7 @@ final class FXLI_Gemini_Client {
 		$verify_url = $clean_base . '/api/v1/verify';
 
 		$site_url = function_exists('home_url') ? home_url() : 'http://localhost';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.6.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.7.0';
 		$timestamp = time();
 		$body = wp_json_encode(['action' => 'verify', 'timestamp' => $timestamp]);
 		if ($body === false) {

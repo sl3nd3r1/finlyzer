@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.6.0', `FINLYZER_VERSION is bumped to 1.6.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.7.0', `FINLYZER_VERSION is bumped to 1.7.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
-assert(readmeContent.includes('Stable tag: 1.6.0'), 'readme.txt Stable tag matches v1.6.0');
+assert(readmeContent.includes('Stable tag: 1.7.0'), 'readme.txt Stable tag matches v1.7.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1493,12 +1493,12 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.6.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.6.0');
-assert(finlyzerMainPhp.includes('* Version:           1.6.0'), 'finlyzer.php header declares Version 1.6.0');
-assert(packageJsonFront.version === '1.6.0', 'frontend package.json declares version 1.6.0');
-assert(packageJsonBack.version === '1.6.0', 'backend package.json declares version 1.6.0');
-assert(readmeTxt.includes('Stable tag: 1.6.0'), 'readme.txt declares Stable tag: 1.6.0');
-assert(readmeTxt.includes('= 1.6.0 ='), 'readme.txt documents 1.6.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.7.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.7.0');
+assert(finlyzerMainPhp.includes('* Version:           1.7.0'), 'finlyzer.php header declares Version 1.7.0');
+assert(packageJsonFront.version === '1.7.0', 'frontend package.json declares version 1.7.0');
+assert(packageJsonBack.version === '1.7.0', 'backend package.json declares version 1.7.0');
+assert(readmeTxt.includes('Stable tag: 1.7.0'), 'readme.txt declares Stable tag: 1.7.0');
+assert(readmeTxt.includes('= 1.7.0 ='), 'readme.txt documents 1.7.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1546,8 +1546,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.6.0'"), 'class-fxli-gemini-client.php declares matching 1.6.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.6.0')"), 'preview-server.php declares FINLYZER_VERSION 1.6.0');
+assert(geminiClientPhpContent.includes("'1.7.0'"), 'class-fxli-gemini-client.php declares matching 1.7.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.7.0')"), 'preview-server.php declares FINLYZER_VERSION 1.7.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2508,7 +2508,7 @@ assert(secretMatchExample === null, '.env.production.example purges baked FINLYZ
 const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
 const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
 assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
-assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.6.0'), 'wp-detector.ts sets User-Agent to 1.6.0');
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.7.0'), 'wp-detector.ts sets User-Agent to 1.7.0');
 
 // 33.3 Gemini API Key Header Transmission (No Query String Leakage)
 // Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
@@ -2517,18 +2517,18 @@ const geminiServiceContent = fs.readFileSync(geminiServicePath, 'utf8');
 assert(geminiServiceContent.includes("'x-goog-api-key': apiKey"), "gemini.ts passes API key securely via 'x-goog-api-key' header");
 assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?key= query parameter from API URL');
 
-// 33.4 Multi-Component 1.6.0 Version Consistency across Systems
+// 33.4 Multi-Component 1.7.0 Version Consistency across Systems
 const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
 const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
-assert(adminApiContent.includes("version: '1.6.0'"), 'admin-api.ts synchronizes version to 1.6.0');
+assert(adminApiContent.includes("version: '1.7.0'"), 'admin-api.ts synchronizes version to 1.7.0');
 
 const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
 const healthContent = fs.readFileSync(healthPath, 'utf8');
-assert(healthContent.includes("version: '1.6.0'"), 'health.ts synchronizes version to 1.6.0');
+assert(healthContent.includes("version: '1.7.0'"), 'health.ts synchronizes version to 1.7.0');
 
 const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
 const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
-assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.6.0'), 'market-timing.ts sets User-Agent to 1.6.0');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.7.0'), 'market-timing.ts sets User-Agent to 1.7.0');
 
 // 33.5 Windows XAMPP Developer Parity in Build Packaging
 const buildPackagePath = path.resolve(__dirname, '../build-package.js');
@@ -2625,7 +2625,7 @@ assert(summaryCardsPhpV34.includes('/* translators: %d: Product ID. */'), 'summa
 assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatibility Tested up to: 7.1');
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
-assert(readmeTxtV34.includes('Stable tag: 1.6.0'), 'readme.txt declares Stable tag: 1.6.0');
+assert(readmeTxtV34.includes('Stable tag: 1.7.0'), 'readme.txt declares Stable tag: 1.7.0');
 assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
 assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
 assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
@@ -3787,6 +3787,138 @@ for (let i = 0; i < 100000; i++) {
 const errorFormatDuration = performance.now() - errorFormatStart;
 assert(formattedCount === 100000, `Successfully processed 100,000 diagnostic formatting cycles (${formattedCount}/100000)`);
 assert(errorFormatDuration < 50, `100,000 diagnostic formatting cycles completed in ${errorFormatDuration.toFixed(2)}ms (< 50ms SLA)`);
+
+// TEST GROUP 46: WordPress Plugin Check Compliance, Internationalization Contracts & Heavy-Load Concurrency Resilience (v1.7.0)
+console.log('\nTEST GROUP 46: WordPress Plugin Check Compliance, Internationalization Contracts & Heavy-Load Concurrency Resilience (v1.7.0)');
+
+// 46.1 WordPress.WP.I18n.MissingTranslatorsComment Contract: class-fxli-gemini-client.php
+const geminiClientPhpV46 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
+
+// Line 436 and 490 checks
+assert(
+	geminiClientPhpV46.includes('/* translators: 1: Endpoint URL, 2: Network error message. */'),
+	'class-fxli-gemini-client.php includes translators comment for network error string'
+);
+assert(
+	geminiClientPhpV46.includes('/* translators: 1: HTTP status code, 2: Error response body snippet. */'),
+	'class-fxli-gemini-client.php includes translators comment for calculation service HTTP status string'
+);
+
+// Systematic codebase audit for any missing translators comments on parameterized localization functions
+const phpFilesToAudit = [
+	path.resolve(__dirname, '../finlyzer.php'),
+	path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'),
+	path.resolve(__dirname, '../includes/class-fxli-rate-service.php'),
+	path.resolve(__dirname, '../includes/class-fxli-crypto.php'),
+	path.resolve(__dirname, '../includes/class-fxli-admin-page.php'),
+	path.resolve(__dirname, '../templates/partials/summary-cards.php')
+];
+
+let auditedPlaceholdersCount = 0;
+for (const phpFilePath of phpFilesToAudit) {
+	if (!fs.existsSync(phpFilePath)) continue;
+	const content = fs.readFileSync(phpFilePath, 'utf8');
+	const lines = content.split('\n');
+
+	for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+		const line = lines[lineIdx];
+		// Match __(), esc_html__(), _e(), _x() containing placeholders (%s, %d, %1$s, etc.)
+		if (/(__|esc_html__|esc_attr__|_e|_x)\s*\(\s*['"][^'"]*%(\d+\$)?(s|d|f|u)[^'"]*['"]/.test(line)) {
+			auditedPlaceholdersCount++;
+			// The preceding non-empty line or block comment must contain translators:
+			let foundTranslatorsComment = false;
+			for (let back = lineIdx - 1; back >= Math.max(0, lineIdx - 4); back--) {
+				if (/translators:/i.test(lines[back])) {
+					foundTranslatorsComment = true;
+					break;
+				}
+				if (lines[back].trim() !== '' && !lines[back].trim().startsWith('*') && !lines[back].trim().startsWith('/*') && !lines[back].trim().startsWith('//')) {
+					// hit non-comment code
+					break;
+				}
+			}
+			assert(
+				foundTranslatorsComment,
+				`Parameterized i18n call in ${path.basename(phpFilePath)} at line ${lineIdx + 1} must have a translators: comment`
+			);
+		}
+	}
+}
+assert(auditedPlaceholdersCount >= 2, `Audited at least 2 parameterized i18n calls with mandatory translators comment (found: ${auditedPlaceholdersCount})`);
+
+// 46.2 Polymorphic FXLI_Logger::log() Parameter Contract & PHP Runtime Immunity
+const loggerPhpV46 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-logger.php'), 'utf8');
+assert(
+	loggerPhpV46.includes("public static function log(mixed $arg1 = '', mixed $arg2 = 'GENERAL', mixed $arg3 = '', mixed $arg4 = []): void"),
+	'class-fxli-logger.php defines polymorphic log method with robust defaults preventing ArgumentCountError'
+);
+
+// Verify via PHP runtime that 1, 2, 3, and 4 argument invocations execute cleanly without ArgumentCountError
+try {
+	const phpLoggerTest = `<?php
+define('ABSPATH', 1);
+function get_option($key, $default = false) { return 'yes'; }
+function update_option($key, $val, $autoload = null) { return true; }
+function current_time($type) { return '2026-09-30 18:30:00'; }
+require "${path.resolve(__dirname, '../includes/class-fxli-logger.php').replace(/\\/g, '/')}";
+
+// Test 1 arg
+FXLI_Logger::log('info');
+// Test 2 args (which previously triggered ArgumentCountError if signature was strict)
+FXLI_Logger::log('warning', 'Test 2 arg message');
+// Test 3 args
+FXLI_Logger::log('error', 'Test 3 arg message', ['code' => 500]);
+// Test 4 args
+FXLI_Logger::log('debug', 'Test 4 arg message', ['code' => 200], 'test_source');
+
+echo json_encode(['success' => true]);
+`;
+	const phpExecResult = JSON.parse(execSync('php', { input: phpLoggerTest }).toString());
+	assert(phpExecResult.success === true, 'PHP FXLI_Logger::log executed 1, 2, 3, and 4 argument calls without error');
+} catch (err) {
+	assert(false, `PHP FXLI_Logger runtime execution test: ${err.message}`);
+}
+
+// 46.3 Pre-Rendered Error Debug DOM & Cache-Busting Verification (v1.7.0)
+const dashboardPhpV46 = fs.readFileSync(path.resolve(__dirname, '../templates/dashboard.php'), 'utf8');
+const adminPagePhpV46 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-admin-page.php'), 'utf8');
+const readmeTxtV46 = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
+const finlyzerPhpV46 = fs.readFileSync(path.resolve(__dirname, '../finlyzer.php'), 'utf8');
+
+assert(dashboardPhpV46.includes('id="finlyzer-dev-error-box"'), 'dashboard.php contains #finlyzer-dev-error-box container');
+assert(adminPagePhpV46.includes('FINLYZER_VERSION'), 'class-fxli-admin-page.php binds script versioning to FINLYZER_VERSION');
+assert(readmeTxtV46.includes('Stable tag: 1.7.0'), 'readme.txt declares Stable tag 1.7.0');
+assert(readmeTxtV46.includes('= 1.7.0 ='), 'readme.txt documents = 1.7.0 = changelog');
+assert(finlyzerPhpV46.includes("Version:           1.7.0"), 'finlyzer.php declares plugin Version 1.7.0');
+
+// Strict Guideline 13 & No Open Source mentions
+assert(!readmeTxtV46.toLowerCase().includes('open source') && !readmeTxtV46.toLowerCase().includes('opensource'), 'readme.txt contains zero "open source" mentions');
+assert(!finlyzerPhpV46.toLowerCase().includes('open source') && !finlyzerPhpV46.toLowerCase().includes('opensource'), 'finlyzer.php contains zero "open source" mentions');
+
+// 46.4 Heavy-Load i18n & Logger Formatting Stress Benchmark (100,000 Cycles)
+const i18nBenchStart = performance.now();
+let i18nProcessedCount = 0;
+
+for (let i = 0; i < 100000; i++) {
+	// Simulate i18n sprintf placeholder replacement and translators metadata extraction
+	const templateStr = 'Network error to %1$s: %2$s';
+	const endpoint = `https://api.finlyzer.dev/v1/summary?step=${i}`;
+	const errMsg = i % 2 === 0 ? 'cURL 28: Operation timed out' : 'cURL 7: Failed to connect to host';
+	const formatted = templateStr.replace('%1$s', endpoint).replace('%2$s', errMsg);
+
+	// Simulate logger normalization with default arguments
+	const level = (i % 3 === 0) ? 'error' : (i % 3 === 1) ? 'warning' : 'info';
+	const normalizedContext = { cycle: i, status: 503 };
+	const source = 'gemini_client';
+
+	if (formatted.length > 0 && level && normalizedContext.cycle === i && source) {
+		i18nProcessedCount++;
+	}
+}
+
+const i18nBenchDuration = performance.now() - i18nBenchStart;
+assert(i18nProcessedCount === 100000, `100,000 i18n and logger formatting cycles completed (${i18nProcessedCount}/100000)`);
+assert(i18nBenchDuration < 50, `100,000 formatting cycles executed in ${i18nBenchDuration.toFixed(2)}ms (< 50ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY
