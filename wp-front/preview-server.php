@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.2.0');
+	define('FINLYZER_VERSION', '1.3.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
@@ -659,6 +659,52 @@ if ($uri === '/wp-json/finlyzer/v1/clear-logs') {
 	header('Content-Type: application/json; charset=utf-8');
 	FXLI_Logger::get_instance()->clear_logs();
 	echo json_encode(['success' => true, 'message' => 'Telemetry buffer cleared']);
+	exit;
+}
+
+// 4.1 Handle Cloud Sentinel Settings REST Endpoints
+if ($uri === '/wp-json/finlyzer/v1/settings/cloud-resync') {
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode([
+		'success'    => true,
+		'latency_ms' => 48,
+		'message'    => 'Cloud Sentinel successfully re-synchronized and active.',
+	]);
+	exit;
+}
+
+if ($uri === '/wp-json/finlyzer/v1/settings/cloud-optin') {
+	header('Content-Type: application/json; charset=utf-8');
+	$raw = file_get_contents('php://input');
+	$data = json_decode((string) $raw, true);
+	$opt_in = !empty($data['opt_in']);
+	echo json_encode([
+		'success'      => true,
+		'cloud_opt_in' => $opt_in,
+		'connected'    => $opt_in,
+		'message'      => $opt_in
+			? 'Finlyzer Cloud Sentinel enabled. AI risk insights are now active.'
+			: 'Switched to 100% Local Engine. No external network requests will be made.',
+	]);
+	exit;
+}
+
+if ($uri === '/wp-json/finlyzer/v1/cloud/status') {
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode([
+		'success'          => true,
+		'cloud_opt_in'     => true,
+		'connected'        => true,
+		'status'           => 'active',
+		'site_id'          => 'c1d87e03aad2d4f352aa6e1ed516f164835c8f9e59ce87c05db8073b762881b0',
+		'short_site_id'    => 'c1d8••••••••81b0',
+		'mode'             => 'cloud_opt_in',
+		'encryption'       => 'AES-256-GCM',
+		'privacy_standard' => 'zero_pii',
+		'source'           => 'encrypted_db',
+		'is_locked'        => false,
+		'environment'      => 'development',
+	]);
 	exit;
 }
 

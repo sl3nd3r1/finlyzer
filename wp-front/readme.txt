@@ -7,7 +7,7 @@ Requires PHP: 8.1
 Requires Plugins: woocommerce
 WC requires at least: 8.0
 WC tested up to: 11.1
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -115,6 +115,13 @@ No. Finlyzer reads your existing WooCommerce order history and computes gateway 
 Finlyzer recognizes conversion spread models for PayPal, Stripe, Klarna, WooPayments, Adyen, Mollie, Square, Direct Wire/BACS, Cash on Delivery, and standard credit card gateways.
 
 == Changelog ==
+
+= 1.3.0 =
+* Security: Implemented authenticated encryption at rest (AEAD AES-256-GCM) with dynamic HKDF-SHA256 key derivation from WordPress core salts.
+* Compliance: Enforced `autoload = false` for cryptographic credentials, adhering to 2026 WordPress Plugin Directory performance and security standards.
+* Resilience: Enhanced self-healing site pairing lifecycle with forced re-pairing (`$force = true`) to automatically recover from authentication desynchronization.
+* Performance: Integrated high-throughput request-scoped memory caching to eliminate redundant OpenSSL decryption operations during bulk order auditing.
+* Cleanup: Added explicit database sanitization in `uninstall.php` ensuring complete removal of encrypted secrets and pairing metadata upon plugin deletion per Guideline 11.
 
 = 1.2.0 =
 * Feature: Decoupled resilient dashboard rendering engine with independent fragment resolution (`Promise.allSettled`).

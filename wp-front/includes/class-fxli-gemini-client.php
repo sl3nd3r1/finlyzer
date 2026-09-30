@@ -136,7 +136,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.2.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -210,7 +210,7 @@ final class FXLI_Gemini_Client {
 
 		// handle 401 signature mismatch with single automated self-healing re-pair attempt
 		if ($code === 401 && class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in() && class_exists('FXLI_Crypto')) {
-			if (FXLI_Crypto::auto_pair_site()) {
+			if (FXLI_Crypto::auto_pair_site(null, true)) {
 				$new_sig = FXLI_Security::sign_worker_payload($body, $timestamp);
 				if ($new_sig !== '') {
 					$retry_res = wp_remote_post($endpoint, [
@@ -384,7 +384,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.2.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -440,7 +440,7 @@ final class FXLI_Gemini_Client {
 
 		// handle 401 signature mismatch with one-shot automated re-pair and retry
 		if ($code === 401 && class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in() && class_exists('FXLI_Crypto')) {
-			if (FXLI_Crypto::auto_pair_site()) {
+			if (FXLI_Crypto::auto_pair_site(null, true)) {
 				$new_sig = FXLI_Security::sign_worker_payload($body, $timestamp);
 				if ($new_sig !== '') {
 					$retry_res = wp_remote_post($endpoint, [
@@ -519,7 +519,7 @@ final class FXLI_Gemini_Client {
 		$verify_url = $clean_base . '/api/v1/verify';
 
 		$site_url = function_exists('home_url') ? home_url() : 'http://localhost';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.2.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
 		$timestamp = time();
 		$body = wp_json_encode(['action' => 'verify', 'timestamp' => $timestamp]);
 		if ($body === false) {

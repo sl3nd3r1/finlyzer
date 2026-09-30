@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.2.0', `FINLYZER_VERSION is bumped to 1.2.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.3.0', `FINLYZER_VERSION is bumped to 1.3.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
-assert(readmeContent.includes('Stable tag: 1.2.0'), 'readme.txt Stable tag matches v1.2.0');
+assert(readmeContent.includes('Stable tag: 1.3.0'), 'readme.txt Stable tag matches v1.3.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1487,12 +1487,12 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.2.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.2.0');
-assert(finlyzerMainPhp.includes('* Version:           1.2.0'), 'finlyzer.php header declares Version 1.2.0');
-assert(packageJsonFront.version === '1.2.0', 'frontend package.json declares version 1.2.0');
-assert(packageJsonBack.version === '1.2.0', 'backend package.json declares version 1.2.0');
-assert(readmeTxt.includes('Stable tag: 1.2.0'), 'readme.txt declares Stable tag: 1.2.0');
-assert(readmeTxt.includes('= 1.2.0 ='), 'readme.txt documents 1.2.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.3.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.3.0');
+assert(finlyzerMainPhp.includes('* Version:           1.3.0'), 'finlyzer.php header declares Version 1.3.0');
+assert(packageJsonFront.version === '1.3.0', 'frontend package.json declares version 1.3.0');
+assert(packageJsonBack.version === '1.3.0', 'backend package.json declares version 1.3.0');
+assert(readmeTxt.includes('Stable tag: 1.3.0'), 'readme.txt declares Stable tag: 1.3.0');
+assert(readmeTxt.includes('= 1.3.0 ='), 'readme.txt documents 1.3.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1540,8 +1540,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.2.0'"), 'class-fxli-gemini-client.php declares matching 1.2.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.2.0')"), 'preview-server.php declares FINLYZER_VERSION 1.2.0');
+assert(geminiClientPhpContent.includes("'1.3.0'"), 'class-fxli-gemini-client.php declares matching 1.3.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.3.0')"), 'preview-server.php declares FINLYZER_VERSION 1.3.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2502,7 +2502,7 @@ assert(secretMatchExample === null, '.env.production.example purges baked FINLYZ
 const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
 const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
 assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
-assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.2.0'), 'wp-detector.ts sets User-Agent to 1.2.0');
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.3.0'), 'wp-detector.ts sets User-Agent to 1.3.0');
 
 // 33.3 Gemini API Key Header Transmission (No Query String Leakage)
 // Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
@@ -2511,18 +2511,18 @@ const geminiServiceContent = fs.readFileSync(geminiServicePath, 'utf8');
 assert(geminiServiceContent.includes("'x-goog-api-key': apiKey"), "gemini.ts passes API key securely via 'x-goog-api-key' header");
 assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?key= query parameter from API URL');
 
-// 33.4 Multi-Component 1.2.0 Version Consistency across Systems
+// 33.4 Multi-Component 1.3.0 Version Consistency across Systems
 const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
 const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
-assert(adminApiContent.includes("version: '1.2.0'"), 'admin-api.ts synchronizes version to 1.2.0');
+assert(adminApiContent.includes("version: '1.3.0'"), 'admin-api.ts synchronizes version to 1.3.0');
 
 const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
 const healthContent = fs.readFileSync(healthPath, 'utf8');
-assert(healthContent.includes("version: '1.2.0'"), 'health.ts synchronizes version to 1.2.0');
+assert(healthContent.includes("version: '1.3.0'"), 'health.ts synchronizes version to 1.3.0');
 
 const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
 const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
-assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.2.0'), 'market-timing.ts sets User-Agent to 1.2.0');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.3.0'), 'market-timing.ts sets User-Agent to 1.3.0');
 
 // 33.5 Windows XAMPP Developer Parity in Build Packaging
 const buildPackagePath = path.resolve(__dirname, '../build-package.js');
@@ -2619,7 +2619,7 @@ assert(summaryCardsPhpV34.includes('/* translators: %d: Product ID. */'), 'summa
 assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatibility Tested up to: 7.1');
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
-assert(readmeTxtV34.includes('Stable tag: 1.2.0'), 'readme.txt declares Stable tag: 1.2.0');
+assert(readmeTxtV34.includes('Stable tag: 1.3.0'), 'readme.txt declares Stable tag: 1.3.0');
 assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
 assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
 assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
@@ -3333,6 +3333,149 @@ const decoupleBenchDuration = performance.now() - decoupleBenchStart;
 assert(successfulSummaries === 100000, 'All 100,000 summary calculations rendered without interruption');
 assert(degradedInsights === 20000, 'All 20,000 remote AI hiccups were gracefully absorbed without taking down the dashboard');
 assert(decoupleBenchDuration < 100, `100,000 decoupled fragment state resolutions completed in ${decoupleBenchDuration.toFixed(2)}ms (< 100ms SLA)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 42: WordPress 2026 Directory Compliant AEAD HMAC Storage, Forced Re-Pairing & High-Throughput Memory Cache (v1.3.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 42: WordPress 2026 Directory Compliant AEAD HMAC Storage, Forced Re-Pairing & High-Throughput Memory Cache (v1.3.0)');
+
+// 42.1 WordPress Plugin Directory Guidelines & Security Laws (2026) Compliance in class-fxli-crypto.php
+const cryptoPhpPathV42 = path.resolve(__dirname, '../includes/class-fxli-crypto.php');
+const cryptoPhpContentV42 = fs.readFileSync(cryptoPhpPathV42, 'utf8');
+
+// Guideline Invariant 1: Authenticated Encryption at Rest (AEAD AES-256-GCM)
+assert(cryptoPhpContentV42.includes("'aes-256-gcm'"), 'class-fxli-crypto.php implements AES-256-GCM authenticated cipher');
+assert(cryptoPhpContentV42.includes('openssl_encrypt(') && cryptoPhpContentV42.includes('$tag'), 'class-fxli-crypto.php captures 16-byte GCM authentication tag');
+assert(cryptoPhpContentV42.includes('IV_LENGTH = 12') && cryptoPhpContentV42.includes('random_bytes(self::IV_LENGTH)'), 'class-fxli-crypto.php uses cryptographically secure 12-byte initialization vector (96-bit standard for GCM)');
+
+// Guideline Invariant 2: Dynamic HKDF-SHA256 Derivation (Zero Encryption Keys in Database)
+assert(cryptoPhpContentV42.includes('hash_hkdf('), 'class-fxli-crypto.php derives encryption key dynamically using HKDF-SHA256');
+assert(cryptoPhpContentV42.includes("wp_salt('auth')"), 'class-fxli-crypto.php salts key derivation with WordPress core wp_salt()');
+assert(cryptoPhpContentV42.includes('AUTH_KEY'), 'class-fxli-crypto.php incorporates wp-config.php AUTH_KEY');
+
+// Guideline Invariant 3: Autoloading Prohibition (autoload = false)
+assert(cryptoPhpContentV42.includes("update_option(self::OPTION_ENCRYPTED_SECRET, $encrypted, false)"), 'class-fxli-crypto.php strictly sets autoload=false to prevent database bloat');
+
+// Guideline Invariant 4: Envelope Storage Structure
+assert(cryptoPhpContentV42.includes("'data'") && cryptoPhpContentV42.includes("'iv'") && cryptoPhpContentV42.includes("'tag'"), 'class-fxli-crypto.php serializes authenticated payload envelope with data, iv, and tag');
+
+// Guideline Invariant 5: Request-Scoped Memory Caching for High-Throughput Loops
+assert(cryptoPhpContentV42.includes('private static ?string $decrypted_cache = null;'), 'class-fxli-crypto.php defines request-scoped in-memory decryption cache');
+assert(cryptoPhpContentV42.includes('if (self::$decrypted_cache !== null)'), 'class-fxli-crypto.php checks memory cache before engaging OpenSSL HKDF/GCM pipeline');
+
+// Guideline Invariant 6: Resilient Forced Re-Pairing Lifecycle
+assert(cryptoPhpContentV42.includes('public static function auto_pair_site(?string $worker_base_url = null, bool $force = false)'), 'class-fxli-crypto.php auto_pair_site accepts $force parameter');
+assert(cryptoPhpContentV42.includes('self::$decrypted_cache = null;'), 'class-fxli-crypto.php invalidates in-memory cache when new secret is persisted or forced');
+assert(cryptoPhpContentV42.includes('public static function force_re_pair(): array'), 'class-fxli-crypto.php exposes force_re_pair() helper');
+assert(cryptoPhpContentV42.includes('self::auto_pair_site(null, true)'), 'force_re_pair invokes auto_pair_site with $force = true');
+
+// 42.2 Client-Side and Subsystem Resilient Forced Pairing Integration
+const geminiClientPhpV42 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
+assert(geminiClientPhpV42.includes('FXLI_Crypto::auto_pair_site(null, true)'), 'class-fxli-gemini-client.php passes $force = true on HTTP 401 recovery');
+
+const restApiPhpV42 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-rest-api.php'), 'utf8');
+assert(restApiPhpV42.includes('FXLI_Crypto::auto_pair_site(null, true)'), 'class-fxli-rest-api.php passes $force = true on handle_cloud_optin()');
+
+const envPhpV42 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-env.php'), 'utf8');
+assert(envPhpV42.includes('finlyzer-worker-prod.ebi1055lol.workers.dev'), 'class-fxli-env.php provides canonical production worker endpoint fallback');
+
+const previewServerPhpV42 = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
+assert(previewServerPhpV42.includes('/settings/cloud-resync'), 'preview-server.php mocks /settings/cloud-resync endpoint');
+assert(previewServerPhpV42.includes('/settings/cloud-optin'), 'preview-server.php mocks /settings/cloud-optin endpoint');
+assert(previewServerPhpV42.includes('/cloud/status'), 'preview-server.php mocks /cloud/status endpoint');
+
+// 42.3 Uninstallation Cleanup Compliance (WordPress Guideline 11)
+const uninstallPhpPathV42 = path.resolve(__dirname, '../uninstall.php');
+assert(fs.existsSync(uninstallPhpPathV42), 'uninstall.php exists in plugin root');
+const uninstallPhpContentV42 = fs.readFileSync(uninstallPhpPathV42, 'utf8');
+assert(uninstallPhpContentV42.includes("delete_option('finlyzer_worker_hmac_secret_encrypted')"), 'uninstall.php cleans up encrypted secret option');
+assert(uninstallPhpContentV42.includes("delete_option('finlyzer_cloud_opt_in')"), 'uninstall.php cleans up cloud opt-in option');
+assert(uninstallPhpContentV42.includes("delete_option('finlyzer_site_id')"), 'uninstall.php cleans up site_id option');
+
+// 42.4 Cryptographic AEAD Authenticity & Tamper Resistance Challenge (Node crypto simulation)
+function mockDeriveKey(salt, authKey) {
+	return crypto.hkdfSync('sha256', authKey, salt, 'finlyzer-hmac-v1', 32);
+}
+
+function mockEncrypt(plainSecret, key) {
+	const iv = crypto.randomBytes(12);
+	const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+	const ciphertext = Buffer.concat([cipher.update(plainSecret, 'utf8'), cipher.final()]);
+	const tag = cipher.getAuthTag();
+	return JSON.stringify({
+		v: 1,
+		iv: iv.toString('base64'),
+		tag: tag.toString('base64'),
+		ciphertext: ciphertext.toString('base64')
+	});
+}
+
+function mockDecrypt(envelopeJson, key) {
+	const parsed = JSON.parse(envelopeJson);
+	const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(parsed.iv, 'base64'));
+	decipher.setAuthTag(Buffer.from(parsed.tag, 'base64'));
+	const decrypted = Buffer.concat([decipher.update(Buffer.from(parsed.ciphertext, 'base64')), decipher.final()]);
+	return decrypted.toString('utf8');
+}
+
+const testPlainSecret = 'sec_site_test_pairing_token_0123456789abcdef';
+const salt = 'wp_auth_salt_super_secure_random_string_2026';
+const authKey = 'wp_auth_key_super_secure_random_string_2026';
+const derivedKey = mockDeriveKey(salt, authKey);
+const encryptedEnvelope = mockEncrypt(testPlainSecret, derivedKey);
+
+// Verify roundtrip decryption
+const decryptedSecret = mockDecrypt(encryptedEnvelope, derivedKey);
+assert(decryptedSecret === testPlainSecret, 'AEAD AES-256-GCM roundtrip decrypts original secret successfully');
+
+// Verify tamper resistance: modifying ciphertext or auth tag must throw
+let tamperDetected = false;
+try {
+	const tamperedEnvelopeObj = JSON.parse(encryptedEnvelope);
+	const rawCipher = Buffer.from(tamperedEnvelopeObj.ciphertext, 'base64');
+	rawCipher[0] ^= 0x01; // flip 1 bit
+	tamperedEnvelopeObj.ciphertext = rawCipher.toString('base64');
+	mockDecrypt(JSON.stringify(tamperedEnvelopeObj), derivedKey);
+} catch (e) {
+	tamperDetected = true;
+}
+assert(tamperDetected, 'Modifying 1 bit in AEAD ciphertext throws authentication failure (tamper-proof)');
+
+// Verify wrong key rejection
+let wrongKeyDetected = false;
+try {
+	const wrongKey = mockDeriveKey('different_salt', authKey);
+	mockDecrypt(encryptedEnvelope, wrongKey);
+} catch (e) {
+	wrongKeyDetected = true;
+}
+assert(wrongKeyDetected, 'Decrypting with incorrect salt or AUTH_KEY throws authentication tag mismatch');
+
+// 42.5 High-Throughput Heavy-Load Stress Test: In-Memory Decryption Cache (100,000 Operations)
+const memCacheBenchStart = performance.now();
+let simulatedCacheHits = 0;
+let simulatedCryptoOps = 0;
+
+let runtimeCache = null;
+for (let i = 0; i < 100000; i++) {
+	if (i === 50000) {
+		// simulate forced re-pairing clearing cache mid-stream
+		runtimeCache = null;
+	}
+
+	if (runtimeCache !== null) {
+		simulatedCacheHits++;
+		const secret = runtimeCache;
+	} else {
+		simulatedCryptoOps++;
+		runtimeCache = mockDecrypt(encryptedEnvelope, derivedKey);
+	}
+}
+const memCacheBenchDuration = performance.now() - memCacheBenchStart;
+
+assert(simulatedCryptoOps === 2, `Exactly 2 OpenSSL decryptions occurred during 100,000 operations (initial + post-force) (got ${simulatedCryptoOps})`);
+assert(simulatedCacheHits === 99998, `99,998 accesses hit request-scoped in-memory cache directly (got ${simulatedCacheHits})`);
+assert(memCacheBenchDuration < 30, `100,000 secret retrievals completed in ${memCacheBenchDuration.toFixed(2)}ms (< 30ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

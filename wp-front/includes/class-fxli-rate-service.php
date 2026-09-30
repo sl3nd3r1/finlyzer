@@ -223,7 +223,7 @@ final class FXLI_Rate_Service {
 				'timeout'     => self::REQUEST_TIMEOUT_SECONDS,
 				'redirection' => 2,
 				'httpversion' => '1.1',
-				'user-agent'  => 'Finlyzer/' . (defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.2.0') . '; ' . (function_exists('home_url') ? home_url() : 'WordPress'),
+				'user-agent'  => 'Finlyzer/' . (defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0') . '; ' . (function_exists('home_url') ? home_url() : 'WordPress'),
 				'sslverify'   => true,
 				'headers'     => [
 					'Accept' => 'application/json',

@@ -25,6 +25,11 @@ delete_option('finlyzer_db_version');
 delete_option('fxli_db_version');
 delete_option('finlyzer_order_state_version');
 delete_option('finlyzer_telemetry_logs');
+delete_option('finlyzer_worker_hmac_secret_encrypted');
+delete_option('finlyzer_worker_hmac_secret');
+delete_option('finlyzer_cloud_opt_in');
+delete_option('finlyzer_site_id');
+delete_option('finlyzer_worker_endpoint');
 
 // unschedule daily scanner cron
 wp_clear_scheduled_hook('fxli_daily_scan');

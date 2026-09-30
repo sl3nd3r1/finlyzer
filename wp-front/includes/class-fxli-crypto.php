@@ -21,6 +21,14 @@ final class FXLI_Crypto {
 	public const OPTION_ENCRYPTED_SECRET = 'finlyzer_worker_hmac_secret_encrypted';
 	public const OPTION_LEGACY_PLAINTEXT_SECRET = 'finlyzer_worker_hmac_secret';
 
+	// request-scoped memory cache for decrypted secret to ensure sub-microsecond performance under heavy order batches
+	private static ?string $decrypted_cache = null;
+
+	// clear request-scoped decrypted cache
+	public static function clear_memory_cache(): void {
+		self::$decrypted_cache = null;
+	}
+
 	// derive a deterministic 256-bit encryption key using HKDF-SHA256 from WordPress core salts
 	public static function derive_encryption_key(): string {
 		// collect server-level high-entropy salts from wp-config.php
@@ -226,40 +234,51 @@ final class FXLI_Crypto {
 			return __('Encryption failed. Please verify OpenSSL extension is enabled.', 'finlyzer');
 		}
 
-		// save encrypted envelope to wp_options
+		// save encrypted envelope to wp_options with autoload strictly disabled (false / 'no')
 		if (function_exists('update_option')) {
 			update_option(self::OPTION_ENCRYPTED_SECRET, $encrypted, false);
 			// purge legacy plaintext option if present
 			delete_option(self::OPTION_LEGACY_PLAINTEXT_SECRET);
+			self::$decrypted_cache = $secret;
 			return true;
 		}
 
 		return false;
 	}
 
-	// retrieve decrypted secret from database
+	// retrieve decrypted secret from database (using request-scoped memory cache to avoid repeated OpenSSL ops)
 	public static function get_stored_secret(): ?string {
+		if (self::$decrypted_cache !== null) {
+			return self::$decrypted_cache;
+		}
+
 		if (!function_exists('get_option')) {
 			return null;
 		}
 
 		$encrypted = get_option(self::OPTION_ENCRYPTED_SECRET, null);
 		if (is_string($encrypted) && $encrypted !== '') {
-			return self::decrypt_secret($encrypted);
+			$decrypted = self::decrypt_secret($encrypted);
+			if ($decrypted !== null) {
+				self::$decrypted_cache = $decrypted;
+				return $decrypted;
+			}
 		}
 
 		// check for legacy unencrypted option and auto-migrate
 		$legacy = get_option(self::OPTION_LEGACY_PLAINTEXT_SECRET, null);
 		if (is_string($legacy) && $legacy !== '') {
 			self::save_secret($legacy);
+			self::$decrypted_cache = $legacy;
 			return $legacy;
 		}
 
 		return null;
 	}
 
-	// purge stored database secret
+	// purge stored database secret and clear memory cache
 	public static function delete_stored_secret(): bool {
+		self::$decrypted_cache = null;
 		if (!function_exists('delete_option')) {
 			return false;
 		}
@@ -269,21 +288,27 @@ final class FXLI_Crypto {
 	}
 
 	// perform automated site pairing with Cloudflare Worker upon explicit administrator opt-in (Guidelines 7 & 9 compliant)
-	public static function auto_pair_site(?string $worker_base_url = null): bool {
+	public static function auto_pair_site(?string $worker_base_url = null, bool $force = false): bool {
 		// return early if cloud service is not explicitly opted in by administrator
 		if (!class_exists('FXLI_Env') || !FXLI_Env::is_cloud_opted_in()) {
 			return false;
 		}
 
-		// return early if already configured with valid secret in database
-		$existing = self::get_stored_secret();
-		if ($existing !== null && strlen($existing) >= self::MIN_SECRET_LENGTH && !str_contains($existing, 'dev-ephemeral')) {
-			return true;
+		// return early if already configured with valid secret in database unless force re-pairing is requested
+		if (!$force) {
+			$existing = self::get_stored_secret();
+			if ($existing !== null && strlen($existing) >= self::MIN_SECRET_LENGTH && !str_contains($existing, 'dev-ephemeral')) {
+				return true;
+			}
 		}
 
 		// return early if managed via wp-config.php constant
 		if (defined('FINLYZER_WORKER_HMAC_SECRET') && is_string(FINLYZER_WORKER_HMAC_SECRET) && FINLYZER_WORKER_HMAC_SECRET !== '') {
 			return true;
+		}
+
+		if ($force) {
+			self::clear_memory_cache();
 		}
 
 		// resolve worker base URL
@@ -306,7 +331,7 @@ final class FXLI_Crypto {
 		$pairEndpoint = rtrim($baseUrl, '/') . '/api/v1/pair';
 		$siteId = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : hash('sha256', (defined('AUTH_KEY') ? AUTH_KEY : 'finlyzer') . '|' . (function_exists('home_url') ? home_url() : 'localhost'));
 		$siteUrl = function_exists('home_url') ? home_url() : '';
-		$pluginVersion = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.26.0';
+		$pluginVersion = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
 		$now = time();
 		$nonce = function_exists('wp_generate_password') ? wp_generate_password(32, false) : bin2hex(random_bytes(16));
 		$signature = hash_hmac('sha256', "finlyzer:pair:{$siteId}:{$now}:{$nonce}", $siteId);
@@ -408,8 +433,8 @@ final class FXLI_Crypto {
 			// purge existing secret to force fresh pairing
 			self::delete_stored_secret();
 
-			// execute fresh pairing
-			$paired = self::auto_pair_site();
+			// execute fresh pairing with force flag
+			$paired = self::auto_pair_site(null, true);
 			if (!$paired) {
 				// restore previous secret if fresh pairing was unsuccessful
 				if ($backupSecret !== null && $backupSecret !== '') {

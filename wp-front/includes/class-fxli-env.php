@@ -238,7 +238,8 @@ final class FXLI_Env {
 			return 'http://127.0.0.1:8787/insight';
 		}
 
-		return '';
+		// 7. canonical production worker endpoint fallback
+		return 'https://finlyzer-worker-prod.ebi1055lol.workers.dev/insight';
 	}
 
 	// resolve Cloudflare Worker order analysis endpoint URL with security enforcement

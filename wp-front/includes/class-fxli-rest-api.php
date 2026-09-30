@@ -517,7 +517,7 @@ final class FXLI_REST_API {
 			// explicitly opted in: attempt pairing if needed
 			$paired = false;
 			if (class_exists('FXLI_Crypto')) {
-				$paired = FXLI_Crypto::auto_pair_site();
+				$paired = FXLI_Crypto::auto_pair_site(null, true);
 			}
 
 			return new WP_REST_Response([
