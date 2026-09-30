@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/');
 }
 if (!defined('FINLYZER_VERSION')) {
-	define('FINLYZER_VERSION', '1.3.0');
+	define('FINLYZER_VERSION', '1.4.0');
 }
 if (!defined('FINLYZER_PLUGIN_DIR')) {
 	define('FINLYZER_PLUGIN_DIR', __DIR__ . '/');
@@ -815,7 +815,10 @@ header('Content-Type: text/html; charset=utf-8');
 		window.Finlyzer = {
 			restUrl: '/wp-json/finlyzer/v1',
 			nonce: '<?php echo esc_attr(wp_create_nonce('wp_rest')); ?>',
-			cloudOptIn: true
+			cloudOptIn: true,
+			isDev: true,
+			env: 'development',
+			debugLogging: true
 		};
 		window.FXLI = window.Finlyzer;
 	</script>

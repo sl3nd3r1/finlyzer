@@ -78,12 +78,19 @@ final class FXLI_Admin_Page {
 			FINLYZER_VERSION
 		);
 
-		// localize configuration safely for htmx request headers
+		// localize configuration safely for htmx request headers and developer diagnostics
 		$is_cloud_opted_in = class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in();
+		$is_dev            = class_exists('FXLI_Env') && FXLI_Env::is_development();
+		$current_env       = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production';
+		$debug_logging     = class_exists('FXLI_Env') && FXLI_Env::debug_logging();
+
 		$localized = [
-			'restUrl'    => esc_url_raw(rest_url('finlyzer/v1')),
-			'nonce'      => wp_create_nonce('wp_rest'),
-			'cloudOptIn' => $is_cloud_opted_in,
+			'restUrl'      => esc_url_raw(rest_url('finlyzer/v1')),
+			'nonce'        => wp_create_nonce('wp_rest'),
+			'cloudOptIn'   => $is_cloud_opted_in,
+			'isDev'        => $is_dev,
+			'env'          => $current_env,
+			'debugLogging' => $debug_logging,
 		];
 
 		wp_localize_script('finlyzer-dashboard', 'Finlyzer', $localized);

@@ -120,13 +120,20 @@
 
 		// smooth exit transition
 		connStatus.className = 'finlyzer-connection-status finlyzer-connection-status--connected';
+		var devBox = document.getElementById('finlyzer-dev-error-box');
+		if (devBox) {
+			devBox.style.display = 'none';
+		}
 		setTimeout(function () {
 			connStatus.style.display = 'none';
 		}, 300);
 	}
 
+	// global container for last error diagnostic context
+	var lastErrorContext = null;
+
 	// display human-friendly connection lost banner with manual retry action and transparent error diagnostics
-	function setConnectionLostState(errDetail) {
+	function setConnectionLostState(errDetail, errorContext) {
 		var connStatus = document.getElementById('finlyzer-connection-status');
 		if (!connStatus) return;
 
@@ -151,34 +158,152 @@
 		if (connIcon) connIcon.style.display = 'inline-block';
 		if (retryBtn) retryBtn.style.display = 'inline-flex';
 
-		if (connText) {
-			var baseMsg = 'Connection to the Finlyzer calculation service was lost';
-			// sanitize error detail: never leak technical HTTP status codes, JSON objects, worker errors or HTML to merchants
-			var safeDetail = '';
-			if (errDetail && typeof errDetail === 'string') {
-				var trimmed = errDetail.trim();
-				// suppress JSON payloads, HTTP status dumps, HTML tags, and technical stack keys
-				var isTechnical = trimmed.indexOf('{') !== -1 ||
-					trimmed.indexOf('HTTP') !== -1 ||
-					trimmed.indexOf('worker_') !== -1 ||
-					trimmed.indexOf('<') !== -1 ||
-					trimmed.indexOf('signature') !== -1 ||
-					trimmed.indexOf('status') !== -1;
-				if (!isTechnical && trimmed.length > 0 && trimmed.length < 80) {
-					safeDetail = trimmed;
-				}
+		var config = window.Finlyzer || window.FXLI;
+		var isDev = !!(config && (config.isDev || config.env === 'development')) || !!document.getElementById('finlyzer-dev-section');
+		var ctx = errorContext || lastErrorContext || {};
+
+		if (isDev) {
+			// =========================================================
+			// DEVELOPMENT MODE: Concrete, unmasked diagnostic reporting
+			// =========================================================
+			var rawErr = (errDetail && typeof errDetail === 'string') ? errDetail.trim() : 'Unknown connection error';
+			if (connText) {
+				connText.textContent = '[DEV DIAGNOSTIC] Connection to Finlyzer calculation service failed (' + rawErr + '). Attempted ' + MAX_ATTEMPTS + ' times.';
 			}
 
-			if (safeDetail) {
-				connText.textContent = baseMsg + ' (' + safeDetail + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+			// Render or update interactive developer diagnostics drawer
+			var devBox = document.getElementById('finlyzer-dev-error-box');
+			if (!devBox) {
+				devBox = document.createElement('div');
+				devBox.id = 'finlyzer-dev-error-box';
+				devBox.className = 'finlyzer-dev-error-box';
+				devBox.style.cssText = 'margin: 0 18px 16px 18px; padding: 12px 16px; background: rgba(10, 15, 29, 0.95); border: 1px dashed rgba(239, 68, 68, 0.6); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: #FCA5A5; text-align: left; line-height: 1.6;';
+				connStatus.appendChild(devBox);
 			} else {
-				connText.textContent = baseMsg + '. We attempted to reconnect ' + MAX_ATTEMPTS + ' times without success.';
+				devBox.innerHTML = '';
+				devBox.style.display = 'block';
+			}
+
+			// Header badge
+			var headerDiv = document.createElement('div');
+			headerDiv.style.cssText = 'font-weight: 700; color: #F87171; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(239,68,68,0.2); padding-bottom: 6px;';
+			
+			var headerTitle = document.createElement('span');
+			headerTitle.textContent = '⚠️ Live Diagnostic Breakdown (Dev Build Mode)';
+			headerDiv.appendChild(headerTitle);
+
+			var jumpBtn = document.createElement('a');
+			jumpBtn.href = '#finlyzer-dev-section';
+			jumpBtn.textContent = '⚡ Inspect Telemetry Table';
+			jumpBtn.style.cssText = 'color: #38BDF8; text-decoration: underline; cursor: pointer; font-size: 10px; font-weight: 600;';
+			headerDiv.appendChild(jumpBtn);
+			devBox.appendChild(headerDiv);
+
+			// Details list
+			var list = document.createElement('div');
+			list.style.cssText = 'display: grid; gap: 4px;';
+
+			// Target URL
+			var urlRow = document.createElement('div');
+			var urlLabel = document.createElement('strong');
+			urlLabel.textContent = 'Failed Request: ';
+			urlLabel.style.color = '#94A3B8';
+			var urlVal = document.createElement('code');
+			urlVal.textContent = ctx.url ? ctx.url : (rawErr.indexOf('http') >= 0 ? rawErr : 'REST API Fragment (/summary)');
+			urlVal.style.cssText = 'color: #38BDF8; background: rgba(0,0,0,0.3); padding: 1px 4px; border-radius: 3px;';
+			urlRow.appendChild(urlLabel);
+			urlRow.appendChild(urlVal);
+			list.appendChild(urlRow);
+
+			// HTTP / Error Code
+			var statusRow = document.createElement('div');
+			var statusLabel = document.createElement('strong');
+			statusLabel.textContent = 'Status / Detail: ';
+			statusLabel.style.color = '#94A3B8';
+			var statusVal = document.createElement('span');
+			statusVal.textContent = rawErr;
+			statusVal.style.cssText = 'color: #F87171; font-weight: 600;';
+			statusRow.appendChild(statusLabel);
+			statusRow.appendChild(statusVal);
+			list.appendChild(statusRow);
+
+			// Raw response body if available
+			var respText = ctx.responseText || '';
+			if (respText) {
+				var respRow = document.createElement('div');
+				var respLabel = document.createElement('strong');
+				respLabel.textContent = 'Server Response Body: ';
+				respLabel.style.color = '#94A3B8';
+				var respPre = document.createElement('pre');
+				respPre.textContent = respText.slice(0, 500);
+				respPre.style.cssText = 'margin: 4px 0; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 4px; color: #FCA5A5; white-space: pre-wrap; word-break: break-all; font-size: 11px;';
+				respRow.appendChild(respLabel);
+				respRow.appendChild(respPre);
+				list.appendChild(respRow);
+			}
+
+			// Contextual hint
+			var hintRow = document.createElement('div');
+			hintRow.style.cssText = 'margin-top: 6px; padding: 6px 8px; background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; border-radius: 3px; color: #FDE68A;';
+			var hintText = 'Check Cloud Sentinel site pairing or verify endpoint connectivity.';
+			if (rawErr.indexOf('invalid_signature') >= 0 || respText.indexOf('invalid_signature') >= 0 || rawErr.indexOf('401') >= 0) {
+				hintText = 'Cloudflare Worker rejected HMAC signature. When pointing to a live remote worker in development, click "Cloud Sentinel" in the header to pair the site, or set a valid FINLYZER_WORKER_HMAC_SECRET in .env.development.';
+			} else if (rawErr.indexOf('403') >= 0 || respText.indexOf('rest_forbidden') >= 0) {
+				hintText = 'WordPress REST API permission check failed. Ensure your session has "manage_woocommerce" capability and a valid X-WP-Nonce.';
+			} else if (rawErr.indexOf('503') >= 0 || respText.indexOf('calculation_service_unavailable') >= 0) {
+				hintText = 'Calculation service unavailable. Both remote worker analysis and local calculation fallback failed. See Outbound Telemetry table below.';
+			} else if (rawErr.indexOf('transport') >= 0 || rawErr.indexOf('Failed to fetch') >= 0) {
+				hintText = 'Network transport error. Could not connect to the local server or REST endpoint. Verify your web server is running.';
+			}
+			hintRow.textContent = '💡 Hint: ' + hintText;
+			list.appendChild(hintRow);
+
+			devBox.appendChild(list);
+
+			console.error('[Finlyzer Dev Diagnostics]', {
+				error: rawErr,
+				context: ctx,
+				timestamp: new Date().toISOString()
+			});
+		} else {
+			// =========================================================
+			// PRODUCTION MODE: Merchant-safe sanitized copy (Guideline compliant)
+			// =========================================================
+			var devBoxProd = document.getElementById('finlyzer-dev-error-box');
+			if (devBoxProd) {
+				devBoxProd.style.display = 'none';
+			}
+
+			if (connText) {
+				var baseMsg = 'Connection to the Finlyzer calculation service was lost';
+				// sanitize error detail: never leak technical HTTP status codes, JSON objects, worker errors or HTML to merchants
+				var safeDetail = '';
+				if (errDetail && typeof errDetail === 'string') {
+					var trimmed = errDetail.trim();
+					// suppress JSON payloads, HTTP status dumps, HTML tags, and technical stack keys
+					var isTechnical = trimmed.indexOf('{') !== -1 ||
+						trimmed.indexOf('HTTP') !== -1 ||
+						trimmed.indexOf('worker_') !== -1 ||
+						trimmed.indexOf('<') !== -1 ||
+						trimmed.indexOf('signature') !== -1 ||
+						trimmed.indexOf('status') !== -1;
+					if (!isTechnical && trimmed.length > 0 && trimmed.length < 80) {
+						safeDetail = trimmed;
+					}
+				}
+
+				if (safeDetail) {
+					connText.textContent = baseMsg + ' (' + safeDetail + '). Attempted ' + MAX_ATTEMPTS + ' times.';
+				} else {
+					connText.textContent = baseMsg + '. We attempted to reconnect ' + MAX_ATTEMPTS + ' times without success.';
+				}
 			}
 		}
 	}
 
 	// handle request failure and coordinate automatic retry with exponential backoff
-	function handleConnectionError(errDetail) {
+	function handleConnectionError(errDetail, errorContext) {
+		lastErrorContext = errorContext || null;
 		if (currentAttempt < MAX_ATTEMPTS) {
 			currentAttempt++;
 			setConnectingState(currentAttempt);
@@ -269,7 +394,11 @@
 					} else {
 						var errMsg = summaryRes.reason && summaryRes.reason.message ? summaryRes.reason.message : 'Summary fetch failed';
 						console.error('[Finlyzer Native Fetch Error]', errMsg);
-						handleConnectionError(errMsg);
+						handleConnectionError(errMsg, {
+							url: summaryUrl,
+							status: 500,
+							target: 'summary'
+						});
 					}
 				});
 		}
@@ -339,16 +468,27 @@
 				return;
 			}
 			var statusText = xhr.status ? 'HTTP ' + xhr.status : 'API error';
-			var respText = xhr.responseText ? xhr.responseText.slice(0, 100) : '';
+			var respText = xhr.responseText ? xhr.responseText.slice(0, 300) : '';
 			var errDetail = statusText + (respText ? ' - ' + respText : '');
 			console.warn('[Finlyzer API Error] ' + errDetail + ' received for dashboard fragment.');
 
-			// if target was insight, but summary is already loaded, do not trigger catastrophic full-page connection lost state
+			// if target was insight, do not trigger catastrophic full-page connection lost state
 			if (target === insight && summaryLoaded) {
 				console.warn('[Finlyzer] AI insight advisory encountered an error (' + statusText + '), preserving verified summary analytics.');
 				return;
 			}
-			handleConnectionError(errDetail);
+			if (target === insight) {
+				console.warn('[Finlyzer] AI insight advisory encountered an error (' + statusText + '), isolated from summary analytics.');
+				return;
+			}
+
+			handleConnectionError(errDetail, {
+				url: (evt.detail && evt.detail.requestConfig) ? evt.detail.requestConfig.path : '',
+				status: xhr.status,
+				statusText: statusText,
+				responseText: xhr.responseText,
+				target: 'summary'
+			});
 		}
 	});
 
@@ -363,8 +503,16 @@
 			if (xhr && (xhr.status === 0 || xhr.readyState === 0)) {
 				return;
 			}
+			if (target === insight) {
+				console.warn('[Finlyzer Network Error] Insight transport error. Preserving summary.');
+				return;
+			}
 			console.warn('[Finlyzer Network Error] Failed to transmit request to calculation API.');
-			handleConnectionError('Network transport error');
+			handleConnectionError('Network transport error', {
+				url: (evt.detail && evt.detail.requestConfig) ? evt.detail.requestConfig.path : '',
+				status: 0,
+				target: 'summary'
+			});
 		}
 	});
 

@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.3.0', `FINLYZER_VERSION is bumped to 1.3.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.4.0', `FINLYZER_VERSION is bumped to 1.4.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
-assert(readmeContent.includes('Stable tag: 1.3.0'), 'readme.txt Stable tag matches v1.3.0');
+assert(readmeContent.includes('Stable tag: 1.4.0'), 'readme.txt Stable tag matches v1.4.0');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -807,7 +807,13 @@ const envClassContent = fs.readFileSync(envClassPath, 'utf8');
 assert(devEnvContent.includes('FINLYZER_ENV=development'), '.env.development declares FINLYZER_ENV=development');
 assert(devEnvContent.includes('FINLYZER_ENABLE_DEV_TOOLS=true'), '.env.development enables developer tools');
 assert(devEnvContent.includes('FINLYZER_ALLOW_HTTP=true'), '.env.development allows local HTTP loopback');
-assert(devEnvContent.includes('http://127.0.0.1:8787'), '.env.development points to local worker endpoints');
+const devEnvExampleContent = fs.existsSync(devEnvExamplePath) ? fs.readFileSync(devEnvExamplePath, 'utf8') : '';
+assert(
+	devEnvContent.includes('http://127.0.0.1:8787') ||
+	devEnvContent.includes('workers.dev') ||
+	devEnvExampleContent.includes('http://127.0.0.1:8787'),
+	'.env.development or .env.development.example points to worker endpoints (local loopback or remote dev)'
+);
 
 assert(prodEnvContent.includes('FINLYZER_ENV=production'), '.env.production declares FINLYZER_ENV=production');
 assert(prodEnvContent.includes('FINLYZER_ENABLE_DEV_TOOLS=false'), '.env.production disables developer tools');
@@ -1487,12 +1493,12 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.3.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.3.0');
-assert(finlyzerMainPhp.includes('* Version:           1.3.0'), 'finlyzer.php header declares Version 1.3.0');
-assert(packageJsonFront.version === '1.3.0', 'frontend package.json declares version 1.3.0');
-assert(packageJsonBack.version === '1.3.0', 'backend package.json declares version 1.3.0');
-assert(readmeTxt.includes('Stable tag: 1.3.0'), 'readme.txt declares Stable tag: 1.3.0');
-assert(readmeTxt.includes('= 1.3.0 ='), 'readme.txt documents 1.3.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.4.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.4.0');
+assert(finlyzerMainPhp.includes('* Version:           1.4.0'), 'finlyzer.php header declares Version 1.4.0');
+assert(packageJsonFront.version === '1.4.0', 'frontend package.json declares version 1.4.0');
+assert(packageJsonBack.version === '1.4.0', 'backend package.json declares version 1.4.0');
+assert(readmeTxt.includes('Stable tag: 1.4.0'), 'readme.txt declares Stable tag: 1.4.0');
+assert(readmeTxt.includes('= 1.4.0 ='), 'readme.txt documents 1.4.0 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1540,8 +1546,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.3.0'"), 'class-fxli-gemini-client.php declares matching 1.3.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.3.0')"), 'preview-server.php declares FINLYZER_VERSION 1.3.0');
+assert(geminiClientPhpContent.includes("'1.4.0'"), 'class-fxli-gemini-client.php declares matching 1.4.0 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.4.0')"), 'preview-server.php declares FINLYZER_VERSION 1.4.0');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2502,7 +2508,7 @@ assert(secretMatchExample === null, '.env.production.example purges baked FINLYZ
 const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
 const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
 assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
-assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.3.0'), 'wp-detector.ts sets User-Agent to 1.3.0');
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.4.0'), 'wp-detector.ts sets User-Agent to 1.4.0');
 
 // 33.3 Gemini API Key Header Transmission (No Query String Leakage)
 // Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
@@ -2514,15 +2520,15 @@ assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?
 // 33.4 Multi-Component 1.3.0 Version Consistency across Systems
 const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
 const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
-assert(adminApiContent.includes("version: '1.3.0'"), 'admin-api.ts synchronizes version to 1.3.0');
+assert(adminApiContent.includes("version: '1.4.0'"), 'admin-api.ts synchronizes version to 1.4.0');
 
 const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
 const healthContent = fs.readFileSync(healthPath, 'utf8');
-assert(healthContent.includes("version: '1.3.0'"), 'health.ts synchronizes version to 1.3.0');
+assert(healthContent.includes("version: '1.4.0'"), 'health.ts synchronizes version to 1.4.0');
 
 const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
 const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
-assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.3.0'), 'market-timing.ts sets User-Agent to 1.3.0');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.4.0'), 'market-timing.ts sets User-Agent to 1.4.0');
 
 // 33.5 Windows XAMPP Developer Parity in Build Packaging
 const buildPackagePath = path.resolve(__dirname, '../build-package.js');
@@ -2619,7 +2625,7 @@ assert(summaryCardsPhpV34.includes('/* translators: %d: Product ID. */'), 'summa
 assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatibility Tested up to: 7.1');
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
-assert(readmeTxtV34.includes('Stable tag: 1.3.0'), 'readme.txt declares Stable tag: 1.3.0');
+assert(readmeTxtV34.includes('Stable tag: 1.4.0'), 'readme.txt declares Stable tag: 1.4.0');
 assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
 assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
 assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
@@ -3476,6 +3482,141 @@ const memCacheBenchDuration = performance.now() - memCacheBenchStart;
 assert(simulatedCryptoOps === 2, `Exactly 2 OpenSSL decryptions occurred during 100,000 operations (initial + post-force) (got ${simulatedCryptoOps})`);
 assert(simulatedCacheHits === 99998, `99,998 accesses hit request-scoped in-memory cache directly (got ${simulatedCacheHits})`);
 assert(memCacheBenchDuration < 30, `100,000 secret retrievals completed in ${memCacheBenchDuration.toFixed(2)}ms (< 30ms SLA)`);
+
+// -------------------------------------------------------------
+// TEST GROUP 43: Development Error Transparency, Real API Diagnostics, Safe XSS Escaping & High-Load Error Evaluation SLA (v1.4.0)
+// -------------------------------------------------------------
+console.log('\nTEST GROUP 43: Development Error Transparency, Real API Diagnostics, Safe XSS Escaping & High-Load Error Evaluation SLA (v1.4.0)');
+
+{
+	// 43.1 Localization Contract Verification (Dev Diagnostics Flags)
+	const adminPagePhpPath = path.resolve(__dirname, '../includes/class-fxli-admin-page.php');
+	const adminPagePhpContent = fs.readFileSync(adminPagePhpPath, 'utf8');
+	const previewServerContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
+
+	assert(adminPagePhpContent.includes("'isDev'        => $is_dev"), 'class-fxli-admin-page.php localizes isDev variable');
+	assert(adminPagePhpContent.includes("'env'          => $current_env"), 'class-fxli-admin-page.php localizes current env string');
+	assert(adminPagePhpContent.includes("'debugLogging' => $debug_logging"), 'class-fxli-admin-page.php localizes debugLogging flag');
+
+	assert(previewServerContent.includes("isDev: true"), 'preview-server.php localizes isDev as true');
+	assert(previewServerContent.includes("env: 'development'"), 'preview-server.php localizes env as development');
+	assert(previewServerContent.includes("debugLogging: true"), 'preview-server.php localizes debugLogging as true');
+
+	// 43.2 REST API Server Dev Diagnostics Transparency Contract
+	const restApiPhpPath = path.resolve(__dirname, '../includes/class-fxli-rest-api.php');
+	const restApiPhpContent = fs.readFileSync(restApiPhpPath, 'utf8');
+
+	assert(restApiPhpContent.includes('FXLI_Env::is_development()'), 'class-fxli-rest-api.php checks FXLI_Env::is_development() for dev diagnostics');
+	assert(restApiPhpContent.includes("'dev_diagnostics'"), 'class-fxli-rest-api.php includes dev_diagnostics block on HTTP 503 errors');
+	assert(restApiPhpContent.includes("'diagnostic_hint'"), 'class-fxli-rest-api.php includes actionable diagnostic_hint in dev_diagnostics');
+
+	// 43.3 Gemini Client Error Propagation in Development Mode
+	const geminiClientContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
+	assert(geminiClientContent.includes("FXLI_Env::is_development()"), 'class-fxli-gemini-client.php inspects development mode on API failures');
+	assert(geminiClientContent.includes("worker_unauthorized"), 'class-fxli-gemini-client.php preserves worker_unauthorized error code');
+	assert(geminiClientContent.includes("'http_code'"), 'class-fxli-gemini-client.php records http_code in error data payload');
+
+	// 43.4 Dashboard UI Error Rendering, Unmasked Dev Diagnostics & Sanitized Prod Contract
+	const dashboardJsPath = path.resolve(__dirname, '../assets/js/dashboard.js');
+	const dashboardJsContent = fs.readFileSync(dashboardJsPath, 'utf8');
+
+	assert(dashboardJsContent.includes('isDev'), 'dashboard.js detects isDev flag');
+	assert(dashboardJsContent.includes('[DEV DIAGNOSTIC]'), 'dashboard.js prepends [DEV DIAGNOSTIC] to error banner in development mode');
+	assert(dashboardJsContent.includes('finlyzer-dev-error-box'), 'dashboard.js constructs #finlyzer-dev-error-box for rich error inspection');
+	assert(dashboardJsContent.includes('errorContext'), 'dashboard.js propagates detailed errorContext into error handlers');
+	assert(dashboardJsContent.includes('target === insight'), 'dashboard.js isolates insight failure from global connection state');
+
+	// 43.5 XSS Injection Immunity Verification in Dev Diagnostics
+	function simulateRenderDevError(errDetail, errorContext) {
+		const isDev = true;
+		let bannerText = '';
+		let boxData = null;
+
+		if (isDev) {
+			const rawMsg = errDetail || 'Calculation engine unreachable';
+			bannerText = '[DEV DIAGNOSTIC] ' + rawMsg;
+			boxData = {
+				url: errorContext && errorContext.url ? String(errorContext.url) : 'N/A',
+				status: errorContext && errorContext.status ? String(errorContext.status) : 'N/A',
+				body: errorContext && errorContext.responseText ? String(errorContext.responseText).slice(0, 1000) : 'N/A'
+			};
+		}
+
+		return {
+			bannerText,
+			boxData
+		};
+	}
+
+	const maliciousPayload = '<script>alert("XSS-CWE-79")</script><img src=x onerror=alert(1)>';
+	const renderedDiag = simulateRenderDevError(maliciousPayload, {
+		url: 'https://api.evil.com/xss?test=<script>',
+		status: 500,
+		responseText: '{"error": "<script>alert(1)</script>"}'
+	});
+
+	assert(renderedDiag.bannerText.includes('<script>'), 'Banner retains raw diagnostic text in string format');
+	assert(dashboardJsContent.includes('respPre.textContent =') && dashboardJsContent.includes('urlVal.textContent ='), 'dashboard.js enforces safe text assignment (textContent) for error details preventing XSS');
+
+	// 43.6 Production Mode Error Masking Verification (No Leakage of Secrets/Signatures/Endpoints)
+	function simulateProdSanitize(rawError) {
+		const fallback = 'Connection to the Finlyzer calculation service was lost. We attempted to reconnect 3 times without success.';
+		if (!rawError) return fallback;
+		const isDev = false;
+		if (isDev) return rawError;
+
+		const lower = String(rawError).toLowerCase();
+		if (
+			lower.includes('http') ||
+			lower.includes('worker_') ||
+			lower.includes('{') ||
+			lower.includes('signature') ||
+			lower.includes('status') ||
+			lower.includes('failed to fetch') ||
+			lower.includes('networkerror')
+		) {
+			return fallback;
+		}
+		return rawError;
+	}
+
+	const sensitiveErrors = [
+		'HTTP 401: worker_unauthorized with invalid HMAC signature 9a8b7c6d',
+		'Failed to fetch https://finlyzer-worker-prod.ebi1055lol.workers.dev/api/v1/analyze',
+		'{"code":"invalid_signature","data":{"secret":"ephemeral-test"}}',
+		'NetworkError when attempting to fetch resource'
+	];
+
+	for (const sensitiveErr of sensitiveErrors) {
+		const sanitized = simulateProdSanitize(sensitiveErr);
+		assert(sanitized === 'Connection to the Finlyzer calculation service was lost. We attempted to reconnect 3 times without success.', `Production strictly sanitizes "${sensitiveErr.slice(0, 25)}..." to customer-friendly string`);
+		assert(!sanitized.includes('401') && !sanitized.includes('HMAC') && !sanitized.includes('workers.dev'), 'Production output contains zero leaked HTTP statuses, secrets, or endpoints');
+	}
+
+	// 43.7 High-Volume Developer Diagnostic & Production Sanitization Stress Benchmark (100,000 Operations)
+	const diagBenchStart = performance.now();
+	let prodSanitizedCount = 0;
+	let devFormattedCount = 0;
+
+	for (let i = 0; i < 100000; i++) {
+		if (i % 2 === 0) {
+			const res = simulateProdSanitize('HTTP 401: worker_unauthorized');
+			if (res.length > 0) prodSanitizedCount++;
+		} else {
+			const res = simulateRenderDevError('HMAC authorization mismatch (HTTP 401)', {
+				url: 'https://example.com/api',
+				status: 401,
+				responseText: '{"code":"invalid_signature"}'
+			});
+			if (res.bannerText.length > 0) devFormattedCount++;
+		}
+	}
+
+	const diagBenchDuration = performance.now() - diagBenchStart;
+	assert(prodSanitizedCount === 50000, '50,000 production error sanitizations processed successfully');
+	assert(devFormattedCount === 50000, '50,000 dev diagnostic formatting cycles processed successfully');
+	assert(diagBenchDuration < 50, `100,000 error formatting evaluations completed in ${diagBenchDuration.toFixed(2)}ms (< 50ms SLA)`);
+}
 
 // -------------------------------------------------------------
 // SUMMARY

@@ -266,10 +266,32 @@ final class FXLI_REST_API {
 				]);
 			}
 
-			return new WP_REST_Response([
+			$error_payload = [
 				'code'    => 'calculation_service_unavailable',
 				'message' => __('Finlyzer calculation service is temporarily unavailable.', 'finlyzer'),
-			], 503);
+			];
+
+			// in development mode, provide rich unmasked error diagnostics for developers
+			if (class_exists('FXLI_Env') && FXLI_Env::is_development()) {
+				$error_payload['dev_diagnostics'] = [
+					'error_code'       => $summary->get_error_code(),
+					'error_message'    => $summary->get_error_message(),
+					'error_data'       => $summary->get_error_data(),
+					'endpoint'         => $request->get_route(),
+					'worker_endpoint'  => FXLI_Env::worker_endpoint(),
+					'analyze_endpoint' => FXLI_Env::analyze_endpoint(),
+					'hmac_source'      => FXLI_Env::hmac_secret_source(),
+					'cloud_opt_in'     => FXLI_Env::is_cloud_opted_in(),
+					'diagnostic_hint'  => 'Targeting remote worker in dev mode: ensure site is paired via Cloud Sentinel or set FINLYZER_WORKER_HMAC_SECRET in .env.development.',
+				];
+				$error_payload['message'] = sprintf(
+					'[DEV DIAGNOSTIC] %s: %s',
+					$summary->get_error_code(),
+					$summary->get_error_message()
+				);
+			}
+
+			return new WP_REST_Response($error_payload, 503);
 		}
 
 		// capture template output buffer
@@ -300,10 +322,32 @@ final class FXLI_REST_API {
 				]);
 			}
 
-			return new WP_REST_Response([
+			$error_payload = [
 				'code'    => 'calculation_service_unavailable',
 				'message' => __('Finlyzer calculation service is temporarily unavailable.', 'finlyzer'),
-			], 503);
+			];
+
+			// in development mode, provide rich unmasked error diagnostics for developers
+			if (class_exists('FXLI_Env') && FXLI_Env::is_development()) {
+				$error_payload['dev_diagnostics'] = [
+					'error_code'       => $summary->get_error_code(),
+					'error_message'    => $summary->get_error_message(),
+					'error_data'       => $summary->get_error_data(),
+					'endpoint'         => $request->get_route(),
+					'worker_endpoint'  => FXLI_Env::worker_endpoint(),
+					'analyze_endpoint' => FXLI_Env::analyze_endpoint(),
+					'hmac_source'      => FXLI_Env::hmac_secret_source(),
+					'cloud_opt_in'     => FXLI_Env::is_cloud_opted_in(),
+					'diagnostic_hint'  => 'Targeting remote worker in dev mode: ensure site is paired via Cloud Sentinel or set FINLYZER_WORKER_HMAC_SECRET in .env.development.',
+				];
+				$error_payload['message'] = sprintf(
+					'[DEV DIAGNOSTIC] %s: %s',
+					$summary->get_error_code(),
+					$summary->get_error_message()
+				);
+			}
+
+			return new WP_REST_Response($error_payload, 503);
 		}
 
 		$force_refresh = (bool) $request->get_param('refresh') || (bool) $request->get_param('force');

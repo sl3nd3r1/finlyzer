@@ -331,7 +331,7 @@ final class FXLI_Crypto {
 		$pairEndpoint = rtrim($baseUrl, '/') . '/api/v1/pair';
 		$siteId = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : hash('sha256', (defined('AUTH_KEY') ? AUTH_KEY : 'finlyzer') . '|' . (function_exists('home_url') ? home_url() : 'localhost'));
 		$siteUrl = function_exists('home_url') ? home_url() : '';
-		$pluginVersion = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
+		$pluginVersion = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.4.0';
 		$now = time();
 		$nonce = function_exists('wp_generate_password') ? wp_generate_password(32, false) : bin2hex(random_bytes(16));
 		$signature = hash_hmac('sha256', "finlyzer:pair:{$siteId}:{$now}:{$nonce}", $siteId);

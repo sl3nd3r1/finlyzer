@@ -136,7 +136,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.4.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -384,7 +384,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.4.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -432,7 +432,13 @@ final class FXLI_Gemini_Client {
 					'currency'    => $payload['store_currency'] ?? 'USD',
 				]);
 			}
-			return new WP_Error('worker_http_error', __('Unable to reach calculation service. Please verify server connectivity.', 'finlyzer'));
+			$msg = (class_exists('FXLI_Env') && FXLI_Env::is_development())
+				? sprintf(__('Network error to %1$s: %2$s', 'finlyzer'), $endpoint, $response->get_error_message())
+				: __('Unable to reach calculation service. Please verify server connectivity.', 'finlyzer');
+			return new WP_Error('worker_http_network_error', $msg, [
+				'endpoint' => $endpoint,
+				'error'    => $response->get_error_message(),
+			]);
 		}
 
 		$code = (int) wp_remote_retrieve_response_code($response);
@@ -477,7 +483,17 @@ final class FXLI_Gemini_Client {
 		}
 
 		if ($code !== 200) {
-			return new WP_Error('worker_http_error', __('Calculation service is temporarily unavailable. Please retry shortly.', 'finlyzer'));
+			$clean_snippet = wp_strip_all_tags(substr($raw_body, 0, 200));
+			$error_code = ($code === 401) ? 'worker_unauthorized' : ('worker_http_error_' . $code);
+			$msg = (class_exists('FXLI_Env') && FXLI_Env::is_development())
+				? sprintf(__('Calculation service returned HTTP %1$d: %2$s', 'finlyzer'), $code, $clean_snippet ?: 'Empty response body')
+				: __('Calculation service is temporarily unavailable. Please retry shortly.', 'finlyzer');
+			return new WP_Error($error_code, $msg, [
+				'status'    => $code,
+				'http_code' => $code,
+				'endpoint'  => $endpoint,
+				'body'      => $clean_snippet,
+			]);
 		}
 
 		$data = json_decode($raw_body, true);
@@ -519,7 +535,7 @@ final class FXLI_Gemini_Client {
 		$verify_url = $clean_base . '/api/v1/verify';
 
 		$site_url = function_exists('home_url') ? home_url() : 'http://localhost';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.3.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.4.0';
 		$timestamp = time();
 		$body = wp_json_encode(['action' => 'verify', 'timestamp' => $timestamp]);
 		if ($body === false) {
