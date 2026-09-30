@@ -7,7 +7,7 @@ Requires PHP: 8.1
 Requires Plugins: woocommerce
 WC requires at least: 8.0
 WC tested up to: 11.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -115,6 +115,13 @@ No. Finlyzer reads your existing WooCommerce order history and computes gateway 
 Finlyzer recognizes conversion spread models for PayPal, Stripe, Klarna, WooPayments, Adyen, Mollie, Square, Direct Wire/BACS, Cash on Delivery, and standard credit card gateways.
 
 == Changelog ==
+
+= 1.2.0 =
+* Feature: Decoupled resilient dashboard rendering engine with independent fragment resolution (`Promise.allSettled`).
+* Resilience: Self-healing automated site pairing lifecycle with HMAC token re-synchronization on authorization expiration.
+* Reliability: Fail-open fallback to local calculation engine ensuring zero dashboard disruption during remote network interruptions.
+* Security: Comprehensive nonce verification supporting both request headers and query parameters for cross-environment compatibility.
+* UI: Refined Cloud Sentinel interface clean naming standards.
 
 = 1.1.0 =
 * Feature: Direct European Central Bank (ECB) exchange rate integration via Frankfurter API (https://api.frankfurter.dev) using WordPress HTTP API (`wp_remote_get`).

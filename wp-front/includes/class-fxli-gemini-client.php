@@ -136,7 +136,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.1.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.2.0';
 
 		$payload = [
 			'site_id'        => self::site_id(),
@@ -158,6 +158,12 @@ final class FXLI_Gemini_Client {
 		// generate timestamped HMAC signature
 		$timestamp = time();
 		$signature = FXLI_Security::sign_worker_payload($body, $timestamp);
+		if ($signature === '' && class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in() && class_exists('FXLI_Crypto')) {
+			// user explicitly opted in; execute automated zero-touch site enrollment if token is missing
+			if (FXLI_Crypto::auto_pair_site()) {
+				$signature = FXLI_Security::sign_worker_payload($body, $timestamp);
+			}
+		}
 		if ($signature === '') {
 			// fallback cleanly without breaking merchant view
 			return $this->generate_heuristic_warning($summary);
@@ -202,10 +208,33 @@ final class FXLI_Gemini_Client {
 			FXLI_Logger::log_http_call($endpoint, 'POST', $code, $duration, $code === 200 ? null : wp_remote_retrieve_body($response), ['type' => 'insight']);
 		}
 
-		if ($code !== 200) {
-			if (class_exists('FXLI_Env') && FXLI_Env::is_production() && FXLI_Env::force_api_calculation()) {
-				return new WP_Error('worker_http_error', __('Risk analysis service is temporarily unavailable.', 'finlyzer'));
+		// handle 401 signature mismatch with single automated self-healing re-pair attempt
+		if ($code === 401 && class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in() && class_exists('FXLI_Crypto')) {
+			if (FXLI_Crypto::auto_pair_site()) {
+				$new_sig = FXLI_Security::sign_worker_payload($body, $timestamp);
+				if ($new_sig !== '') {
+					$retry_res = wp_remote_post($endpoint, [
+						'timeout'   => $timeout,
+						'sslverify' => $strict_ssl,
+						'headers'   => [
+							'Content-Type'    => 'application/json',
+							'X-FXLI-Site'     => self::site_id(),
+							'X-FXLI-Site-Url' => $site_url,
+							'X-FXLI-Version'  => $plugin_version,
+							'X-FXLI-Time'     => (string) $timestamp,
+							'X-FXLI-Sig'      => $new_sig,
+						],
+						'body'      => $body,
+					]);
+					if (!is_wp_error($retry_res) && (int) wp_remote_retrieve_response_code($retry_res) === 200) {
+						$response = $retry_res;
+						$code = 200;
+					}
+				}
 			}
+		}
+
+		if ($code !== 200) {
 			$fallback = $this->generate_heuristic_warning($summary);
 			$ttl = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? 10 : HOUR_IN_SECONDS;
 			set_transient($cache_key, $fallback, $ttl);
@@ -355,7 +384,7 @@ final class FXLI_Gemini_Client {
 		// attach site authentication metadata to payload
 		$payload['site_id'] = self::site_id();
 		$payload['site_url'] = function_exists('home_url') ? home_url() : '';
-		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.1.0';
+		$payload['plugin_version'] = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.2.0';
 
 		$body = wp_json_encode($payload);
 		if ($body === false) {
@@ -365,6 +394,12 @@ final class FXLI_Gemini_Client {
 		// generate timestamped HMAC signature
 		$timestamp = time();
 		$signature = FXLI_Security::sign_worker_payload($body, $timestamp);
+		if ($signature === '' && class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in() && class_exists('FXLI_Crypto')) {
+			// user explicitly opted in; execute automated zero-touch site enrollment if token is missing
+			if (FXLI_Crypto::auto_pair_site()) {
+				$signature = FXLI_Security::sign_worker_payload($body, $timestamp);
+			}
+		}
 		if ($signature === '') {
 			return new WP_Error('hmac_unconfigured', __('Worker HMAC signing secret is unconfigured or has insufficient entropy.', 'finlyzer'));
 		}
@@ -402,6 +437,36 @@ final class FXLI_Gemini_Client {
 
 		$code = (int) wp_remote_retrieve_response_code($response);
 		$raw_body = wp_remote_retrieve_body($response);
+
+		// handle 401 signature mismatch with one-shot automated re-pair and retry
+		if ($code === 401 && class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in() && class_exists('FXLI_Crypto')) {
+			if (FXLI_Crypto::auto_pair_site()) {
+				$new_sig = FXLI_Security::sign_worker_payload($body, $timestamp);
+				if ($new_sig !== '') {
+					$retry_res = wp_remote_post($endpoint, [
+						'timeout'   => $timeout,
+						'sslverify' => $strict_ssl,
+						'headers'   => [
+							'Content-Type'    => 'application/json',
+							'X-FXLI-Site'     => self::site_id(),
+							'X-FXLI-Site-Url' => $payload['site_url'],
+							'X-FXLI-Version'  => $payload['plugin_version'],
+							'X-FXLI-Time'     => (string) $timestamp,
+							'X-FXLI-Sig'      => $new_sig,
+						],
+						'body'      => $body,
+					]);
+					if (!is_wp_error($retry_res)) {
+						$retry_code = (int) wp_remote_retrieve_response_code($retry_res);
+						if ($retry_code === 200) {
+							$response = $retry_res;
+							$code = 200;
+							$raw_body = wp_remote_retrieve_body($retry_res);
+						}
+					}
+				}
+			}
+		}
 
 		if (class_exists('FXLI_Logger')) {
 			FXLI_Logger::log_http_call($endpoint, 'POST', $code, $duration, $code === 200 ? null : substr($raw_body, 0, 256), [
@@ -454,7 +519,7 @@ final class FXLI_Gemini_Client {
 		$verify_url = $clean_base . '/api/v1/verify';
 
 		$site_url = function_exists('home_url') ? home_url() : 'http://localhost';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.1.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.2.0';
 		$timestamp = time();
 		$body = wp_json_encode(['action' => 'verify', 'timestamp' => $timestamp]);
 		if ($body === false) {

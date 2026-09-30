@@ -251,7 +251,13 @@ final class FXLI_REST_API {
 		$days = (int) $request->get_param('days');
 		$summary = FXLI_Order_Analyzer::instance()->get_summary($days);
 
-		// return 503 Service Unavailable if backend calculation API is unreachable
+		// if summary evaluation encountered an error, attempt clean local fallback before failing
+		if (is_wp_error($summary)) {
+			$store_currency = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
+			$summary = FXLI_Order_Analyzer::instance()->calculate_local_summary($days, $store_currency);
+		}
+
+		// return 503 Service Unavailable if backend calculation API is unreachable and local fallback failed
 		if (is_wp_error($summary)) {
 			if (class_exists('FXLI_Logger')) {
 				FXLI_Logger::log('error', 'REST_API', sprintf('Summary analysis failed: %s (%s)', $summary->get_error_message(), $summary->get_error_code()), [
@@ -279,7 +285,13 @@ final class FXLI_REST_API {
 		$days = (int) $request->get_param('days');
 		$summary = FXLI_Order_Analyzer::instance()->get_summary($days);
 
-		// return 503 Service Unavailable if backend calculation API is unreachable
+		// if summary evaluation encountered an error, attempt clean local fallback before failing
+		if (is_wp_error($summary)) {
+			$store_currency = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
+			$summary = FXLI_Order_Analyzer::instance()->calculate_local_summary($days, $store_currency);
+		}
+
+		// return 503 Service Unavailable if backend calculation API is unreachable and local fallback failed
 		if (is_wp_error($summary)) {
 			if (class_exists('FXLI_Logger')) {
 				FXLI_Logger::log('error', 'REST_API', sprintf('Insight order scan failed: %s (%s)', $summary->get_error_message(), $summary->get_error_code()), [

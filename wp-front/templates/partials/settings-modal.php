@@ -53,7 +53,7 @@ $fxli_current_env    = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'pro
 			<div class="finlyzer-sentinel-grid finlyzer-sentinel-grid--single">
 				<div class="finlyzer-sentinel-card">
 					<span class="finlyzer-sentinel-card__label"><?php esc_html_e('Engine Mode', 'finlyzer'); ?></span>
-					<span class="finlyzer-sentinel-card__val" id="finlyzerEngineModeVal"><?php echo $fxli_cloud_opted_in ? esc_html__('Cloud Sentinel Enabled (Google Gemini)', 'finlyzer') : esc_html__('100% Local On-Store Database Engine', 'finlyzer'); ?></span>
+					<span class="finlyzer-sentinel-card__val" id="finlyzerEngineModeVal"><?php echo $fxli_cloud_opted_in ? esc_html__('Cloud Sentinel Enabled', 'finlyzer') : esc_html__('100% Local On-Store Database Engine', 'finlyzer'); ?></span>
 					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('All core calculations run on your own WordPress database without external dependencies.', 'finlyzer'); ?></span>
 				</div>
 			</div>
@@ -62,7 +62,7 @@ $fxli_current_env    = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'pro
 			<div class="finlyzer-verify-box">
 				<div class="finlyzer-verify-header">
 					<div>
-						<h4 class="finlyzer-verify-title"><?php esc_html_e('Google Gemini Cloud AI Sentinel', 'finlyzer'); ?></h4>
+						<h4 class="finlyzer-verify-title"><?php esc_html_e('Cloud AI Sentinel', 'finlyzer'); ?></h4>
 						<p class="finlyzer-verify-sub">
 							<?php esc_html_e('Optional AI risk analysis. Sends strictly anonymized numeric order aggregates (store currency, total loss, currency counts). Zero customer PII is ever sent.', 'finlyzer'); ?>
 						</p>

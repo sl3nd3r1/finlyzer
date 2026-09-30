@@ -221,39 +221,56 @@
 			headers['X-WP-Nonce'] = config.nonce;
 		}
 
-		// native fetch fallback with credentials: 'include'
+		// native fetch fallback with credentials: 'include' and independent fragment resilience
 		function executeNativeFetchFallback() {
 			if (!summary || !insight) return;
 
-			Promise.all([
-				fetch(summaryUrl, { headers: headers, credentials: 'include' }).then(function (r) {
+			var fetchSummary = fetch(summaryUrl, { headers: headers, credentials: 'include' })
+				.then(function (r) {
 					if (!r.ok) {
 						return r.text().then(function (t) {
 							throw new Error('HTTP ' + r.status + (t ? ': ' + t.slice(0, 100) : ''));
 						});
 					}
 					return r.text();
-				}),
-				fetch(insightUrl, { headers: headers, credentials: 'include' }).then(function (r) {
-					if (!r.ok) {
-						return r.text().then(function (t) {
-							throw new Error('HTTP ' + r.status + (t ? ': ' + t.slice(0, 100) : ''));
-						});
-					}
-					return r.text();
-				}),
-			])
-				.then(function (results) {
-					// swap fragments safely
-					summary.innerHTML = results[0];
-					insight.innerHTML = results[1];
-					summaryLoaded = true;
-					insightLoaded = true;
-					setConnectedState();
 				})
-				.catch(function (err) {
-					console.error('[Finlyzer Native Fetch Error]', err);
-					handleConnectionError(err.message || 'Fetch failed');
+				.then(function (html) {
+					summary.innerHTML = html;
+					summaryLoaded = true;
+					return html;
+				});
+
+			var fetchInsight = fetch(insightUrl, { headers: headers, credentials: 'include' })
+				.then(function (r) {
+					if (!r.ok) {
+						return r.text().then(function (t) {
+							throw new Error('HTTP ' + r.status + (t ? ': ' + t.slice(0, 100) : ''));
+						});
+					}
+					return r.text();
+				})
+				.then(function (html) {
+					insight.innerHTML = html;
+					insightLoaded = true;
+					return html;
+				});
+
+			Promise.allSettled([fetchSummary, fetchInsight])
+				.then(function (results) {
+					var summaryRes = results[0];
+					var insightRes = results[1];
+
+					if (summaryRes.status === 'fulfilled') {
+						// summary loaded successfully; hide top banner and preserve merchant dashboard
+						setConnectedState();
+						if (insightRes.status !== 'fulfilled') {
+							console.warn('[Finlyzer] AI insight advisory unavailable or delayed:', insightRes.reason);
+						}
+					} else {
+						var errMsg = summaryRes.reason && summaryRes.reason.message ? summaryRes.reason.message : 'Summary fetch failed';
+						console.error('[Finlyzer Native Fetch Error]', errMsg);
+						handleConnectionError(errMsg);
+					}
 				});
 		}
 
@@ -325,6 +342,12 @@
 			var respText = xhr.responseText ? xhr.responseText.slice(0, 100) : '';
 			var errDetail = statusText + (respText ? ' - ' + respText : '');
 			console.warn('[Finlyzer API Error] ' + errDetail + ' received for dashboard fragment.');
+
+			// if target was insight, but summary is already loaded, do not trigger catastrophic full-page connection lost state
+			if (target === insight && summaryLoaded) {
+				console.warn('[Finlyzer] AI insight advisory encountered an error (' + statusText + '), preserving verified summary analytics.');
+				return;
+			}
 			handleConnectionError(errDetail);
 		}
 	});
@@ -692,7 +715,7 @@
 					if (optIn) {
 						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--active';
 						if (pillText) pillText.textContent = 'Cloud AI Active & Protected';
-						if (engineVal) engineVal.textContent = 'Cloud Sentinel Enabled (Google Gemini)';
+						if (engineVal) engineVal.textContent = 'Cloud Sentinel Enabled';
 						showVerifyResult('success', '✓ ' + (data.message || 'Cloud Sentinel successfully enabled.'));
 					} else {
 						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--optimal';

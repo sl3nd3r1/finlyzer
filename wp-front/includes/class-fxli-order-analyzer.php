@@ -53,7 +53,8 @@ final class FXLI_Order_Analyzer {
 		if ($id > 0 && function_exists('wc_get_order')) {
 			$order = wc_get_order($id);
 			if ($order instanceof WC_Order) {
-				$this->cache_order_estimate($order, get_woocommerce_currency());
+				$store_curr = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
+				$this->cache_order_estimate($order, $store_curr);
 			}
 		}
 
@@ -117,7 +118,7 @@ final class FXLI_Order_Analyzer {
 		}
 
 		$days = max(7, min(90, $days));
-		$store_currency = get_woocommerce_currency();
+		$store_currency = function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : 'USD';
 		$since = (new DateTimeImmutable("-{$days} days"))->format('Y-m-d H:i:s');
 		$statuses = apply_filters('finlyzer_scanned_order_statuses', ['processing', 'completed', 'wc-processing', 'wc-completed']);
 
@@ -624,6 +625,13 @@ final class FXLI_Order_Analyzer {
 			if (is_array($backend_result) && isset($backend_result['total_loss'])) {
 				set_transient($cache_key, $backend_result, 5 * MINUTE_IN_SECONDS);
 				return $backend_result;
+			}
+			// log diagnostic notice when cloud calculation falls back to local database engine
+			if (is_wp_error($backend_result) && class_exists('FXLI_Logger')) {
+				FXLI_Logger::log(FXLI_Logger::LEVEL_WARN, 'ANALYZER', 'Cloud calculation service unavailable; failing open to local engine.', [
+					'error' => $backend_result->get_error_message(),
+					'code'  => $backend_result->get_error_code(),
+				]);
 			}
 		}
 

@@ -27,12 +27,18 @@ final class FXLI_Security {
 		return current_user_can(self::CAPABILITY) || current_user_can(self::ADMIN_CAPABILITY);
 	}
 
-	// strictly verify the X-WP-Nonce header on REST requests
+	// strictly verify the X-WP-Nonce header or _wpnonce parameter on REST requests
 	public static function verify_rest_nonce(WP_REST_Request $request): bool {
 		// extract nonce header
 		$nonce = $request->get_header('X-WP-Nonce');
 		if (!is_string($nonce) || $nonce === '') {
-			return false;
+			// fall back to standard REST request query or body parameter
+			$param_nonce = $request->get_param('_wpnonce');
+			if (is_string($param_nonce) && $param_nonce !== '') {
+				$nonce = $param_nonce;
+			} else {
+				return false;
+			}
 		}
 
 		// evaluate against standard REST nonce action
