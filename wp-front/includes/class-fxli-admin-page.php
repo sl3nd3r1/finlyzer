@@ -61,12 +61,15 @@ final class FXLI_Admin_Page {
 			true
 		);
 
+		// cache-buster for assets in development mode to prevent stale browser execution
+		$asset_version = (class_exists('FXLI_Env') && FXLI_Env::is_development()) ? FINLYZER_VERSION . '.' . time() : FINLYZER_VERSION;
+
 		// enqueue dashboard script
 		wp_enqueue_script(
 			'finlyzer-dashboard',
 			FINLYZER_PLUGIN_URL . 'assets/js/dashboard.js',
 			['htmx'],
-			FINLYZER_VERSION,
+			$asset_version,
 			true
 		);
 
@@ -75,7 +78,7 @@ final class FXLI_Admin_Page {
 			'finlyzer-dashboard',
 			FINLYZER_PLUGIN_URL . 'assets/css/dashboard.css',
 			[],
-			FINLYZER_VERSION
+			$asset_version
 		);
 
 		// localize configuration safely for htmx request headers and developer diagnostics

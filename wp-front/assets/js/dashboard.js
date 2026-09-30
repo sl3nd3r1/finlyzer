@@ -216,12 +216,12 @@
 			devBox = document.createElement('div');
 			devBox.id = 'finlyzer-dev-error-box';
 			devBox.className = 'finlyzer-dev-error-box finlyzer-error-debug-box';
-			devBox.style.cssText = 'margin: 0 18px 16px 18px; padding: 12px 16px; background: rgba(10, 15, 29, 0.95); border: 1px dashed rgba(239, 68, 68, 0.6); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: #FCA5A5; text-align: left; line-height: 1.6;';
-			connStatus.appendChild(devBox);
+			if (connStatus) connStatus.appendChild(devBox);
 		} else {
 			devBox.innerHTML = '';
-			devBox.style.display = 'block';
 		}
+		devBox.style.display = 'block';
+		devBox.style.cssText = 'display: block; margin: 0 18px 16px 18px; padding: 12px 16px; background: rgba(10, 15, 29, 0.95); border: 1px dashed rgba(239, 68, 68, 0.6); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: #FCA5A5; text-align: left; line-height: 1.6;';
 
 		// Header badge
 		var headerDiv = document.createElement('div');
@@ -511,7 +511,7 @@
 			}
 
 			handleConnectionError(errDetail, {
-				url: (evt.detail && evt.detail.requestConfig) ? evt.detail.requestConfig.path : '',
+				url: (evt.detail && evt.detail.requestConfig && evt.detail.requestConfig.path) ? evt.detail.requestConfig.path : '/wp-json/finlyzer/v1/summary',
 				status: xhr.status,
 				statusText: statusText,
 				responseText: xhr.responseText,
@@ -537,7 +537,7 @@
 			}
 			console.warn('[Finlyzer Network Error] Failed to transmit request to calculation API.');
 			handleConnectionError('Network transport error', {
-				url: (evt.detail && evt.detail.requestConfig) ? evt.detail.requestConfig.path : '',
+				url: (evt.detail && evt.detail.requestConfig && evt.detail.requestConfig.path) ? evt.detail.requestConfig.path : '/wp-json/finlyzer/v1/summary',
 				status: 0,
 				target: 'summary'
 			});

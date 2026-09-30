@@ -214,7 +214,7 @@ final class FXLI_Rate_Service {
 
 		// log outgoing rate check at debug level
 		if (class_exists('FXLI_Logger')) {
-			FXLI_Logger::log('Dispatched rate request to Frankfurter API for base ' . $base, 'debug');
+			FXLI_Logger::log(FXLI_Logger::LEVEL_DEBUG, 'RATES', 'Dispatched rate request to Frankfurter API for base ' . $base);
 		}
 
 		$response = wp_remote_get(
@@ -234,7 +234,7 @@ final class FXLI_Rate_Service {
 		// evaluate network transport status
 		if (is_wp_error($response)) {
 			if (class_exists('FXLI_Logger')) {
-				FXLI_Logger::log('Frankfurter API network error: ' . $response->get_error_message(), 'warning');
+				FXLI_Logger::log(FXLI_Logger::LEVEL_WARN, 'RATES', 'Frankfurter API network error: ' . $response->get_error_message());
 			}
 			return [];
 		}
@@ -242,7 +242,7 @@ final class FXLI_Rate_Service {
 		$status_code = (int) wp_remote_retrieve_response_code($response);
 		if ($status_code !== 200) {
 			if (class_exists('FXLI_Logger')) {
-				FXLI_Logger::log('Frankfurter API returned HTTP ' . $status_code, 'warning');
+				FXLI_Logger::log(FXLI_Logger::LEVEL_WARN, 'RATES', 'Frankfurter API returned HTTP ' . $status_code);
 			}
 			return [];
 		}

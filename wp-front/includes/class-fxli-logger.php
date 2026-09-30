@@ -46,8 +46,29 @@ final class FXLI_Logger {
 
 	private function __clone() {}
 
-	// record generic structured log entry with automatic secret redaction
-	public static function log(string $level, string $category, string $message, array $context = []): void {
+	// record generic structured log entry with automatic secret redaction and polymorphic argument protection
+	public static function log(string $level_or_msg, string $category_or_level = 'GENERAL', string $message = '', array $context = []): void {
+		// handle polymorphic calls: log('message', 'debug') vs canonical log('debug', 'CATEGORY', 'message', context)
+		if ($message === '') {
+			$valid_levels = [self::LEVEL_DEBUG, self::LEVEL_INFO, self::LEVEL_WARN, 'warning', self::LEVEL_ERROR];
+			if (in_array(strtolower($category_or_level), $valid_levels, true)) {
+				$level    = strtolower($category_or_level) === 'warning' ? self::LEVEL_WARN : strtolower($category_or_level);
+				$category = 'GENERAL';
+				$message  = $level_or_msg;
+			} elseif (in_array(strtolower($level_or_msg), $valid_levels, true)) {
+				$level    = strtolower($level_or_msg) === 'warning' ? self::LEVEL_WARN : strtolower($level_or_msg);
+				$category = 'GENERAL';
+				$message  = $category_or_level;
+			} else {
+				$level    = self::LEVEL_INFO;
+				$category = 'GENERAL';
+				$message  = $level_or_msg;
+			}
+		} else {
+			$level    = strtolower($level_or_msg) === 'warning' ? self::LEVEL_WARN : strtolower($level_or_msg);
+			$category = $category_or_level;
+		}
+
 		// assert debug logging is permitted or level is warning/error
 		$is_debug_enabled = class_exists('FXLI_Env') ? FXLI_Env::debug_logging() : false;
 		if ($level === self::LEVEL_DEBUG && !$is_debug_enabled) {

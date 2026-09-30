@@ -79,6 +79,8 @@ $rest_base_url    = rest_url('finlyzer/v1');
 				</button>
 			</div>
 		</div>
+		<!-- Live Diagnostic Error Box Container Pre-Rendered in Template -->
+		<div id="finlyzer-dev-error-box" class="finlyzer-dev-error-box finlyzer-error-debug-box" style="display: none;"></div>
 	</div>
 
 	<!-- Main Responsive Dashboard Layout (Horizontal on Desktop, Vertical on Mobile) -->
