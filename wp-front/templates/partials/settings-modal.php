@@ -7,12 +7,13 @@ if (!defined('ABSPATH')) {
 }
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-$fxli_cloud_opted_in = class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in();
-$fxli_site_id        = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : '';
-$fxli_short_site_id  = strlen($fxli_site_id) >= 12 ? substr($fxli_site_id, 0, 4) . '••••••••' . substr($fxli_site_id, -4) : $fxli_site_id;
-$fxli_active_secret  = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
-$fxli_is_connected   = $fxli_cloud_opted_in && $fxli_active_secret !== '' && !str_contains($fxli_active_secret, 'dev-ephemeral');
-$fxli_current_env    = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production';
+$fxli_cloud_opted_in      = class_exists('FXLI_Env') && FXLI_Env::is_cloud_opted_in();
+$fxli_live_rates_opted_in = class_exists('FXLI_Rate_Service') && FXLI_Rate_Service::is_live_rates_opted_in();
+$fxli_site_id             = class_exists('FXLI_Gemini_Client') ? FXLI_Gemini_Client::site_id() : '';
+$fxli_short_site_id       = strlen($fxli_site_id) >= 12 ? substr($fxli_site_id, 0, 4) . '••••••••' . substr($fxli_site_id, -4) : $fxli_site_id;
+$fxli_active_secret       = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
+$fxli_is_connected        = $fxli_cloud_opted_in && $fxli_active_secret !== '' && !str_contains($fxli_active_secret, 'dev-ephemeral');
+$fxli_current_env         = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'production';
 // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 ?>
 <div class="finlyzer-modal-backdrop" id="finlyzerSettingsModal" role="dialog" aria-modal="true" aria-labelledby="finlyzerSettingsTitle" style="display:none;">
@@ -45,6 +46,10 @@ $fxli_current_env    = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'pro
 				<span class="finlyzer-status-dot"></span>
 				<span id="finlyzer-status-pill-text"><?php echo $fxli_is_connected ? esc_html__('Cloud AI Active & Protected', 'finlyzer') : esc_html__('Local Calculation Engine Active (Private)', 'finlyzer'); ?></span>
 			</div>
+			<div id="finlyzer-rates-status-badge" class="finlyzer-status-pill <?php echo $fxli_live_rates_opted_in ? 'finlyzer-status-pill--active' : 'finlyzer-status-pill--optimal'; ?>" style="margin-left: 8px;">
+				<span class="finlyzer-status-dot"></span>
+				<span id="finlyzer-rates-pill-text"><?php echo $fxli_live_rates_opted_in ? esc_html__('Live ECB Rates Active', 'finlyzer') : esc_html__('Offline ECB Rates Matrix (Default)', 'finlyzer'); ?></span>
+			</div>
 		</div>
 
 		<!-- Modal Body -->
@@ -56,6 +61,35 @@ $fxli_current_env    = class_exists('FXLI_Env') ? FXLI_Env::current_env() : 'pro
 					<span class="finlyzer-sentinel-card__val" id="finlyzerEngineModeVal"><?php echo $fxli_cloud_opted_in ? esc_html__('Cloud Sentinel Enabled', 'finlyzer') : esc_html__('100% Local On-Store Database Engine', 'finlyzer'); ?></span>
 					<span class="finlyzer-sentinel-card__desc"><?php esc_html_e('All core calculations run on your own WordPress database without external dependencies.', 'finlyzer'); ?></span>
 				</div>
+			</div>
+
+			<!-- European Central Bank / Frankfurter API Opt-In Box (Guideline 7 Compliant) -->
+			<div class="finlyzer-verify-box finlyzer-verify-box--rates" style="margin-bottom: 20px;">
+				<div class="finlyzer-verify-header">
+					<div>
+						<h4 class="finlyzer-verify-title"><?php esc_html_e('European Central Bank Live Rates', 'finlyzer'); ?></h4>
+						<p class="finlyzer-verify-sub">
+							<?php esc_html_e('Optional daily reference exchange rates via public Frankfurter API (https://api.frankfurter.dev). Off by default per WordPress Plugin Guideline 7. Sends only currency ISO codes (e.g. USD, EUR) to fetch daily ECB reference exchange rates. No personal data, store URL, or order data is ever sent.', 'finlyzer'); ?>
+						</p>
+					</div>
+					<div class="finlyzer-optin-actions" id="finlyzerRatesOptinActions">
+						<?php if ($fxli_live_rates_opted_in) : ?>
+							<button type="button" id="finlyzerRatesOptOutBtn" class="finlyzer-btn finlyzer-btn--secondary">
+								<span><?php esc_html_e('Switch to Offline Rates', 'finlyzer'); ?></span>
+							</button>
+						<?php else : ?>
+							<button type="button" id="finlyzerRatesOptInBtn" class="finlyzer-btn finlyzer-btn--accent">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<circle cx="12" cy="12" r="10"></circle>
+									<line x1="2" y1="12" x2="22" y2="12"></line>
+									<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+								</svg>
+								<span><?php esc_html_e('Enable Live Rates (Opt In)', 'finlyzer'); ?></span>
+							</button>
+						<?php endif; ?>
+					</div>
+				</div>
+				<div id="finlyzerRatesResult" class="finlyzer-verify-result" style="display:none;" aria-live="polite"></div>
 			</div>
 
 			<!-- Cloud Sentinel Opt-In / Connection Box -->

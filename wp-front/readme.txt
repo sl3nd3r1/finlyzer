@@ -7,7 +7,7 @@ Requires PHP: 8.1
 Requires Plugins: woocommerce
 WC requires at least: 8.0
 WC tested up to: 11.1
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,14 +66,15 @@ Finlyzer operates 100% locally by default. Optionally, administrators can opt in
   - Data Sent (only upon explicit opt-in): Strictly anonymized, store-level aggregate metrics (store currency ISO code, total transaction volume, aggregate conversion fee estimates, currency breakdown, and order counts).
   - **Zero Personally Identifiable Information (PII)**: Customer names, email addresses, phone numbers, billing/shipping physical addresses, IP addresses, payment card credentials, and individual order IDs are never collected, logged, or transmitted.
 
-* **Global Market Reference Rates / Frankfurter API (European Central Bank Reference Data)**: Used to evaluate payment processor conversion fee markups and market timing exchange rate shifts.
+* **Global Market Reference Rates / Frankfurter API (European Central Bank Reference Data — Optional, 100% Opt-In Only)**: Used to evaluate payment processor conversion fee markups and market timing exchange rate shifts.
+  - Opt-in Status: **Disabled / OFF by default** per WordPress Plugin Guideline 7. Requires explicit administrator opt-in in the Finlyzer settings dialog before any network request is dispatched.
+  - How It Operates: By default, Finlyzer operates 100% locally and offline using an internal European Central Bank reference matrix. When explicitly enabled by the administrator, the plugin uses WordPress HTTP API (`wp_remote_get`) from your WordPress server to fetch reference exchange rates for the store's active transaction currencies.
   - Service: https://frankfurter.dev / https://api.frankfurter.dev (data published by European Central Bank: https://www.ecb.europa.eu)
   - Terms of Service: https://frankfurter.dev
   - Privacy Policy: https://frankfurter.dev
-  - How It Operates: The plugin uses WordPress HTTP API (`wp_remote_get`) from your WordPress server to fetch reference exchange rates for the store's active transaction currencies.
   - Local Transient Caching: Rates are locally cached in WordPress Transients for 12 hours (matching ECB daily 16:00 CET fixings) to minimize remote requests and maintain fast dashboard load times.
-  - Resilient Fallback: If the API is unreachable, the plugin gracefully falls back to an internal reference matrix so dashboard operations remain uninterrupted.
-  - Data Sent: Currency ISO codes (e.g., "EUR", "USD") via URL parameters. No store details, customer records, or financial transaction identifiers are ever sent.
+  - Resilient Fallback: If the API is unreachable or disabled, the plugin gracefully uses its internal reference matrix so dashboard operations remain completely uninterrupted and private.
+  - Data Sent (only when opted-in): Currency ISO codes (e.g., "EUR", "USD") via URL parameters. Zero store URLs, zero customer records, and zero financial transaction identifiers are ever sent.
 
 == Third-Party Libraries & Source Code ==
 
@@ -115,6 +116,13 @@ No. Finlyzer reads your existing WooCommerce order history and computes gateway 
 Finlyzer recognizes conversion spread models for PayPal, Stripe, Klarna, WooPayments, Adyen, Mollie, Square, Direct Wire/BACS, Cash on Delivery, and standard credit card gateways.
 
 == Changelog ==
+
+= 1.9.0 =
+* Compliance: Strict adherence to WordPress Plugin Guideline 7 — European Central Bank reference exchange rates (Frankfurter API) are disabled by default with an explicit administrator opt-in setting in the Finlyzer dashboard dialog.
+* Privacy: Sanitized HTTP User-Agent header in outbound requests to completely eliminate site URL transmission, ensuring zero store or customer data leakage.
+* Database Safety: Formatted all custom database table definitions strictly per WordPress core dbDelta() specifications, ensuring lowercase field types and standard key whitespace formatting.
+* Clean Activation: Implemented comprehensive pre-flight requirement checks (PHP 8.1+, WP 6.4+, OpenSSL, JSON, Hash, WooCommerce 8.0+) with clean error reporting and zero unexpected output during activation.
+* Offline Resilience: Ensured 100% functional analytics operation using the built-in European Central Bank reference matrix when external services are unconsented or offline.
 
 = 1.8.0 =
 * Compliance: Resolved all 22 WordPress.org Plugin Check (PCP) WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound warnings in template files by prefixing all template-level variables with the official plugin prefix ($fxli_).

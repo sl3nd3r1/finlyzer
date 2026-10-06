@@ -30,6 +30,7 @@ $total_combined_currency_drag = (float) ($summary['total_combined_currency_drag'
 $active_markets               = (array) ($summary['active_markets'] ?? []);
 $gateways                     = (array) ($summary['gateways'] ?? []);
 $products_by_gateway          = (array) ($summary['products_by_gateway'] ?? []);
+$fxli_is_live_rates_opted_in  = class_exists('FXLI_Rate_Service') && FXLI_Rate_Service::is_live_rates_opted_in();
 
 $formatted_total         = wc_price($total_loss, ['currency' => $store_currency]);
 $formatted_run_rate      = wc_price($annualized_run_rate, ['currency' => $store_currency]);
@@ -296,6 +297,11 @@ $severity_label = $severity_labels[$severity_level] ?? $severity_labels['moderat
 				__('%d Markets Active', 'finlyzer'),
 				count($active_markets)
 			)); ?>
+			<?php if (!$fxli_is_live_rates_opted_in) : ?>
+				&bull; <span class="finlyzer-offline-badge" title="<?php esc_attr_e('Using built-in offline ECB reference rates. Enable live rates in settings.', 'finlyzer'); ?>"><?php esc_html_e('Offline ECB Matrix', 'finlyzer'); ?></span>
+			<?php else : ?>
+				&bull; <span class="finlyzer-live-badge" title="<?php esc_attr_e('Live ECB reference rates active via Frankfurter API.', 'finlyzer'); ?>"><?php esc_html_e('Live ECB Rates', 'finlyzer'); ?></span>
+			<?php endif; ?>
 		</span>
 	</div>
 

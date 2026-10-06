@@ -170,6 +170,20 @@ final class FXLI_REST_API {
 					'callback'            => [$this, 'handle_cloud_resync'],
 					'permission_callback' => [$this, 'permission_check'],
 				]);
+
+				// register live reference exchange rates opt-in toggle endpoint (Guideline 7 compliant)
+				register_rest_route($ns, '/settings/live-rates-optin', [
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => [$this, 'handle_live_rates_optin'],
+					'permission_callback' => [$this, 'permission_check'],
+					'args'                => [
+						'opt_in' => [
+							'required'          => true,
+							'type'              => 'boolean',
+							'sanitize_callback' => static fn($v): bool => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+						],
+					],
+				]);
 			}
 		});
 	}
@@ -559,19 +573,22 @@ final class FXLI_REST_API {
 		$active_secret = class_exists('FXLI_Env') ? FXLI_Env::hmac_secret() : '';
 		$is_paired = $is_opted_in && $active_secret !== '' && !str_contains($active_secret, 'dev-ephemeral');
 
+		$is_rates_opted_in = class_exists('FXLI_Rate_Service') ? FXLI_Rate_Service::is_live_rates_opted_in() : false;
+
 		return new WP_REST_Response([
-			'success'          => true,
-			'cloud_opt_in'     => $is_opted_in,
-			'connected'        => $is_paired,
-			'status'           => $is_paired ? 'active' : ($is_opted_in ? 'opted_in_unpaired' : 'local_only'),
-			'site_id'          => $site_id,
-			'short_site_id'    => $short_site_id,
-			'mode'             => $is_opted_in ? 'cloud_opt_in' : 'local_only',
-			'encryption'       => 'AES-256-GCM',
-			'privacy_standard' => 'zero_pii',
-			'source'           => $source,
-			'is_locked'        => $is_locked,
-			'environment'      => $env,
+			'success'           => true,
+			'cloud_opt_in'      => $is_opted_in,
+			'live_rates_opt_in' => $is_rates_opted_in,
+			'connected'         => $is_paired,
+			'status'            => $is_paired ? 'active' : ($is_opted_in ? 'opted_in_unpaired' : 'local_only'),
+			'site_id'           => $site_id,
+			'short_site_id'     => $short_site_id,
+			'mode'              => $is_opted_in ? 'cloud_opt_in' : 'local_only',
+			'encryption'        => 'AES-256-GCM',
+			'privacy_standard'  => 'zero_pii',
+			'source'            => $source,
+			'is_locked'         => $is_locked,
+			'environment'       => $env,
 		], 200);
 	}
 
@@ -633,5 +650,28 @@ final class FXLI_REST_API {
 				'message' => __('Connection re-synchronization could not be completed. Please try again shortly.', 'finlyzer'),
 			], 500);
 		}
+	}
+
+	// handle administrator explicit opt-in / opt-out for live market reference exchange rates (Guideline 7 compliant)
+	public function handle_live_rates_optin(WP_REST_Request $request): WP_REST_Response {
+		$opt_in = (bool) $request->get_param('opt_in');
+
+		if (class_exists('FXLI_Rate_Service')) {
+			FXLI_Rate_Service::set_live_rates_opt_in($opt_in);
+		} elseif (class_exists('FXLI_Env')) {
+			FXLI_Env::set_live_rates_opt_in($opt_in);
+		}
+
+		if (class_exists('FXLI_Logger')) {
+			FXLI_Logger::log(FXLI_Logger::LEVEL_INFO, 'SETTINGS', sprintf('Live ECB rates opt-in changed to: %s', $opt_in ? 'enabled' : 'disabled'));
+		}
+
+		return new WP_REST_Response([
+			'success'           => true,
+			'live_rates_opt_in' => $opt_in,
+			'message'           => $opt_in
+				? __('Live European Central Bank reference exchange rates enabled via Frankfurter API.', 'finlyzer')
+				: __('Switched to built-in offline ECB reference rates. Zero external network calls.', 'finlyzer'),
+		], 200);
 	}
 }

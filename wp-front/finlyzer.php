@@ -3,7 +3,7 @@
  * Plugin Name:       Finlyzer — FX Loss & Margin Insights for WooCommerce
  * Plugin URI:        https://github.com/sl3nd3r1/finlyzer
  * Description:       Track hidden payment gateway conversion fees and currency loss across your international WooCommerce sales.
- * Version:           1.8.0
+ * Version:           1.9.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Requires Plugins:  woocommerce
@@ -28,6 +28,7 @@
  *  - Capability and nonce verification on all REST endpoints (manage_woocommerce + wp_rest).
  *  - Prepared SQL queries ($wpdb->prepare()) and strictly escaped template rendering.
  *  - Full High-Performance Order Storage (HPOS) compatibility declared.
+ *  - Guideline 7 compliance: all remote external requests (Cloud AI, ECB exchange rates) are strictly opt-in only.
  */
 
 declare(strict_types=1);
@@ -38,7 +39,7 @@ if (!defined('ABSPATH')) {
 }
 
 // core plugin constants
-define('FINLYZER_VERSION', '1.8.0');
+define('FINLYZER_VERSION', '1.9.0');
 define('FINLYZER_DB_VERSION', '3');
 define('FINLYZER_PLUGIN_FILE', __FILE__);
 define('FINLYZER_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -63,26 +64,109 @@ require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-gemini-client.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-rest-api.php';
 require_once FINLYZER_PLUGIN_DIR . 'includes/class-fxli-admin-page.php';
 
+/**
+ * Verify system and environment compatibility requirements.
+ *
+ * @return array{met: bool, errors: list<string>}
+ */
+function finlyzer_check_requirements(): array {
+	$errors = [];
+
+	// verify minimum PHP version (8.1+)
+	if (version_compare(PHP_VERSION, '8.1', '<')) {
+		$errors[] = sprintf(
+			/* translators: 1: current PHP version, 2: required PHP version */
+			__('Finlyzer requires PHP %2$s or higher (currently running %1$s).', 'finlyzer'),
+			PHP_VERSION,
+			'8.1'
+		);
+	}
+
+	// verify minimum WordPress version (6.4+)
+	global $wp_version;
+	if (isset($wp_version) && version_compare($wp_version, '6.4', '<')) {
+		$errors[] = sprintf(
+			/* translators: 1: current WordPress version, 2: required WordPress version */
+			__('Finlyzer requires WordPress %2$s or higher (currently running %1$s).', 'finlyzer'),
+			$wp_version,
+			'6.4'
+		);
+	}
+
+	// verify required PHP extensions
+	$missing_extensions = [];
+	foreach (['openssl', 'json', 'hash'] as $ext) {
+		if (!extension_loaded($ext)) {
+			$missing_extensions[] = $ext;
+		}
+	}
+	if (!empty($missing_extensions)) {
+		$errors[] = sprintf(
+			/* translators: %s: list of missing PHP extensions */
+			__('Finlyzer requires the following PHP extension(s): %s.', 'finlyzer'),
+			implode(', ', $missing_extensions)
+		);
+	}
+
+	// verify WooCommerce availability and minimum supported version (8.0+)
+	if (!class_exists('WooCommerce')) {
+		$errors[] = __('Finlyzer requires WooCommerce to be installed and active.', 'finlyzer');
+	} elseif (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
+		$errors[] = sprintf(
+			/* translators: 1: current WooCommerce version, 2: required WooCommerce version */
+			__('Finlyzer requires WooCommerce %2$s or higher (currently running %1$s).', 'finlyzer'),
+			WC_VERSION,
+			'8.0'
+		);
+	}
+
+	return [
+		'met'    => empty($errors),
+		'errors' => $errors,
+	];
+}
+
 // verify WooCommerce availability and minimum supported version (8.0+)
 function finlyzer_requirements_met(): bool {
-	// check WooCommerce main class
-	if (!class_exists('WooCommerce')) {
-		return false;
-	}
-	// check WooCommerce version
-	if (defined('WC_VERSION') && version_compare(WC_VERSION, '8.0', '<')) {
-		return false;
-	}
-	return true;
+	return finlyzer_check_requirements()['met'];
 }
 
 // render admin notice if requirements fail
 function finlyzer_admin_missing_requirements_notice(): void {
+	$check = finlyzer_check_requirements();
+	if ($check['met']) {
+		return;
+	}
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php esc_html_e('Finlyzer requires WooCommerce 8.0 or newer to be installed and active.', 'finlyzer'); ?></p>
+		<p><strong><?php esc_html_e('Finlyzer — System Requirement Notice:', 'finlyzer'); ?></strong></p>
+		<ul style="list-style-type: disc; margin-left: 20px;">
+			<?php foreach ($check['errors'] as $error) : ?>
+				<li><?php echo esc_html($error); ?></li>
+			<?php endforeach; ?>
+		</ul>
 	</div>
 	<?php
+}
+
+// handle clean plugin activation with pre-flight requirement enforcement
+function finlyzer_on_activate(): void {
+	$check = finlyzer_check_requirements();
+
+	// fail closed if host server fails essential PHP or crypto extension requirements
+	if (version_compare(PHP_VERSION, '8.1', '<') || !extension_loaded('openssl') || !extension_loaded('json') || !extension_loaded('hash')) {
+		if (function_exists('deactivate_plugins')) {
+			deactivate_plugins(plugin_basename(__FILE__));
+		}
+		wp_die(
+			esc_html(implode(' ', $check['errors'])),
+			esc_html__('Finlyzer Activation Error', 'finlyzer'),
+			['back_link' => true]
+		);
+	}
+
+	// execute database schema migrations and cron registration
+	FXLI_Installer::activate();
 }
 
 // initialize plugin components once all plugins have loaded
@@ -113,7 +197,7 @@ function finlyzer_bootstrap(): void {
 add_action('plugins_loaded', 'finlyzer_bootstrap');
 
 // register lifecycle hooks
-register_activation_hook(__FILE__, ['FXLI_Installer', 'activate']);
+register_activation_hook(__FILE__, 'finlyzer_on_activate');
 register_deactivation_hook(__FILE__, ['FXLI_Installer', 'deactivate']);
 
 // declare High-Performance Order Storage (HPOS) custom order tables compatibility

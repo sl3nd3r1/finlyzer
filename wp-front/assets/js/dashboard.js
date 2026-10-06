@@ -984,6 +984,72 @@
 			});
 		}
 
+		// 3. European Central Bank Live Rates Opt-in toggle handlers (Guideline 7 compliant)
+		function handleRatesOptInToggle(optIn) {
+			showRatesResult('loading', optIn ? 'Enabling Live European Central Bank Rates...' : 'Switching to Offline Reference Rates...');
+
+			fetch(restBase + '/settings/live-rates-optin', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': nonce
+				},
+				credentials: 'same-origin',
+				body: JSON.stringify({ opt_in: optIn })
+			})
+			.then(function (res) { return res.json(); })
+			.then(function (data) {
+				if (data.success) {
+					if (window.Finlyzer) window.Finlyzer.liveRatesOptIn = optIn;
+					if (window.FXLI) window.FXLI.liveRatesOptIn = optIn;
+
+					var ratesBadge = document.getElementById('finlyzer-rates-status-badge');
+					var ratesPillText = document.getElementById('finlyzer-rates-pill-text');
+
+					if (optIn) {
+						if (ratesBadge) ratesBadge.className = 'finlyzer-status-pill finlyzer-status-pill--active';
+						if (ratesPillText) ratesPillText.textContent = 'Live ECB Rates Active';
+						showRatesResult('success', '✓ ' + (data.message || 'Live ECB rates enabled.'));
+					} else {
+						if (ratesBadge) ratesBadge.className = 'finlyzer-status-pill finlyzer-status-pill--optimal';
+						if (ratesPillText) ratesPillText.textContent = 'Offline ECB Rates Matrix (Default)';
+						showRatesResult('success', '✓ ' + (data.message || 'Offline reference rates active.'));
+					}
+
+					setTimeout(function () {
+						window.location.reload();
+					}, 1000);
+				} else {
+					showRatesResult('error', '✗ ' + (data.message || 'Rate opt-in update failed.'));
+				}
+			})
+			.catch(function () {
+				showRatesResult('error', '✗ Failed to update rate preference. Please retry.');
+			});
+		}
+
+		var ratesOptInBtn = document.getElementById('finlyzerRatesOptInBtn');
+		if (ratesOptInBtn) {
+			ratesOptInBtn.addEventListener('click', function () {
+				handleRatesOptInToggle(true);
+			});
+		}
+
+		var ratesOptOutBtn = document.getElementById('finlyzerRatesOptOutBtn');
+		if (ratesOptOutBtn) {
+			ratesOptOutBtn.addEventListener('click', function () {
+				handleRatesOptInToggle(false);
+			});
+		}
+
+		function showRatesResult(type, message) {
+			var resBox = document.getElementById('finlyzerRatesResult');
+			if (!resBox) return;
+			resBox.style.display = 'block';
+			resBox.className = 'finlyzer-verify-result finlyzer-verify-result--' + type;
+			resBox.textContent = sanitizeMessage(message);
+		}
+
 		function sanitizeMessage(str) {
 			if (!str || typeof str !== 'string') return '';
 			// strip any HTML tags to prevent markup or fatal error display leaks

@@ -296,6 +296,28 @@ final class FXLI_Env {
 		return false;
 	}
 
+	// check if administrator has explicitly opted into live market exchange rates (Guideline 7 compliant)
+	public static function is_live_rates_opted_in(): bool {
+		if (class_exists('FXLI_Rate_Service')) {
+			return FXLI_Rate_Service::is_live_rates_opted_in();
+		}
+		if (function_exists('get_option')) {
+			return get_option('finlyzer_live_rates_opt_in', 'no') === 'yes';
+		}
+		return false;
+	}
+
+	// record administrator live market rates opt-in choice
+	public static function set_live_rates_opt_in(bool $opt_in): bool {
+		if (class_exists('FXLI_Rate_Service')) {
+			return FXLI_Rate_Service::set_live_rates_opt_in($opt_in);
+		}
+		if (function_exists('update_option')) {
+			return update_option('finlyzer_live_rates_opt_in', $opt_in ? 'yes' : 'no', false);
+		}
+		return false;
+	}
+
 	// retrieve HMAC secret across resolution hierarchy: constant -> env -> encrypted DB -> fallback
 	public static function hmac_secret(): string {
 		// 1. check wp-config constant override

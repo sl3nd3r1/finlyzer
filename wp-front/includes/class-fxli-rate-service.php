@@ -34,6 +34,9 @@ final class FXLI_Rate_Service {
 	// hard request timeout in seconds to prevent blocking PHP-FPM workers
 	public const REQUEST_TIMEOUT_SECONDS = 4;
 
+	// explicit administrator opt-in option key (defaults to disabled / 'no' per Guideline 7)
+	public const OPTION_LIVE_RATES_OPT_IN = 'finlyzer_live_rates_opt_in';
+
 	private static ?self $instance = null;
 
 	// request-scoped in-memory cache: base:symbols_hash => rates array
@@ -114,6 +117,22 @@ final class FXLI_Rate_Service {
 
 	private function __construct() {}
 
+	// check if administrator has explicitly opted into live market reference exchange rates (Guideline 7 compliant)
+	public static function is_live_rates_opted_in(): bool {
+		if (function_exists('get_option')) {
+			return get_option(self::OPTION_LIVE_RATES_OPT_IN, 'no') === 'yes';
+		}
+		return false;
+	}
+
+	// record administrator live market rates opt-in preference
+	public static function set_live_rates_opt_in(bool $opt_in): bool {
+		if (function_exists('update_option')) {
+			return update_option(self::OPTION_LIVE_RATES_OPT_IN, $opt_in ? 'yes' : 'no', false);
+		}
+		return false;
+	}
+
 	// sanitize currency ISO symbol strictly to 3 uppercase alphabetic characters
 	public static function sanitize_currency(string $code): string {
 		// strip any non-alpha characters and enforce 3-character uppercase standard
@@ -122,7 +141,7 @@ final class FXLI_Rate_Service {
 	}
 
 	// retrieve exchange rates for base currency against a list of foreign symbols
-	// returns array with 'rates' map and 'source' indicator ('live' | 'cache' | 'fallback')
+	// returns array with 'rates' map and 'source' indicator ('live' | 'cache' | 'offline')
 	public function get_rates(string $base_currency, array $symbols): array {
 		$base = self::sanitize_currency($base_currency);
 		if ($base === '') {
@@ -154,7 +173,19 @@ final class FXLI_Rate_Service {
 		if (isset(self::$memory_cache[$cache_key])) {
 			return [
 				'rates'  => self::$memory_cache[$cache_key],
-				'source' => 'cache',
+				'source' => self::is_live_rates_opted_in() ? 'cache' : 'offline',
+			];
+		}
+
+		// Guideline 7 compliance: If administrator has not explicitly opted into live market rates (default),
+		// serve immediate offline rates derived from the built-in resilient ECB reference matrix (zero network calls, 100% private)
+		if (!self::is_live_rates_opted_in()) {
+			$offline_rates = $this->calculate_fallback_rates($base, $target_symbols);
+			self::$memory_cache[$cache_key] = $offline_rates;
+
+			return [
+				'rates'  => $offline_rates,
+				'source' => 'offline',
 			];
 		}
 
@@ -170,7 +201,7 @@ final class FXLI_Rate_Service {
 			}
 		}
 
-		// 3. dispatch HTTP GET request to public Frankfurter API via WordPress HTTP API
+		// 3. dispatch HTTP GET request to public Frankfurter API via WordPress HTTP API (opt-in verified)
 		$rates = $this->fetch_from_frankfurter($base, $target_symbols);
 		if (!empty($rates)) {
 			$ttl = (int) apply_filters('fxli_rate_cache_ttl', self::DEFAULT_CACHE_TTL);
@@ -203,6 +234,11 @@ final class FXLI_Rate_Service {
 			return [];
 		}
 
+		// double-check opt-in consent before executing remote network call
+		if (!self::is_live_rates_opted_in()) {
+			return [];
+		}
+
 		// build strict query string without arbitrary injection vectors
 		$query = add_query_arg(
 			[
@@ -217,13 +253,18 @@ final class FXLI_Rate_Service {
 			FXLI_Logger::log(FXLI_Logger::LEVEL_DEBUG, 'RATES', 'Dispatched rate request to Frankfurter API for base ' . $base);
 		}
 
+		// compose privacy-preserving User-Agent without site URL leakage (Guideline 7 compliant)
+		$wp_version = function_exists('get_bloginfo') ? (string) get_bloginfo('version') : '6.4';
+		$plugin_version = defined('FINLYZER_VERSION') ? (string) FINLYZER_VERSION : '1.9.0';
+		$user_agent = 'Finlyzer/' . $plugin_version . '; WordPress/' . $wp_version;
+
 		$response = wp_remote_get(
 			$query,
 			[
 				'timeout'     => self::REQUEST_TIMEOUT_SECONDS,
 				'redirection' => 2,
 				'httpversion' => '1.1',
-				'user-agent'  => 'Finlyzer/' . (defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.8.0') . '; ' . (function_exists('home_url') ? home_url() : 'WordPress'),
+				'user-agent'  => $user_agent,
 				'sslverify'   => true,
 				'headers'     => [
 					'Accept' => 'application/json',
