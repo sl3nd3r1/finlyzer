@@ -7,7 +7,7 @@ Requires PHP: 8.1
 Requires Plugins: woocommerce
 WC requires at least: 8.0
 WC tested up to: 11.1
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -116,6 +116,12 @@ No. Finlyzer reads your existing WooCommerce order history and computes gateway 
 Finlyzer recognizes conversion spread models for PayPal, Stripe, Klarna, WooPayments, Adyen, Mollie, Square, Direct Wire/BACS, Cash on Delivery, and standard credit card gateways.
 
 == Changelog ==
+
+= 1.9.1 =
+* Feature: User-initiated on-demand currency analysis via prominent "Begin Analysis" action button.
+* Compliance: Eliminated all automatic outbound network and local API calls on dashboard page load (WordPress Plugin Guideline 7).
+* UX: Streamlined Server Connection & Sync modal with dedicated Check Connection and Re-sync controls, removing redundant configuration cards.
+* Performance: Optimized on-demand calculation with live European Central Bank reference exchange rates upon user analysis request.
 
 = 1.9.0 =
 * Compliance: Strict adherence to WordPress Plugin Guideline 7 — European Central Bank reference exchange rates (Frankfurter API) are disabled by default with an explicit administrator opt-in setting in the Finlyzer dashboard dialog.

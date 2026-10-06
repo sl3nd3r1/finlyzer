@@ -136,7 +136,7 @@ final class FXLI_Gemini_Client {
 		}
 
 		$site_url = function_exists('home_url') ? home_url() : '';
-		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.9.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? FINLYZER_VERSION : '1.9.1';
 
 		$payload = [
 			'site_id'        => self::site_id(),

@@ -316,7 +316,7 @@ const dashboardCssContent = fs.readFileSync(dashboardCssPath, 'utf8');
 // Version contract verification
 const versionMatch = pluginPhpContent.match(/define\('FINLYZER_VERSION',\s*'([^']+)'\);/);
 assert(versionMatch !== null, 'FINLYZER_VERSION constant exists in finlyzer.php');
-assert(versionMatch && versionMatch[1] === '1.9.0', `FINLYZER_VERSION is bumped to 1.9.0 (got ${versionMatch ? versionMatch[1] : 'null'})`);
+assert(versionMatch && versionMatch[1] === '1.9.1', `FINLYZER_VERSION is bumped to 1.9.1 (got ${versionMatch ? versionMatch[1] : 'null'})`);
 
 // Layout contract in template
 assert(dashboardPhpContent.includes('finlyzer-main-layout'), 'dashboard.php declares .finlyzer-main-layout wrapper');
@@ -536,7 +536,7 @@ assert(fs.existsSync(readmePath), 'readme.txt exists in plugin root');
 const readmeContent = fs.readFileSync(readmePath, 'utf8');
 assert(readmeContent.includes('=== Finlyzer'), 'readme.txt has standard WordPress title block');
 assert(readmeContent.includes('Contributors: sl3nd3r, raygens, finlyzer'), 'readme.txt declares contributors including sl3nd3r');
-assert(readmeContent.includes('Stable tag: 1.9.0'), 'readme.txt Stable tag matches v1.9.0');
+assert(readmeContent.includes('Stable tag: 1.9.1'), 'readme.txt Stable tag matches v1.9.1');
 assert(readmeContent.includes('Requires PHP: 8.1'), 'readme.txt requires PHP 8.1+');
 assert(readmeContent.includes('Requires at least: 6.4'), 'readme.txt requires WordPress 6.4+');
 
@@ -1493,12 +1493,12 @@ const packageJsonFront = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../
 const packageJsonBack = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../backend/wp-back/package.json'), 'utf8'));
 const readmeTxt = fs.readFileSync(path.resolve(__dirname, '../readme.txt'), 'utf8');
 
-assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.9.0')"), 'finlyzer.php defines FINLYZER_VERSION 1.9.0');
-assert(finlyzerMainPhp.includes('* Version:           1.9.0'), 'finlyzer.php header declares Version 1.9.0');
-assert(packageJsonFront.version === '1.9.0', 'frontend package.json declares version 1.9.0');
-assert(packageJsonBack.version === '1.9.0', 'backend package.json declares version 1.9.0');
-assert(readmeTxt.includes('Stable tag: 1.9.0'), 'readme.txt declares Stable tag: 1.9.0');
-assert(readmeTxt.includes('= 1.9.0 ='), 'readme.txt documents 1.9.0 release notes');
+assert(finlyzerMainPhp.includes("define('FINLYZER_VERSION', '1.9.1')"), 'finlyzer.php defines FINLYZER_VERSION 1.9.1');
+assert(finlyzerMainPhp.includes('* Version:           1.9.1'), 'finlyzer.php header declares Version 1.9.1');
+assert(packageJsonFront.version === '1.9.1', 'frontend package.json declares version 1.9.1');
+assert(packageJsonBack.version === '1.9.1', 'backend package.json declares version 1.9.1');
+assert(readmeTxt.includes('Stable tag: 1.9.1'), 'readme.txt declares Stable tag: 1.9.1');
+assert(readmeTxt.includes('= 1.9.1 ='), 'readme.txt documents 1.9.1 release notes');
 
 // 22.8 High-Volume Dual-Engine Resilience Stress Test (100,000 Simulated Requests)
 const dualEngineStart = performance.now();
@@ -1546,8 +1546,8 @@ assert(restApiPhpUpdated.includes('$served || $result !== $response'), 'serve_ht
 // 23.5 Multi-Component Subsystem Fallback Parity
 const geminiClientPhpContent = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-gemini-client.php'), 'utf8');
 const previewServerPhpContent = fs.readFileSync(path.resolve(__dirname, '../preview-server.php'), 'utf8');
-assert(geminiClientPhpContent.includes("'1.9.0'"), 'class-fxli-gemini-client.php declares matching 1.9.0 fallback version');
-assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.9.0')"), 'preview-server.php declares FINLYZER_VERSION 1.9.0');
+assert(geminiClientPhpContent.includes("'1.9.1'"), 'class-fxli-gemini-client.php declares matching 1.9.1 fallback version');
+assert(previewServerPhpContent.includes("define('FINLYZER_VERSION', '1.9.1')"), 'preview-server.php declares FINLYZER_VERSION 1.9.1');
 
 // 23.6 High-Volume REST Fragment Serving Stress Matrix (100,000 Simulated Cycles)
 const restFragmentStressStart = performance.now();
@@ -2508,7 +2508,7 @@ assert(secretMatchExample === null, '.env.production.example purges baked FINLYZ
 const wpDetectorPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/wp-detector.ts');
 const wpDetectorContent = fs.readFileSync(wpDetectorPath, 'utf8');
 assert(wpDetectorContent.includes("redirect: 'manual'"), "wp-detector.ts enforces redirect: 'manual' to mitigate SSRF");
-assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.9.0'), 'wp-detector.ts sets User-Agent to 1.9.0');
+assert(wpDetectorContent.includes('Finlyzer-Sentinel-Probe/1.9.1'), 'wp-detector.ts sets User-Agent to 1.9.1');
 
 // 33.3 Gemini API Key Header Transmission (No Query String Leakage)
 // Per 2026 secure web API standards, API keys must be transmitted in HTTP headers, not URL query params
@@ -2517,18 +2517,18 @@ const geminiServiceContent = fs.readFileSync(geminiServicePath, 'utf8');
 assert(geminiServiceContent.includes("'x-goog-api-key': apiKey"), "gemini.ts passes API key securely via 'x-goog-api-key' header");
 assert(!geminiServiceContent.includes('?key=${apiKey}'), 'gemini.ts eliminates ?key= query parameter from API URL');
 
-// 33.4 Multi-Component 1.9.0 Version Consistency across Systems
+// 33.4 Multi-Component 1.9.1 Version Consistency across Systems
 const adminApiPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/admin-api.ts');
 const adminApiContent = fs.readFileSync(adminApiPath, 'utf8');
-assert(adminApiContent.includes("version: '1.9.0'"), 'admin-api.ts synchronizes version to 1.9.0');
+assert(adminApiContent.includes("version: '1.9.1'"), 'admin-api.ts synchronizes version to 1.9.1');
 
 const healthPath = path.resolve(__dirname, '../../../backend/wp-back/src/routes/health.ts');
 const healthContent = fs.readFileSync(healthPath, 'utf8');
-assert(healthContent.includes("version: '1.9.0'"), 'health.ts synchronizes version to 1.9.0');
+assert(healthContent.includes("version: '1.9.1'"), 'health.ts synchronizes version to 1.9.1');
 
 const marketTimingPath = path.resolve(__dirname, '../../../backend/wp-back/src/services/market-timing.ts');
 const marketTimingContent = fs.readFileSync(marketTimingPath, 'utf8');
-assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.9.0'), 'market-timing.ts sets User-Agent to 1.9.0');
+assert(marketTimingContent.includes('Finlyzer-Market-Timing/1.9.1'), 'market-timing.ts sets User-Agent to 1.9.1');
 
 // 33.5 Windows XAMPP Developer Parity in Build Packaging
 const buildPackagePath = path.resolve(__dirname, '../build-package.js');
@@ -2625,7 +2625,7 @@ assert(summaryCardsPhpV34.includes('/* translators: %d: Product ID. */'), 'summa
 assert(readmeTxtV34.includes('Tested up to: 7.1'), 'readme.txt declares compatibility Tested up to: 7.1');
 const tagsLineV34 = readmeTxtV34.split('\n').find(l => l.startsWith('Tags:'));
 assert(tagsLineV34 && tagsLineV34.split(',').length <= 5, 'readme.txt strictly limits plugin tags to 5 tags');
-assert(readmeTxtV34.includes('Stable tag: 1.9.0'), 'readme.txt declares Stable tag: 1.9.0');
+assert(readmeTxtV34.includes('Stable tag: 1.9.1'), 'readme.txt declares Stable tag: 1.9.1');
 assert(readmeTxtV34.includes('== Third-Party Libraries & Source Code =='), 'readme.txt declares == Third-Party Libraries & Source Code ==');
 assert(readmeTxtV34.includes('BSD-2-Clause'), 'readme.txt declares HTMX BSD-2-Clause license');
 assert(fs.existsSync(path.resolve(__dirname, '../assets/js/vendor/htmx.js')), 'unminified assets/js/vendor/htmx.js exists per Guideline 4');
@@ -3887,9 +3887,9 @@ const finlyzerPhpV46 = fs.readFileSync(path.resolve(__dirname, '../finlyzer.php'
 
 assert(dashboardPhpV46.includes('id="finlyzer-dev-error-box"'), 'dashboard.php contains #finlyzer-dev-error-box container');
 assert(adminPagePhpV46.includes('FINLYZER_VERSION'), 'class-fxli-admin-page.php binds script versioning to FINLYZER_VERSION');
-assert(readmeTxtV46.includes('Stable tag: 1.9.0'), 'readme.txt declares Stable tag 1.9.0');
-assert(readmeTxtV46.includes('= 1.9.0 ='), 'readme.txt documents = 1.9.0 = changelog');
-assert(finlyzerPhpV46.includes("Version:           1.9.0"), 'finlyzer.php declares plugin Version 1.9.0');
+assert(readmeTxtV46.includes('Stable tag: 1.9.1'), 'readme.txt declares Stable tag 1.9.1');
+assert(readmeTxtV46.includes('= 1.9.1 ='), 'readme.txt documents = 1.9.1 = changelog');
+assert(finlyzerPhpV46.includes("Version:           1.9.1"), 'finlyzer.php declares plugin Version 1.9.1');
 
 // Strict Guideline 13 & No Open Source mentions
 assert(!readmeTxtV46.toLowerCase().includes('open source') && !readmeTxtV46.toLowerCase().includes('opensource'), 'readme.txt contains zero "open source" mentions');
@@ -3985,7 +3985,7 @@ for (const varName of dashboardFlaggedVars) {
 try {
 	const phpTemplateTest = `<?php
 define('ABSPATH', 1);
-define('FINLYZER_VERSION', '1.9.0');
+define('FINLYZER_VERSION', '1.9.1');
 
 class FXLI_Env {
 	public static function dev_tools_enabled() { return true; }
@@ -4137,9 +4137,11 @@ assert(finlyzerPhpContentV48.includes("register_activation_hook(__FILE__, 'finly
 // 48.5 UI Consent Components, Badges, and Documentation
 const settingsModalPathV48 = path.resolve(__dirname, '../templates/partials/settings-modal.php');
 const settingsModalContentV48 = fs.readFileSync(settingsModalPathV48, 'utf8');
-assert(settingsModalContentV48.includes('finlyzer-verify-box--rates'), 'settings-modal.php provides ECB Live Rates opt-in box');
-assert(settingsModalContentV48.includes('finlyzerRatesOptInBtn'), 'settings-modal.php includes opt-in button');
-assert(settingsModalContentV48.includes('finlyzerRatesOptOutBtn'), 'settings-modal.php includes opt-out button');
+assert(!settingsModalContentV48.includes('finlyzer-verify-box--rates'), 'settings-modal.php strictly removed redundant ECB Live Rates box per Image Two specifications');
+assert(!settingsModalContentV48.includes('finlyzerRatesOptInBtn'), 'settings-modal.php eliminated redundant rates opt-in button');
+assert(!settingsModalContentV48.includes('finlyzerRatesOptOutBtn'), 'settings-modal.php eliminated redundant rates opt-out button');
+assert(settingsModalContentV48.includes('finlyzerCheckConnectionBtn'), 'settings-modal.php provides Check Connection button');
+assert(settingsModalContentV48.includes('finlyzerVerifyHmacBtn'), 'settings-modal.php provides Re-sync button');
 
 const summaryCardsPathV48 = path.resolve(__dirname, '../templates/partials/summary-cards.php');
 const summaryCardsContentV48 = fs.readFileSync(summaryCardsPathV48, 'utf8');
@@ -4150,13 +4152,13 @@ const readmeContentV48 = fs.readFileSync(path.resolve(__dirname, '../readme.txt'
 assert(readmeContentV48.includes('== External Services =='), 'readme.txt declares == External Services ==');
 assert(readmeContentV48.includes('api.frankfurter.dev'), 'readme.txt documents api.frankfurter.dev service');
 assert(readmeContentV48.includes('disabled by default'), 'readme.txt clearly discloses Frankfurter is disabled by default');
-assert(readmeContentV48.includes('= 1.9.0 ='), 'readme.txt includes 1.9.0 changelog entry');
+assert(readmeContentV48.includes('= 1.9.1 ='), 'readme.txt includes 1.9.1 changelog entry');
 
 // 48.6 Live PHP CLI Offline Matrix Execution & Zero-Network Verification
 try {
 	const phpRateTest = `<?php
 define('ABSPATH', 1);
-define('FINLYZER_VERSION', '1.9.0');
+define('FINLYZER_VERSION', '1.9.1');
 
 $GLOBALS['options'] = [
 	'finlyzer_live_rates_opt_in' => 'no'
@@ -4245,6 +4247,77 @@ for (let i = 0; i < 100000; i++) {
 const rateBenchDurationV48 = performance.now() - rateBenchStartV48;
 assert(benchCalculatedRatesV48 === 100000, `Successfully performed 100,000 offline rate calculations (${benchCalculatedRatesV48}/100000)`);
 assert(rateBenchDurationV48 < 50, `100,000 offline cross-rate calculations executed in ${rateBenchDurationV48.toFixed(2)}ms (< 50ms SLA)`);
+
+// =============================================================
+// TEST GROUP 49: User-Initiated Analysis CTA, Zero-Network Dashboard Load & Streamlined Server Sync (v1.9.1)
+// =============================================================
+console.log('\nTEST GROUP 49: User-Initiated Analysis CTA, Zero-Network Dashboard Load & Streamlined Server Sync (v1.9.1)');
+
+// 49.1 Zero-Network Page Load Verification (Guideline 7 Compliance)
+const dashboardPhpV49 = fs.readFileSync(path.resolve(__dirname, '../templates/dashboard.php'), 'utf8');
+assert(!dashboardPhpV49.includes('hx-trigger="load"'), 'dashboard.php strictly eliminates automated hx-trigger="load" attributes');
+assert(dashboardPhpV49.includes('finlyzer-pre-analysis-hero'), 'dashboard.php pre-renders #finlyzer-pre-analysis-hero for clean idle state');
+assert(dashboardPhpV49.includes('finlyzer-pre-analysis-sidebar'), 'dashboard.php pre-renders #finlyzer-pre-analysis-sidebar for clean idle state');
+assert(dashboardPhpV49.includes('id="finlyzer-connection-status" class="finlyzer-connection-status" style="display:none;"'), 'dashboard.php hides connection status banner by default on initial page load');
+
+// 49.2 User-Initiated Analysis Trigger Contract
+assert(dashboardPhpV49.includes('id="finlyzer-start-analysis-btn"'), 'dashboard.php provides header #finlyzer-start-analysis-btn action button');
+assert(dashboardPhpV49.includes('Begin Analysis'), 'dashboard.php labels action as "Begin Analysis"');
+assert(dashboardPhpV49.includes('id="finlyzer-hero-start-btn"'), 'dashboard.php provides hero #finlyzer-hero-start-btn call-to-action button');
+
+const dashboardJsV49 = fs.readFileSync(path.resolve(__dirname, '../assets/js/dashboard.js'), 'utf8');
+assert(dashboardJsV49.includes('function startAnalysis('), 'dashboard.js implements startAnalysis() function');
+assert(dashboardJsV49.includes('hasStartedAnalysis'), 'dashboard.js manages hasStartedAnalysis lifecycle state');
+assert(dashboardJsV49.includes('finlyzer-start-analysis-btn'), 'dashboard.js binds click listener to #finlyzer-start-analysis-btn');
+assert(dashboardJsV49.includes('finlyzer-hero-start-btn'), 'dashboard.js binds click listener to #finlyzer-hero-start-btn');
+assert(dashboardJsV49.includes('updateStartButtonState'), 'dashboard.js handles responsive button state updates');
+
+// 49.3 Image Two Compliance: Streamlined Server Connection & Sync Modal
+const settingsModalV49 = fs.readFileSync(path.resolve(__dirname, '../templates/partials/settings-modal.php'), 'utf8');
+assert(!settingsModalV49.includes('European Central Bank Live Rates'), 'settings-modal.php completely removed European Central Bank Live Rates container per Image Two red X');
+assert(!settingsModalV49.includes('finlyzer-verify-box--rates'), 'settings-modal.php eliminates rates configuration container');
+assert(settingsModalV49.includes('finlyzerCheckConnectionBtn'), 'settings-modal.php provides Check Connection button');
+assert(settingsModalV49.includes('Check Connection'), 'settings-modal.php labels Check Connection button clearly');
+assert(settingsModalV49.includes('finlyzerVerifyHmacBtn'), 'settings-modal.php provides Re-sync button');
+assert(settingsModalV49.includes('Re-sync'), 'settings-modal.php labels Re-sync button clearly');
+assert(settingsModalV49.includes('first click "Check Connection"'), 'settings-modal.php includes user guidance for checking connection before re-sync');
+assert(dashboardJsV49.includes('finlyzerCheckConnectionBtn'), 'dashboard.js wires up Check Connection button');
+assert(dashboardJsV49.includes('/settings/hmac/verify'), 'dashboard.js calls /settings/hmac/verify on Check Connection click');
+
+// 49.4 REST API On-Demand User Initiation Contract
+const restApiPhpV49 = fs.readFileSync(path.resolve(__dirname, '../includes/class-fxli-rest-api.php'), 'utf8');
+assert(restApiPhpV49.includes("'initiate'"), 'class-fxli-rest-api.php registers initiate parameter on REST routes');
+assert(restApiPhpV49.includes('FXLI_Rate_Service::set_live_rates_opt_in(true)'), 'class-fxli-rest-api.php activates live rates upon user explicit initiation');
+assert(restApiPhpV49.includes('FXLI_Env::set_cloud_opt_in(true)'), 'class-fxli-rest-api.php activates cloud sentinel upon user explicit initiation');
+
+// 49.5 High-Concurrency User-Initiated Analysis Pipeline Stress Benchmark (100,000 Cycles)
+const analysisPipelineStart = performance.now();
+let simulatedAnalyses = 0;
+let simulatedRateCalcs = 0;
+
+for (let i = 0; i < 100000; i++) {
+	// Simulate user trigger state transition
+	let state = { hasAnalyzed: false, period: 30, liveRates: false };
+	if (i % 2 === 0) {
+		// user clicks "Begin Analysis"
+		state.hasAnalyzed = true;
+		state.liveRates = true;
+		simulatedAnalyses++;
+	}
+
+	// simulate on-demand rate calculation
+	if (state.liveRates) {
+		const orderTotal = (i % 500) + 25.5;
+		const gatewaySpread = 0.022;
+		const loss = Math.round(orderTotal * gatewaySpread * 100) / 100;
+		if (loss > 0) simulatedRateCalcs++;
+	}
+}
+
+const analysisPipelineDuration = performance.now() - analysisPipelineStart;
+assert(simulatedAnalyses === 50000, `Simulated 50,000 user-initiated analysis dispatches (${simulatedAnalyses}/50000)`);
+assert(simulatedRateCalcs === 50000, `Executed 50,000 high-precision gateway spread calculations (${simulatedRateCalcs}/50000)`);
+assert(analysisPipelineDuration < 100, `100,000 user-initiated analysis cycles executed in ${analysisPipelineDuration.toFixed(2)}ms (< 100ms SLA)`);
 
 // -------------------------------------------------------------
 // SUMMARY

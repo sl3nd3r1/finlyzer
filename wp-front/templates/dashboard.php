@@ -28,12 +28,18 @@ $fxli_rest_base_url    = rest_url('finlyzer/v1');
 
 		<!-- Timeframe & Navigation Controls -->
 		<div class="finlyzer-header__controls">
+			<button type="button" class="finlyzer-btn finlyzer-btn--accent finlyzer-header-cta" id="finlyzer-start-analysis-btn" title="<?php esc_attr_e('Start FX margin and exchange rate analysis', 'finlyzer'); ?>">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+					<polygon points="5 3 19 12 5 21 5 3"></polygon>
+				</svg>
+				<span id="finlyzer-start-analysis-btn-text"><?php esc_html_e('Begin Analysis', 'finlyzer'); ?></span>
+			</button>
 			<div class="finlyzer-range-group" role="group" aria-label="<?php esc_attr_e('Reporting timeframe', 'finlyzer'); ?>">
 				<button type="button" class="finlyzer-range-btn is-active" data-days="30" aria-pressed="true" title="<?php esc_attr_e('View 30-day analytics', 'finlyzer'); ?>">30D</button>
 				<button type="button" class="finlyzer-range-btn" data-days="60" aria-pressed="false" title="<?php esc_attr_e('View 60-day analytics', 'finlyzer'); ?>">60D</button>
 				<button type="button" class="finlyzer-range-btn" data-days="90" aria-pressed="false" title="<?php esc_attr_e('View 90-day analytics', 'finlyzer'); ?>">90D</button>
 			</div>
-			<button type="button" class="finlyzer-settings-nav-btn" id="finlyzerSettingsNavBtn" title="<?php esc_attr_e('Finlyzer Cloud Sentinel Status', 'finlyzer'); ?>">
+			<button type="button" class="finlyzer-settings-nav-btn" id="finlyzerSettingsNavBtn" title="<?php esc_attr_e('Server Connection Status', 'finlyzer'); ?>">
 				<span class="finlyzer-nav-dot" aria-hidden="true"></span>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -53,7 +59,7 @@ $fxli_rest_base_url    = rest_url('finlyzer/v1');
 	</header>
 
 	<!-- API Connection Status Banner -->
-	<div id="finlyzer-connection-status" class="finlyzer-connection-status finlyzer-connection-status--connecting" role="status" aria-live="polite">
+	<div id="finlyzer-connection-status" class="finlyzer-connection-status" style="display:none;" role="status" aria-live="polite">
 		<div class="finlyzer-connection-status__inner">
 			<div class="finlyzer-connection-status__left">
 				<span class="finlyzer-connection-spinner" id="finlyzer-connection-spinner" aria-hidden="true"></span>
@@ -89,13 +95,44 @@ $fxli_rest_base_url    = rest_url('finlyzer/v1');
 				id="finlyzer-summary"
 				class="finlyzer-summary"
 				hx-get="<?php echo esc_url($fxli_rest_summary_url); ?>"
-				hx-trigger="load"
 				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($fxli_rest_nonce); ?>"}'
 				hx-swap="innerHTML"
 				aria-live="polite"
 			>
-				<div class="finlyzer-skeleton finlyzer-skeleton--hero" aria-hidden="true"></div>
-				<div class="finlyzer-skeleton finlyzer-skeleton--ledger" aria-hidden="true"></div>
+				<div class="finlyzer-pre-analysis-hero" id="finlyzer-pre-analysis-hero">
+					<div class="finlyzer-pre-analysis-card">
+						<div class="finlyzer-pre-analysis-badge">
+							<span class="finlyzer-status-dot"></span>
+							<span><?php esc_html_e('On-Demand Analytics Engine', 'finlyzer'); ?></span>
+						</div>
+						<h2 class="finlyzer-pre-analysis-title"><?php esc_html_e('Discover Hidden Gateway Spreads & FX Margin Drag', 'finlyzer'); ?></h2>
+						<p class="finlyzer-pre-analysis-desc">
+							<?php esc_html_e('Finlyzer audits your international WooCommerce orders against official ECB market reference exchange rates to reveal concealed payment gateway currency conversion margins.', 'finlyzer'); ?>
+						</p>
+						<div class="finlyzer-pre-analysis-actions">
+							<button type="button" class="finlyzer-btn finlyzer-btn--accent finlyzer-btn--lg" id="finlyzer-hero-start-btn">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+									<polygon points="5 3 19 12 5 21 5 3"></polygon>
+								</svg>
+								<span><?php esc_html_e('Begin Analysis', 'finlyzer'); ?></span>
+							</button>
+						</div>
+						<div class="finlyzer-pre-analysis-features">
+							<div class="finlyzer-pre-feature">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+								<span><?php esc_html_e('100% On-Demand & Privacy-Safe', 'finlyzer'); ?></span>
+							</div>
+							<div class="finlyzer-pre-feature">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+								<span><?php esc_html_e('Zero Background Polling', 'finlyzer'); ?></span>
+							</div>
+							<div class="finlyzer-pre-feature">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+								<span><?php esc_html_e('Multi-Currency Spread Audit', 'finlyzer'); ?></span>
+							</div>
+						</div>
+					</div>
+				</div>
 			</section>
 		</div>
 
@@ -105,12 +142,25 @@ $fxli_rest_base_url    = rest_url('finlyzer/v1');
 				id="finlyzer-insight"
 				class="finlyzer-insight"
 				hx-get="<?php echo esc_url($fxli_rest_insight_url); ?>"
-				hx-trigger="load"
 				hx-headers='{"X-WP-Nonce": "<?php echo esc_attr($fxli_rest_nonce); ?>"}'
 				hx-swap="innerHTML"
 				aria-live="polite"
 			>
-				<div class="finlyzer-skeleton finlyzer-skeleton--insight" aria-hidden="true"></div>
+				<div class="finlyzer-pre-analysis-sidebar" id="finlyzer-pre-analysis-sidebar">
+					<div class="finlyzer-pre-sidebar-card">
+						<div class="finlyzer-sidebar-icon">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="12" cy="12" r="10"></circle>
+								<line x1="12" y1="16" x2="12" y2="12"></line>
+								<line x1="12" y1="8" x2="12.01" y2="8"></line>
+							</svg>
+						</div>
+						<h4 class="finlyzer-pre-sidebar-title"><?php esc_html_e('Margin Sentinel AI', 'finlyzer'); ?></h4>
+						<p class="finlyzer-pre-sidebar-text">
+							<?php esc_html_e('Executive financial summaries and actionable FX mitigation recommendations will appear here upon beginning your analysis.', 'finlyzer'); ?>
+						</p>
+					</div>
+				</div>
 			</section>
 		</div>
 	</div>

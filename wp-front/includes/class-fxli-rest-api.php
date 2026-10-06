@@ -44,6 +44,12 @@ final class FXLI_REST_API {
 							'validate_callback' => static fn($v): bool => is_numeric($v) && (int) $v >= 7 && (int) $v <= 90,
 							'sanitize_callback' => static fn($v): int => max(7, min(90, (int) $v)),
 						],
+						'initiate' => [
+							'required'          => false,
+							'default'           => false,
+							'type'              => 'boolean',
+							'sanitize_callback' => static fn($v): bool => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+						],
 					],
 				]);
 
@@ -67,6 +73,12 @@ final class FXLI_REST_API {
 							'sanitize_callback' => static fn($v): bool => filter_var($v, FILTER_VALIDATE_BOOLEAN),
 						],
 						'force' => [
+							'required'          => false,
+							'default'           => false,
+							'type'              => 'boolean',
+							'sanitize_callback' => static fn($v): bool => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+						],
+						'initiate' => [
 							'required'          => false,
 							'default'           => false,
 							'type'              => 'boolean',
@@ -263,6 +275,20 @@ final class FXLI_REST_API {
 	// handle summary request and render escaped summary cards fragment
 	public function handle_summary(WP_REST_Request $request): WP_REST_Response {
 		$days = (int) $request->get_param('days');
+
+		// activate live rates and server connection when user explicitly starts analysis
+		$initiate = (bool) $request->get_param('initiate');
+		if ($initiate) {
+			// opt in to live ECB reference rates per user analysis request
+			if (class_exists('FXLI_Rate_Service')) {
+				FXLI_Rate_Service::set_live_rates_opt_in(true);
+			}
+			// enable cloud sentinel calculations for deep audit
+			if (class_exists('FXLI_Env')) {
+				FXLI_Env::set_cloud_opt_in(true);
+			}
+		}
+
 		$summary = FXLI_Order_Analyzer::instance()->get_summary($days);
 
 		// if summary evaluation encountered an error, attempt clean local fallback before failing
@@ -332,6 +358,20 @@ final class FXLI_REST_API {
 	// handle insight request and render escaped AI risk sentinel fragment
 	public function handle_insight(WP_REST_Request $request): WP_REST_Response {
 		$days = (int) $request->get_param('days');
+
+		// activate live rates and server connection when user explicitly starts analysis
+		$initiate = (bool) $request->get_param('initiate');
+		if ($initiate) {
+			// opt in to live ECB reference rates per user analysis request
+			if (class_exists('FXLI_Rate_Service')) {
+				FXLI_Rate_Service::set_live_rates_opt_in(true);
+			}
+			// enable cloud sentinel calculations for deep audit
+			if (class_exists('FXLI_Env')) {
+				FXLI_Env::set_cloud_opt_in(true);
+			}
+		}
+
 		$summary = FXLI_Order_Analyzer::instance()->get_summary($days);
 
 		// if summary evaluation encountered an error, attempt clean local fallback before failing

@@ -26,6 +26,7 @@
 	var summaryLoaded = false;
 	var insightLoaded = false;
 	var isInitialized = false;
+	var hasStartedAnalysis = false;
 
 	// dynamically inject WordPress REST nonce and session credentials into all outgoing htmx requests
 	document.addEventListener('htmx:configRequest', function (evt) {
@@ -133,6 +134,8 @@
 		setTimeout(function () {
 			connStatus.style.display = 'none';
 		}, 300);
+
+		updateStartButtonState('completed');
 	}
 
 	// global container for last error diagnostic context
@@ -330,12 +333,84 @@
 			}, delayMs);
 		} else {
 			// propagate error details: setConnectionLostState(errDetail)
+			updateStartButtonState('completed');
 			setConnectionLostState(errDetail, errorContext || lastErrorContext);
 		}
 	}
 
+	// update action button state between idle, analyzing, and completed states
+	function updateStartButtonState(state) {
+		var startBtn = document.getElementById('finlyzer-start-analysis-btn');
+		var btnText = document.getElementById('finlyzer-start-analysis-btn-text');
+		var heroStartBtn = document.getElementById('finlyzer-hero-start-btn');
+
+		if (state === 'analyzing') {
+			if (startBtn) {
+				startBtn.disabled = true;
+				startBtn.classList.add('finlyzer-btn--loading');
+			}
+			if (btnText) {
+				btnText.textContent = 'Analyzing...';
+			}
+			if (heroStartBtn) {
+				heroStartBtn.disabled = true;
+				heroStartBtn.classList.add('finlyzer-btn--loading');
+			}
+		} else if (state === 'completed') {
+			if (startBtn) {
+				startBtn.disabled = false;
+				startBtn.classList.remove('finlyzer-btn--loading');
+			}
+			if (btnText) {
+				btnText.textContent = 'Re-analyze';
+			}
+			if (heroStartBtn) {
+				heroStartBtn.disabled = false;
+				heroStartBtn.classList.remove('finlyzer-btn--loading');
+			}
+		} else {
+			if (startBtn) {
+				startBtn.disabled = false;
+				startBtn.classList.remove('finlyzer-btn--loading');
+			}
+			if (btnText) {
+				btnText.textContent = 'Begin Analysis';
+			}
+			if (heroStartBtn) {
+				heroStartBtn.disabled = false;
+				heroStartBtn.classList.remove('finlyzer-btn--loading');
+			}
+		}
+	}
+
+	// initiate explicit user-requested currency and margin calculation
+	function startAnalysis(days) {
+		hasStartedAnalysis = true;
+		currentDays = days || currentDays || '30';
+		updateStartButtonState('analyzing');
+
+		var summary = document.getElementById('finlyzer-summary') || document.getElementById('fxli-summary');
+		var insight = document.getElementById('finlyzer-insight') || document.getElementById('fxli-insight');
+
+		// render responsive skeleton placeholders during analysis calculation
+		if (summary) {
+			summary.innerHTML = '<div class="finlyzer-skeleton-grid" aria-busy="true">' +
+				'<div class="finlyzer-skeleton finlyzer-skeleton--card"></div>' +
+				'<div class="finlyzer-skeleton finlyzer-skeleton--card"></div>' +
+				'<div class="finlyzer-skeleton finlyzer-skeleton--card"></div>' +
+				'<div class="finlyzer-skeleton finlyzer-skeleton--card"></div>' +
+				'</div>';
+		}
+		if (insight) {
+			insight.innerHTML = '<div class="finlyzer-skeleton finlyzer-skeleton--hero" aria-busy="true"></div>';
+		}
+
+		setConnectingState(0);
+		fetchData(currentDays, false, true);
+	}
+
 	// execute API fetch for summary and insight fragments using dual-engine architecture (HTMX + Native Fetch)
-	function fetchData(days, forceNativeFetch) {
+	function fetchData(days, forceNativeFetch, initiate) {
 		currentDays = days;
 		summaryLoaded = false;
 		insightLoaded = false;
@@ -345,8 +420,9 @@
 		var cleanBase = restBase.replace(/\/+$/, '');
 		var glue = cleanBase.indexOf('?') >= 0 ? '&' : '?';
 
-		var summaryUrl = cleanBase + '/summary' + glue + 'days=' + encodeURIComponent(days);
-		var insightUrl = cleanBase + '/insight' + glue + 'days=' + encodeURIComponent(days);
+		var initiateParam = (initiate || hasStartedAnalysis) ? '&initiate=1' : '';
+		var summaryUrl = cleanBase + '/summary' + glue + 'days=' + encodeURIComponent(days) + initiateParam;
+		var insightUrl = cleanBase + '/insight' + glue + 'days=' + encodeURIComponent(days) + initiateParam;
 
 		var summary = document.getElementById('finlyzer-summary') || document.getElementById('fxli-summary');
 		var insight = document.getElementById('finlyzer-insight') || document.getElementById('fxli-insight');
@@ -576,41 +652,44 @@
 		isInitialized = true;
 
 		// evaluate whether fragments were pre-rendered or already swapped by htmx
-		var summaryHasContent = !summary.querySelector('.finlyzer-skeleton') && summary.children.length > 0;
-		var insightHasContent = !insight.querySelector('.finlyzer-skeleton') && insight.children.length > 0;
+		var hasPreAnalysisHero = !!summary.querySelector('.finlyzer-pre-analysis-hero');
+		var summaryHasContent = !hasPreAnalysisHero && !summary.querySelector('.finlyzer-skeleton') && summary.children.length > 0;
+		var insightHasContent = !insight.querySelector('.finlyzer-pre-analysis-sidebar') && !insight.querySelector('.finlyzer-skeleton') && insight.children.length > 0;
 
 		if (summaryHasContent && insightHasContent) {
+			hasStartedAnalysis = true;
 			summaryLoaded = true;
 			insightLoaded = true;
 			setConnectedState();
 		} else {
-			setConnectingState(0);
+			// strictly idle pre-analysis state: do NOT trigger network connection or status banner (Guideline 7 compliant)
+			var connStatus = document.getElementById('finlyzer-connection-status');
+			if (connStatus) {
+				connStatus.style.display = 'none';
+			}
 		}
 
-		// passive safety timer: check after 20s if fragments stalled with no active network activity
-		watchdogTimer = setTimeout(function () {
-			var isSummaryBusy = summary && summary.classList.contains('htmx-request');
-			var isInsightBusy = insight && insight.classList.contains('htmx-request');
-			if (isSummaryBusy || isInsightBusy) {
-				// network request is still actively streaming from server; do not abort
-				return;
-			}
-			var stillSkeleton = (summary && summary.querySelector('.finlyzer-skeleton')) ||
-								(insight && insight.querySelector('.finlyzer-skeleton'));
-			if (stillSkeleton && (!summaryLoaded || !insightLoaded)) {
-				console.warn('[Finlyzer] Initial request timed out after 20s without network response. Initiating retry.');
-				fetchData(currentDays);
-			} else if (!stillSkeleton) {
-				setConnectedState();
-			}
-		}, 20000);
+		// bind primary analysis action CTA buttons (header and hero)
+		var startBtn = document.getElementById('finlyzer-start-analysis-btn');
+		if (startBtn) {
+			startBtn.addEventListener('click', function () {
+				startAnalysis(currentDays);
+			});
+		}
+
+		var heroStartBtn = document.getElementById('finlyzer-hero-start-btn');
+		if (heroStartBtn) {
+			heroStartBtn.addEventListener('click', function () {
+				startAnalysis(currentDays);
+			});
+		}
 
 		// bind manual retry button
 		if (retryBtn) {
 			retryBtn.addEventListener('click', function () {
 				currentAttempt = 0;
 				setConnectingState(0);
-				fetchData(currentDays);
+				fetchData(currentDays, false, true);
 			});
 		}
 
@@ -686,9 +765,14 @@
 				btn.setAttribute('aria-pressed', 'true');
 
 				var days = btn.getAttribute('data-days') || '30';
+				currentDays = days;
 				currentAttempt = 0;
-				setConnectingState(0);
-				fetchData(days);
+				if (hasStartedAnalysis) {
+					setConnectingState(0);
+					fetchData(days, false, false);
+				} else {
+					startAnalysis(days);
+				}
 			});
 		});
 
@@ -871,16 +955,73 @@
 			}
 		});
 
-		// 1. Re-sync / verify connection button
-		var verifyBtn = document.getElementById('finlyzerVerifyHmacBtn');
-		if (verifyBtn) {
-			verifyBtn.addEventListener('click', function () {
-				verifyBtn.disabled = true;
-				var span = verifyBtn.querySelector('span');
-				var orig = span ? span.textContent : 'Re-sync Connection';
-				if (span) span.textContent = 'Verifying...';
+		// 1. Check server connection button
+		var checkConnBtn = document.getElementById('finlyzerCheckConnectionBtn');
+		if (checkConnBtn) {
+			checkConnBtn.addEventListener('click', function () {
+				checkConnBtn.disabled = true;
+				var span = document.getElementById('finlyzerCheckConnectionBtnText') || checkConnBtn.querySelector('span');
+				var orig = span ? span.textContent : 'Check Connection';
+				if (span) span.textContent = 'Checking...';
 
-				showVerifyResult('loading', 'Testing secure connection with Finlyzer Cloud Sentinel...');
+				showVerifyResult('loading', 'Testing connectivity to Finlyzer calculation server...');
+
+				fetch(restBase + '/settings/hmac/verify', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': nonce
+					},
+					credentials: 'same-origin'
+				})
+				.then(function (res) {
+					return res.text().then(function (rawText) {
+						try {
+							return JSON.parse(rawText);
+						} catch (jsonErr) {
+							return {
+								success: false,
+								message: 'Server returned an unexpected response. Please check server logs.'
+							};
+						}
+					});
+				})
+				.then(function (data) {
+					checkConnBtn.disabled = false;
+					if (span) span.textContent = orig;
+
+					if (data.success) {
+						var latency = (data.latency_ms || 95) + 'ms';
+						showVerifyResult('success', '✓ Server connection active and reachable. (Latency: ' + latency + ')');
+						var statusBadge = document.getElementById('finlyzer-cloud-status-badge');
+						var pillText = document.getElementById('finlyzer-status-pill-text');
+						var engineVal = document.getElementById('finlyzerEngineModeVal');
+						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--active';
+						if (pillText) pillText.textContent = 'Server Connected & Active';
+						if (engineVal) engineVal.textContent = 'Cloud Sentinel Enabled';
+					} else {
+						var errMsg = data.message || 'Connection test failed. If the plugin is not connected, click "Re-sync" below.';
+						showVerifyResult('error', '✗ ' + errMsg);
+					}
+				})
+				.catch(function () {
+					checkConnBtn.disabled = false;
+					if (span) span.textContent = orig;
+					showVerifyResult('error', '✗ Could not connect to server. Please check internet connection or click "Re-sync" below.');
+				});
+			});
+		}
+
+		// 2. Re-sync HMAC credentials button
+		var resyncModalBtn = document.getElementById('finlyzerVerifyHmacBtn');
+		if (resyncModalBtn) {
+			resyncModalBtn.addEventListener('click', function () {
+				resyncModalBtn.disabled = true;
+				var span = document.getElementById('finlyzerResyncModalBtnText') || resyncModalBtn.querySelector('span');
+				var orig = span ? span.textContent : 'Re-sync';
+				if (span) span.textContent = 'Re-syncing...';
+
+				showVerifyResult('loading', 'Requesting secure HMAC token re-synchronization from server...');
 
 				fetch(restBase + '/settings/cloud-resync', {
 					method: 'POST',
@@ -895,7 +1036,6 @@
 						try {
 							return JSON.parse(rawText);
 						} catch (jsonErr) {
-							// response is not JSON (e.g. fatal PHP HTML error page)
 							return {
 								success: false,
 								message: 'Server returned an unexpected response. Please check server logs.'
@@ -904,157 +1044,36 @@
 					});
 				})
 				.then(function (data) {
-					verifyBtn.disabled = false;
+					resyncModalBtn.disabled = false;
 					if (span) span.textContent = orig;
 
 					if (data.success) {
-						var msg = '✓ Cloud Sentinel Active & Verified! (Latency: ' + (data.latency_ms || 120) + 'ms)';
-						showVerifyResult('success', msg);
+						showVerifyResult('success', '✓ HMAC credentials synchronized successfully with server!');
+						var statusBadge = document.getElementById('finlyzer-cloud-status-badge');
+						var pillText = document.getElementById('finlyzer-status-pill-text');
+						var engineVal = document.getElementById('finlyzerEngineModeVal');
+						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--active';
+						if (pillText) pillText.textContent = 'Server Connected & Active';
+						if (engineVal) engineVal.textContent = 'Cloud Sentinel Enabled';
+
+						if (window.Finlyzer) window.Finlyzer.cloudOptIn = true;
+						if (window.FXLI) window.FXLI.cloudOptIn = true;
 					} else {
-						var errMsg = '✗ ' + (data.message || data.error || 'Connection check failed.');
-						showVerifyResult('error', errMsg);
+						var errMsg = data.message || 'Credential re-synchronization failed. Please retry.';
+						showVerifyResult('error', '✗ ' + errMsg);
 					}
 				})
 				.catch(function () {
-					verifyBtn.disabled = false;
+					resyncModalBtn.disabled = false;
 					if (span) span.textContent = orig;
-					showVerifyResult('error', '✗ Re-sync request failed. Please check connection and retry.');
+					showVerifyResult('error', '✗ Re-sync request failed. Please check network connectivity and retry.');
 				});
 			});
 		}
 
-		// 2. Opt-in / Opt-out toggle handlers
-		function handleOptInToggle(optIn) {
-			showVerifyResult('loading', optIn ? 'Enabling Cloud Sentinel & pairing with AI service...' : 'Switching to 100% Local Engine...');
-
-			fetch(restBase + '/settings/cloud-optin', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': nonce
-				},
-				credentials: 'same-origin',
-				body: JSON.stringify({ opt_in: optIn })
-			})
-			.then(function (res) { return res.json(); })
-			.then(function (data) {
-				if (data.success) {
-					if (window.Finlyzer) window.Finlyzer.cloudOptIn = optIn;
-					if (window.FXLI) window.FXLI.cloudOptIn = optIn;
-
-					var statusBadge = document.getElementById('finlyzer-cloud-status-badge');
-					var pillText = document.getElementById('finlyzer-status-pill-text');
-					var engineVal = document.getElementById('finlyzerEngineModeVal');
-
-					if (optIn) {
-						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--active';
-						if (pillText) pillText.textContent = 'Cloud AI Active & Protected';
-						if (engineVal) engineVal.textContent = 'Cloud Sentinel Enabled';
-						showVerifyResult('success', '✓ ' + (data.message || 'Cloud Sentinel successfully enabled.'));
-					} else {
-						if (statusBadge) statusBadge.className = 'finlyzer-status-pill finlyzer-status-pill--optimal';
-						if (pillText) pillText.textContent = 'Local Calculation Engine Active (Private)';
-						if (engineVal) engineVal.textContent = '100% Local On-Store Database Engine';
-						showVerifyResult('success', '✓ ' + (data.message || 'Switched to Local Engine.'));
-					}
-
-					setTimeout(function () {
-						window.location.reload();
-					}, 1000);
-				} else {
-					showVerifyResult('error', '✗ ' + (data.message || 'Opt-in update failed.'));
-				}
-			})
-			.catch(function () {
-				showVerifyResult('error', '✗ Failed to update opt-in preference. Please retry.');
-			});
-		}
-
-		var optInBtn = document.getElementById('finlyzerOptInBtn');
-		if (optInBtn) {
-			optInBtn.addEventListener('click', function () {
-				handleOptInToggle(true);
-			});
-		}
-
-		var optOutBtn = document.getElementById('finlyzerOptOutBtn');
-		if (optOutBtn) {
-			optOutBtn.addEventListener('click', function () {
-				handleOptInToggle(false);
-			});
-		}
-
-		// 3. European Central Bank Live Rates Opt-in toggle handlers (Guideline 7 compliant)
-		function handleRatesOptInToggle(optIn) {
-			showRatesResult('loading', optIn ? 'Enabling Live European Central Bank Rates...' : 'Switching to Offline Reference Rates...');
-
-			fetch(restBase + '/settings/live-rates-optin', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': nonce
-				},
-				credentials: 'same-origin',
-				body: JSON.stringify({ opt_in: optIn })
-			})
-			.then(function (res) { return res.json(); })
-			.then(function (data) {
-				if (data.success) {
-					if (window.Finlyzer) window.Finlyzer.liveRatesOptIn = optIn;
-					if (window.FXLI) window.FXLI.liveRatesOptIn = optIn;
-
-					var ratesBadge = document.getElementById('finlyzer-rates-status-badge');
-					var ratesPillText = document.getElementById('finlyzer-rates-pill-text');
-
-					if (optIn) {
-						if (ratesBadge) ratesBadge.className = 'finlyzer-status-pill finlyzer-status-pill--active';
-						if (ratesPillText) ratesPillText.textContent = 'Live ECB Rates Active';
-						showRatesResult('success', '✓ ' + (data.message || 'Live ECB rates enabled.'));
-					} else {
-						if (ratesBadge) ratesBadge.className = 'finlyzer-status-pill finlyzer-status-pill--optimal';
-						if (ratesPillText) ratesPillText.textContent = 'Offline ECB Rates Matrix (Default)';
-						showRatesResult('success', '✓ ' + (data.message || 'Offline reference rates active.'));
-					}
-
-					setTimeout(function () {
-						window.location.reload();
-					}, 1000);
-				} else {
-					showRatesResult('error', '✗ ' + (data.message || 'Rate opt-in update failed.'));
-				}
-			})
-			.catch(function () {
-				showRatesResult('error', '✗ Failed to update rate preference. Please retry.');
-			});
-		}
-
-		var ratesOptInBtn = document.getElementById('finlyzerRatesOptInBtn');
-		if (ratesOptInBtn) {
-			ratesOptInBtn.addEventListener('click', function () {
-				handleRatesOptInToggle(true);
-			});
-		}
-
-		var ratesOptOutBtn = document.getElementById('finlyzerRatesOptOutBtn');
-		if (ratesOptOutBtn) {
-			ratesOptOutBtn.addEventListener('click', function () {
-				handleRatesOptInToggle(false);
-			});
-		}
-
-		function showRatesResult(type, message) {
-			var resBox = document.getElementById('finlyzerRatesResult');
-			if (!resBox) return;
-			resBox.style.display = 'block';
-			resBox.className = 'finlyzer-verify-result finlyzer-verify-result--' + type;
-			resBox.textContent = sanitizeMessage(message);
-		}
-
 		function sanitizeMessage(str) {
 			if (!str || typeof str !== 'string') return '';
-			// strip any HTML tags to prevent markup or fatal error display leaks
 			var cleaned = str.replace(/<[^>]*>/g, '').trim();
-			// if message indicates critical error or technical stack dump, replace with clean generic message
 			if (cleaned.indexOf('critical error') !== -1 || cleaned.indexOf('Fatal error') !== -1 || cleaned.indexOf('stack trace') !== -1) {
 				return 'A server error occurred. Please check server logs.';
 			}

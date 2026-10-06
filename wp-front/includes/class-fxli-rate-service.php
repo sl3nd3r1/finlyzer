@@ -255,7 +255,7 @@ final class FXLI_Rate_Service {
 
 		// compose privacy-preserving User-Agent without site URL leakage (Guideline 7 compliant)
 		$wp_version = function_exists('get_bloginfo') ? (string) get_bloginfo('version') : '6.4';
-		$plugin_version = defined('FINLYZER_VERSION') ? (string) FINLYZER_VERSION : '1.9.0';
+		$plugin_version = defined('FINLYZER_VERSION') ? (string) FINLYZER_VERSION : '1.9.1';
 		$user_agent = 'Finlyzer/' . $plugin_version . '; WordPress/' . $wp_version;
 
 		$response = wp_remote_get(
